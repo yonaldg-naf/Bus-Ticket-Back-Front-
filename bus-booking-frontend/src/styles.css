@@ -1,0 +1,205 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* -------------------------------------------------------
+   THEME 3: Minimal White + Jet Black + Purple Accent
+   Global tokens via CSS variables (light mode)
+------------------------------------------------------- */
+:root {
+  --bg: #FAFAFA;
+  --card: #FFFFFF;
+  --border: #E5E5E5;
+  --text: #000000;
+  --text-muted: #6E6E6E;
+  --graphite: #1F1F1F;
+  --accent: #6A5AF9;
+  --success: #00C26E;
+  --error: #FF4A4A;
+  --warning: #FFB020;
+  --info: #3B82F6;
+
+  --radius: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+
+  --shadow-card: 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-soft: 0 4px 16px rgba(0,0,0,0.06);
+
+  --focus-ring: 0 0 0 3px rgba(106,90,249,0.15);
+}
+
+/* -------------------------------------------------------
+   Base
+------------------------------------------------------- */
+@layer base {
+  html, body {
+    @apply h-full;
+  }
+
+  body {
+    @apply antialiased text-base;
+    font-family: theme("fontFamily.sans");
+    color: var(--text);
+    background: var(--bg);
+  }
+
+  /* Headings: bold, tight, premium */
+  h1, h2, h3 {
+    @apply font-extrabold tracking-tight;
+    color: var(--graphite);
+  }
+  h4, h5, h6 {
+    @apply font-bold;
+    color: var(--graphite);
+  }
+
+  /* Links: subtle underline on hover */
+  a {
+    @apply text-black transition-colors;
+  }
+  a:hover {
+    @apply text-[var(--graphite)];
+  }
+
+  /* Scrollbar (subtle) */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #CFCFCF transparent;
+  }
+  *::-webkit-scrollbar {
+    height: 10px;
+    width: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #CFCFCF;
+    border-radius: 9999px;
+  }
+}
+
+/* -------------------------------------------------------
+   Components — buttons, inputs, cards, navbar, badges
+------------------------------------------------------- */
+@layer components {
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center font-semibold transition-colors duration-200 ease-smooth;
+    border-radius: var(--radius);
+    height: 48px;
+    padding: 0 1.1rem;
+    border: 1px solid transparent;
+  }
+  .btn-primary {
+    background: var(--text);
+    color: white;
+  }
+  .btn-primary:hover {
+    background: #1A1A1A;
+  }
+  .btn-primary:focus-visible {
+    box-shadow: var(--focus-ring);
+    outline: none;
+  }
+
+  .btn-secondary {
+    background: white;
+    color: var(--text);
+    border-color: var(--text);
+  }
+  .btn-secondary:hover {
+    background: #F0F0F0;
+  }
+  .btn-secondary:focus-visible {
+    box-shadow: var(--focus-ring);
+    outline: none;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text);
+  }
+  .btn-ghost:hover {
+    background: #F5F5F5;
+  }
+
+  .btn-success { background: var(--success); color: white; }
+  .btn-error   { background: var(--error);   color: white; }
+  .btn-info    { background: var(--info);    color: white; }
+
+  /* Inputs */
+  .input {
+    @apply w-full text-sm;
+    height: 48px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: white;
+    color: var(--text);
+    padding: 0 0.9rem;
+    transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  .input::placeholder {
+    color: var(--text-muted);
+  }
+  .input:focus {
+    border-color: var(--accent);
+    box-shadow: var(--focus-ring);
+    outline: none;
+  }
+  .input[readonly] {
+    background: #F6F6F6;
+    color: var(--graphite);
+  }
+
+  .label {
+    @apply block text-xs font-semibold uppercase tracking-wide mb-1.5;
+    color: #5A5A5A;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+  }
+  .card-soft {
+    box-shadow: var(--shadow-soft);
+  }
+  .card-body {
+    @apply p-6;
+  }
+
+  /* Navbar */
+  .navbar {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    height: 70px;
+  }
+
+  /* Badges (status pills) */
+  .badge {
+    @apply inline-flex items-center text-xs font-medium px-2.5 py-0.5 rounded-full;
+  }
+  .badge-neutral { background: #F2F2F2; color: #555; }
+  .badge-accent  { background: rgba(106,90,249,0.12); color: var(--accent); }
+  .badge-success { background: rgba(0,194,110,0.12); color: var(--success); }
+  .badge-error   { background: rgba(255,74,74,0.12); color: var(--error); }
+
+  /* Table minimal (if used) */
+  .table-minimal thead th {
+    @apply text-left text-xs font-semibold uppercase tracking-wide text-[#6E6E6E] pb-3;
+  }
+  .table-minimal tbody td {
+    @apply py-3;
+    border-top: 1px solid var(--border);
+  }
+}
+
+/* -------------------------------------------------------
+   Utilities (tiny helpers)
+------------------------------------------------------- */
+@layer utilities {
+  .shadow-ring { box-shadow: var(--focus-ring); }
+  .text-muted { color: var(--text-muted); }
+  .divider    { border-color: var(--border); }
+}
