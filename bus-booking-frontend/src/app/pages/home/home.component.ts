@@ -14,119 +14,136 @@ interface CityResponse {
   standalone: true,
   imports: [ReactiveFormsModule, CommonModule],
   template: `
-    <!-- Viewport wrapper: full height minus sticky navbar (64px) -->
-    <section class="min-h-[calc(100vh-64px)] flex items-center justify-center">
-      <div class="container max-w-5xl w-full">
-        <!-- Centered block -->
-        <div class="max-w-4xl mx-auto text-center">
-          <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight">
-            Book Bus Tickets Online
-          </h1>
-          <p class="text-muted text-base sm:text-lg mt-2">
-            Search, compare and book bus tickets across India in seconds.
-          </p>
+  <section class="min-h-[calc(100vh-64px)] flex items-center justify-center bg-[#0f0f10] px-4 relative overflow-hidden">
 
-          <!-- Search Card -->
-          <div class="card card-soft mt-8">
-            <div class="card-body">
-              <form [formGroup]="form" (ngSubmit)="onSearch()">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <!-- From City -->
-                  <div>
-                    <label class="label">From</label>
-                    <select formControlName="fromCity" class="input bg-white">
-                      <option value="">Select city</option>
-                      @for (c of cities(); track c.city) {
-                        <option [value]="c.city">{{ c.city }}</option>
-                      }
-                    </select>
-                    @if (isInvalid('fromCity')) {
-                      <p class="mt-1 text-xs text-red-600">Select departure city</p>
-                    }
-                  </div>
+    <!-- Background glow -->
+    <div class="absolute w-[600px] h-[600px] bg-[#D32F2F]/20 blur-[140px] rounded-full -top-40 -left-40"></div>
+    <div class="absolute w-[400px] h-[400px] bg-[#ff5252]/10 blur-[120px] rounded-full bottom-0 right-0"></div>
 
-                  <!-- To City -->
-                  <div>
-                    <label class="label">To</label>
-                    <select formControlName="toCity" class="input bg-white">
-                      <option value="">Select city</option>
-                      @for (c of cities(); track c.city) {
-                        <option [value]="c.city">{{ c.city }}</option>
-                      }
-                    </select>
-                    @if (isInvalid('toCity')) {
-                      <p class="mt-1 text-xs text-red-600">Select destination city</p>
-                    }
-                  </div>
+    <div class="w-full max-w-5xl text-center relative z-10">
 
-                  <!-- Date -->
-                  <div>
-                    <label class="label">Date</label>
-                    <input formControlName="date" type="date" [min]="today" class="input" />
-                    @if (isInvalid('date')) {
-                      <p class="mt-1 text-xs text-red-600">Select a travel date</p>
-                    }
-                  </div>
+      <!-- Heading -->
+      <h1 class="text-4xl sm:text-5xl font-bold text-white tracking-tight">
+        Book Bus Tickets Easily
+      </h1>
 
-                  <!-- CTA -->
-                  <div class="flex items-end">
-                    <button type="submit" class="btn btn-primary w-full">
-                      Search buses
-                    </button>
-                  </div>
-                </div>
+      <p class="text-gray-400 mt-3 text-base sm:text-lg">
+        Search, compare and travel across India with confidence.
+      </p>
 
-                @if (sameCityError()) {
-                  <p class="mt-3 text-sm text-red-600">⚠ From and To cities cannot be the same.</p>
+      <!-- Search Card -->
+      <div class="mt-10 bg-[#161618] border border-[#2a2a2d] rounded-2xl shadow-2xl p-6 sm:p-8">
+
+        <form [formGroup]="form" (ngSubmit)="onSearch()">
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+            <!-- From -->
+            <div class="text-left">
+              <label class="text-xs text-gray-400">From</label>
+              <select formControlName="fromCity"
+                class="w-full mt-1 px-4 py-3 rounded-lg bg-[#0f0f10] border border-[#2a2a2d]
+                       text-white focus:outline-none focus:ring-2 focus:ring-[#D32F2F]">
+                <option value="">Select city</option>
+                @for (c of cities(); track c.city) {
+                  <option [value]="c.city">{{ c.city }}</option>
                 }
-              </form>
+              </select>
+
+              @if (isInvalid('fromCity')) {
+                <p class="text-xs text-red-500 mt-1">Select departure city</p>
+              }
             </div>
+
+            <!-- To -->
+            <div class="text-left">
+              <label class="text-xs text-gray-400">To</label>
+              <select formControlName="toCity"
+                class="w-full mt-1 px-4 py-3 rounded-lg bg-[#0f0f10] border border-[#2a2a2d]
+                       text-white focus:outline-none focus:ring-2 focus:ring-[#D32F2F]">
+                <option value="">Select city</option>
+                @for (c of cities(); track c.city) {
+                  <option [value]="c.city">{{ c.city }}</option>
+                }
+              </select>
+
+              @if (isInvalid('toCity')) {
+                <p class="text-xs text-red-500 mt-1">Select destination city</p>
+              }
+            </div>
+
+            <!-- Date -->
+            <div class="text-left">
+              <label class="text-xs text-gray-400">Date</label>
+              <input formControlName="date" type="date"
+                [min]="today"
+                class="w-full mt-1 px-4 py-3 rounded-lg bg-[#0f0f10] border border-[#2a2a2d]
+                       text-white focus:outline-none focus:ring-2 focus:ring-[#D32F2F]" />
+
+              @if (isInvalid('date')) {
+                <p class="text-xs text-red-500 mt-1">Select a date</p>
+              }
+            </div>
+
+            <!-- Button -->
+            <div class="flex items-end">
+              <button type="submit"
+                class="w-full py-3 rounded-lg text-white font-semibold
+                       bg-gradient-to-r from-[#D32F2F] to-[#7f1d1d]
+                       hover:opacity-90 active:scale-95 transition shadow-lg">
+                Search
+              </button>
+            </div>
+
           </div>
 
-          <!-- Features -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-5 text-center mt-10">
-            <div class="card">
-              <div class="card-body">
-                <div class="text-2xl mb-1">⚡</div>
-                <div class="font-semibold">Instant Booking</div>
-                <div class="text-xs text-muted mt-1">Confirm in seconds</div>
-              </div>
-            </div>
-            <div class="card">
-              <div class="card-body">
-                <div class="text-2xl mb-1">💺</div>
-                <div class="font-semibold">Seat Selection</div>
-                <div class="text-xs text-muted mt-1">Choose your seat</div>
-              </div>
-            </div>
-            <div class="card">
-              <div class="card-body">
-                <div class="text-2xl mb-1">🔒</div>
-                <div class="font-semibold">Secure Payments</div>
-                <div class="text-xs text-muted mt-1">Safe & encrypted</div>
-              </div>
-            </div>
-            <div class="card">
-              <div class="card-body">
-                <div class="text-2xl mb-1">📱</div>
-                <div class="font-semibold">E‑Tickets</div>
-                <div class="text-xs text-muted mt-1">Go paperless</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Loading -->
-          @if (loadingCities()) {
-            <div class="flex justify-center py-10">
-              <svg class="animate-spin w-8 h-8 text-[var(--accent)]" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-              </svg>
-            </div>
+          @if (sameCityError()) {
+            <p class="text-red-500 text-sm mt-3">From and To cities cannot be the same</p>
           }
-        </div>
+
+        </form>
       </div>
-    </section>
+
+      <!-- Features -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-5 mt-12">
+
+        <div class="bg-[#161618] border border-[#2a2a2d] rounded-xl p-4 text-center">
+          <div class="text-xl mb-1">⚡</div>
+          <div class="text-white font-medium">Fast Booking</div>
+          <div class="text-xs text-gray-500 mt-1">Instant confirmation</div>
+        </div>
+
+        <div class="bg-[#161618] border border-[#2a2a2d] rounded-xl p-4 text-center">
+          <div class="text-xl mb-1">💺</div>
+          <div class="text-white font-medium">Seat Choice</div>
+          <div class="text-xs text-gray-500 mt-1">Pick your seat</div>
+        </div>
+
+        <div class="bg-[#161618] border border-[#2a2a2d] rounded-xl p-4 text-center">
+          <div class="text-xl mb-1">🔒</div>
+          <div class="text-white font-medium">Secure Pay</div>
+          <div class="text-xs text-gray-500 mt-1">Encrypted payments</div>
+        </div>
+
+        <div class="bg-[#161618] border border-[#2a2a2d] rounded-xl p-4 text-center">
+          <div class="text-xl mb-1">📱</div>
+          <div class="text-white font-medium">E-Tickets</div>
+          <div class="text-xs text-gray-500 mt-1">Paperless travel</div>
+        </div>
+
+      </div>
+
+      <!-- Loader -->
+      @if (loadingCities()) {
+        <div class="flex justify-center mt-10">
+          <svg class="animate-spin w-8 h-8 text-[#D32F2F]" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none"/>
+          </svg>
+        </div>
+      }
+
+    </div>
+  </section>
   `,
 })
 export class HomeComponent implements OnInit {
@@ -137,7 +154,7 @@ export class HomeComponent implements OnInit {
   cities = signal<CityResponse[]>([]);
   loadingCities = signal(true);
   sameCityError = signal(false);
-  today = new Date().toISOString().split('T')[0];
+  today = new Date().toISOString().split('T')[0]; // ensures min date works
 
   form = this.fb.group({
     fromCity: ['', Validators.required],
@@ -147,7 +164,10 @@ export class HomeComponent implements OnInit {
 
   ngOnInit(): void {
     this.stopService.getCities().subscribe({
-      next: (data) => { this.cities.set(data); this.loadingCities.set(false); },
+      next: (data) => {
+        this.cities.set(data);
+        this.loadingCities.set(false);
+      },
       error: () => this.loadingCities.set(false),
     });
   }
@@ -159,15 +179,21 @@ export class HomeComponent implements OnInit {
 
   onSearch(): void {
     this.sameCityError.set(false);
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
+
     const { fromCity, toCity, date } = this.form.value;
+
     if (fromCity === toCity) {
       this.sameCityError.set(true);
       return;
     }
-    this.router.navigate(['/search'], { queryParams: { from: fromCity, to: toCity, date } });
+
+    this.router.navigate(['/search'], {
+      queryParams: { from: fromCity, to: toCity, date },
+    });
   }
 }

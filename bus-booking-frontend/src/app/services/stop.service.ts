@@ -1,28 +1,57 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '../../environments/environment';
+import { CityResponse, StopResponse } from '../models/stop-route.models';
 
-export interface CityResponse { city: string; stopCount: number; }
-export interface StopResponse {
-  id: string;
-  city: string;
-  name: string;
-  latitude?: number;
-  longitude?: number;
-}
-
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root',
+})
 export class StopService {
   private http = inject(HttpClient);
-  private base = `${environment.apiUrl}/stops`;
+
+  // ✔ Correct backend base URL (HTTP + port + correct route casing)
+  private baseUrl = 'http://localhost:5299/api/Stops';
+
+  // --------------------------
+  // PUBLIC READ OPERATIONS
+  // --------------------------
 
   getCities(): Observable<CityResponse[]> {
-    return this.http.get<CityResponse[]>(`${this.base}/cities`);
+    return this.http.get<CityResponse[]>(`${this.baseUrl}/cities`);
   }
 
   getStopsByCity(city: string): Observable<StopResponse[]> {
-    const params = new HttpParams().set('city', city);
-    return this.http.get<StopResponse[]>(`${this.base}`, { params });
+    return this.http.get<StopResponse[]>(
+      `${this.baseUrl}/by-city/${encodeURIComponent(city)}`
+    );
+  }
+
+  // --------------------------
+  // ADMIN CRUD OPERATIONS
+  // --------------------------
+
+  createStop(data: {
+    city: string;
+    name: string;
+    latitude?: number | null;
+    longitude?: number | null;
+  }): Observable<StopResponse> {
+    return this.http.post<StopResponse>(`${this.baseUrl}`, data);
+  }
+
+  updateStop(
+    id: string,
+    data: {
+      city: string;
+      name: string;
+      latitude?: number | null;
+      longitude?: number | null;
+    }
+  ): Observable<StopResponse> {
+    return this.http.put<StopResponse>(`${this.baseUrl}/${id}`, data);
+  }
+
+  deleteStop(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 }

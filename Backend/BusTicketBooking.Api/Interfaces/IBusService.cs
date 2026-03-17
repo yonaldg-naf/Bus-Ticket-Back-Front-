@@ -9,8 +9,17 @@ namespace BusTicketBooking.Interfaces
 {
     public interface IBusService
     {
-        // Existing (Id-based)
+        // Existing
         Task<BusResponseDto> CreateAsync(CreateBusRequestDto dto, CancellationToken ct = default);
+
+        // SECURED versions
+        Task<IEnumerable<BusResponseDto>> GetAllSecuredAsync(Guid userId, string role, CancellationToken ct = default);
+        Task<BusResponseDto?> GetByIdSecuredAsync(Guid id, Guid userId, string role, CancellationToken ct = default);
+        Task<BusResponseDto?> UpdateSecuredAsync(Guid id, UpdateBusRequestDto dto, Guid userId, string role, CancellationToken ct = default);
+        Task<bool> DeleteSecuredAsync(Guid id, Guid userId, string role, CancellationToken ct = default);
+        Task<BusResponseDto?> UpdateStatusSecuredAsync(Guid id, BusStatus status, Guid userId, string role, CancellationToken ct = default);
+
+        // Original by-id methods (used internally)
         Task<IEnumerable<BusResponseDto>> GetAllAsync(CancellationToken ct = default);
         Task<BusResponseDto?> GetByIdAsync(Guid id, CancellationToken ct = default);
         Task<BusResponseDto?> UpdateAsync(Guid id, UpdateBusRequestDto dto, CancellationToken ct = default);

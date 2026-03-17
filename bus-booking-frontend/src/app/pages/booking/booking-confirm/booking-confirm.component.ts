@@ -3,7 +3,6 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BookingService } from '../../../services/booking.service';
-import { BookingStateService } from '../../../services/booking-state.service';
 import { ToastService } from '../../../services/toast.service';
 import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../models/booking.models';
 
@@ -12,129 +11,124 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
   standalone: true,
   imports: [CommonModule, RouterLink, FormsModule],
   template: `
-    <section class="container max-w-3xl pt-10">
+    <section class="min-h-screen w-full bg-[#121212] text-white flex justify-center items-start py-10 px-4">
+      <div class="w-full max-w-3xl space-y-6">
 
-      <!-- LOADING -->
-      @if (loading()) {
-        <div class="flex justify-center py-20">
-          <svg class="animate-spin w-8 h-8 text-[var(--accent)]" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10"
-                    stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-          </svg>
-        </div>
-      }
-
-      <!-- CONFIRMED SUCCESS SCREEN -->
-      @if (!loading() && booking() && booking()!.status === BookingStatus.Confirmed) {
-        <div class="text-center mb-10">
-          <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg class="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M5 13l4 4L19 7"/>
+        <!-- LOADING -->
+        @if (loading()) {
+          <div class="flex justify-center py-20">
+            <svg class="animate-spin w-10 h-10 text-[var(--accent)]" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
             </svg>
           </div>
-          <h1 class="text-2xl font-extrabold tracking-tight">Booking Confirmed!</h1>
-          <p class="text-muted mt-1">Your ticket is booked successfully.</p>
-        </div>
-      }
+        }
 
-      <!-- MAIN BOOKING DETAILS -->
-      @if (!loading() && booking()) {
+        <!-- CONFIRMED SUCCESS SCREEN -->
+        @if (!loading() && booking() && booking()!.status === BookingStatus.Confirmed) {
+          <div class="text-center mb-10">
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <h1 class="text-2xl font-extrabold tracking-tight">Booking Confirmed!</h1>
+            <p class="text-gray-300 mt-1">Your ticket is booked successfully.</p>
+          </div>
+        }
 
-        <!-- STATUS BADGE -->
-        <div class="mb-4">
-          <span class="badge" [ngClass]="statusBadgeClass(booking()!.status)">
-            {{ statusLabel(booking()!.status) }}
-          </span>
-        </div>
+        <!-- MAIN BOOKING DETAILS -->
+        @if (!loading() && booking()) {
 
-        <!-- BOOKING INFO -->
-        <div class="card">
-          <div class="card-body">
-            <h2 class="text-xl font-bold mb-3">Booking Details</h2>
+          <!-- STATUS BADGE -->
+          <div class="mb-4">
+            <span class="badge" [ngClass]="statusBadgeClass(booking()!.status)">
+              {{ statusLabel(booking()!.status) }}
+            </span>
+          </div>
 
-            <div class="space-y-2 text-sm text-[var(--graphite)]">
-              <div><span class="font-semibold">Bus:</span> {{ booking()!.busCode }} ({{ booking()!.registrationNumber }})</div>
-              <div><span class="font-semibold">Route:</span> {{ booking()!.routeCode }}</div>
-              <div><span class="font-semibold">Departure:</span> {{ formatDateTime(booking()!.departureUtc) }}</div>
-              <div><span class="font-semibold">Status:</span> {{ statusLabel(booking()!.status) }}</div>
+          <!-- BOOKING INFO -->
+          <div class="card bg-[#1E1E1E] border border-gray-700">
+            <div class="card-body">
+              <h2 class="text-xl font-bold mb-3 text-white">Booking Details</h2>
+              <div class="space-y-2 text-sm text-gray-300">
+                <div><span class="font-semibold">Bus:</span> {{ booking()!.busCode }} ({{ booking()!.registrationNumber }})</div>
+                <div><span class="font-semibold">Route:</span> {{ booking()!.routeCode }}</div>
+                <div><span class="font-semibold">Departure:</span> {{ formatDateTime(booking()!.departureUtc) }}</div>
+                <div><span class="font-semibold">Status:</span> {{ statusLabel(booking()!.status) }}</div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- PASSENGERS -->
-        <div class="card mt-6">
-          <div class="card-body">
-            <h2 class="text-xl font-bold mb-3">Passengers</h2>
-
-            <div class="space-y-3">
-              @for (p of booking()!.passengers; track p.seatNo) {
-                <div class="flex justify-between pb-2 border-b border-[var(--border)]">
-                  <div>
-                    <div class="font-semibold">{{ p.name }}</div>
-                    @if (p.age) {
-                      <div class="text-muted text-xs">Age: {{ p.age }}</div>
-                    }
+          <!-- PASSENGERS -->
+          <div class="card bg-[#1E1E1E] border border-gray-700 mt-6">
+            <div class="card-body">
+              <h2 class="text-xl font-bold mb-3 text-white">Passengers</h2>
+              <div class="space-y-3">
+                @for (p of booking()!.passengers; track p.seatNo) {
+                  <div class="flex justify-between pb-2 border-b border-gray-700">
+                    <div>
+                      <div class="font-semibold">{{ p.name }}</div>
+                      @if (p.age) {
+                        <div class="text-gray-400 text-xs">Age: {{ p.age }}</div>
+                      }
+                    </div>
+                    <div class="font-semibold text-[var(--accent)]">Seat {{ p.seatNo }}</div>
                   </div>
-                  <div class="font-semibold text-[var(--accent)]">Seat {{ p.seatNo }}</div>
-                </div>
-              }
+                }
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- PAYMENT SUMMARY -->
-        <div class="card mt-6">
-          <div class="card-body">
-            <h2 class="text-xl font-bold mb-3">Payment Summary</h2>
+          <!-- PAYMENT SUMMARY -->
+          <div class="card bg-[#1E1E1E] border border-gray-700 mt-6">
+            <div class="card-body">
+              <h2 class="text-xl font-bold mb-3 text-white">Payment Summary</h2>
+              <div class="flex items-center justify-between">
+                <span class="text-gray-400">Total Amount</span>
+                <span class="text-2xl font-bold text-white">₹{{ booking()!.totalAmount }}</span>
+              </div>
 
-            <div class="flex items-center justify-between">
-              <span class="text-muted">Total Amount</span>
-              <span class="text-2xl font-bold">₹{{ booking()!.totalAmount }}</span>
-            </div>
+              <!-- PAYMENT + CANCEL (if Pending) -->
+              <div class="flex flex-col sm:flex-row gap-3 mt-6">
+                
+                <!-- PAY NOW -->
+                @if (booking()!.status === BookingStatus.Pending) {
+                  <button (click)="processPayment()"
+                          [disabled]="payLoading()"
+                          class="btn btn-primary flex-1">
+                    @if (payLoading()) {
+                      <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                      </svg>
+                      Processing...
+                    } @else {
+                      Pay ₹{{ booking()!.totalAmount }}
+                    }
+                  </button>
+                }
 
-            <!-- PAYMENT + CANCEL (if Pending) -->
-            <div class="flex flex-col sm:flex-row gap-3 mt-6">
-              
-              <!-- PAY NOW -->
-              @if (booking()!.status === BookingStatus.Pending) {
-                <button (click)="processPayment()"
-                        [disabled]="payLoading()"
-                        class="btn btn-primary flex-1">
-                  @if (payLoading()) {
-                    <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10"
-                              stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                    </svg>
-                    Processing...
-                  } @else {
-                    Pay ₹{{ booking()!.totalAmount }}
-                  }
-                </button>
-              }
-
-              <!-- CANCEL BOOKING -->
-              @if (booking()!.status === BookingStatus.Pending || booking()!.status === BookingStatus.Confirmed) {
-                <button (click)="cancelBooking()"
-                        class="btn btn-ghost flex-1 border border-red-200 text-red-600 hover:bg-red-50">
-                  Cancel Booking
-                </button>
-              }
+                <!-- CANCEL BOOKING -->
+                @if (booking()!.status === BookingStatus.Pending || booking()!.status === BookingStatus.Confirmed) {
+                  <button (click)="cancelBooking()"
+                          class="btn btn-ghost flex-1 border border-red-600 text-red-500 hover:bg-red-700/10">
+                    Cancel Booking
+                  </button>
+                }
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- FOOTER ACTIONS -->
-        <div class="flex gap-3 mt-6">
-          <a routerLink="/my-bookings" class="btn btn-secondary flex-1 h-[48px]">My Bookings</a>
-          <a routerLink="/home" class="btn btn-primary flex-1 h-[48px]">Book Another</a>
-        </div>
+          <!-- FOOTER ACTIONS -->
+          <div class="flex gap-3 mt-6">
+            <a routerLink="/my-bookings" class="btn btn-secondary flex-1 h-[48px]">My Bookings</a>
+            <a routerLink="/home" class="btn btn-primary flex-1 h-[48px]">Book Another</a>
+          </div>
 
-      }
+        }
+      </div>
     </section>
   `,
 })
@@ -173,7 +167,7 @@ export class BookingConfirmComponent implements OnInit {
 
   statusLabel(status: BookingStatus): string {
     return BookingStatusLabels[status] ?? 'Unknown';
-    }
+  }
 
   formatDateTime(utc: string): string {
     return new Date(utc).toLocaleString('en-IN', {

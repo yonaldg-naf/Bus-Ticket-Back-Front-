@@ -11,94 +11,98 @@ import { ToastService } from '../../../services/toast.service';
   standalone: true,
   imports: [ReactiveFormsModule, CommonModule],
   template: `
-    <section class="container max-w-3xl pt-10">
-      <!-- Back -->
-      <button (click)="goBack()"
-              class="flex items-center gap-1.5 text-sm text-[var(--accent)] hover:underline mb-4">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-        </svg>
-        Back to seats
-      </button>
+    <section class="min-h-screen w-full bg-[#121212] text-white flex justify-center items-start py-10 px-4">
+      <div class="w-full max-w-3xl space-y-6">
 
-      <!-- Heading -->
-      <div class="text-center mb-6">
-        <h1 class="text-2xl font-extrabold tracking-tight">Passenger Details</h1>
-        @if (draft()) {
-          <p class="text-muted mt-1">
-            Bus <span class="font-semibold">{{ draft()!.schedule.busCode }}</span>
-            · {{ draft()!.schedule.routeCode }}
-            · {{ formatTime(draft()!.schedule.departureUtc) }}
-          </p>
-          <p class="text-sm text-[var(--graphite)] mt-1">
-            Seats: <span class="font-semibold text-[var(--accent)]">{{ draft()!.selectedSeats.join(', ') }}</span>
-            · Total: <span class="font-bold">₹{{ draftTotal() }}</span>
-          </p>
-        }
-      </div>
+        <!-- Back -->
+        <button (click)="goBack()"
+                class="flex items-center gap-1.5 text-sm text-[var(--accent)] hover:underline mb-4">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          Back to seats
+        </button>
 
-      <!-- Form card -->
-      <div class="card">
-        <div class="card-body">
-          <form [formGroup]="form" (ngSubmit)="onSubmit()">
-            <div formArrayName="passengers" class="space-y-4">
-              @for (passengerGroup of passengersArray.controls; track $index) {
-                <div [formGroupName]="$index" class="rounded-xl border border-[var(--border)] p-4">
-                  <div class="flex items-center gap-2 mb-3">
-                    <div class="w-7 h-7 bg-[var(--graphite)] rounded-md flex items-center justify-center">
-                      <span class="text-white text-xs font-bold">{{ $index + 1 }}</span>
+        <!-- Heading -->
+        <div class="text-center mb-6">
+          <h1 class="text-2xl font-extrabold tracking-tight">Passenger Details</h1>
+          @if (draft()) {
+            <p class="text-gray-400 mt-1">
+              Bus <span class="font-semibold">{{ draft()!.schedule.busCode }}</span>
+              · {{ draft()!.schedule.routeCode }}
+              · {{ formatTime(draft()!.schedule.departureUtc) }}
+            </p>
+            <p class="text-sm text-gray-500 mt-1">
+              Seats: <span class="font-semibold text-[var(--accent)]">{{ draft()!.selectedSeats.join(', ') }}</span>
+              · Total: <span class="font-bold">₹{{ draftTotal() }}</span>
+            </p>
+          }
+        </div>
+
+        <!-- Form card -->
+        <div class="card bg-[#1E1E1E] border border-gray-700">
+          <div class="card-body">
+            <form [formGroup]="form" (ngSubmit)="onSubmit()">
+              <div formArrayName="passengers" class="space-y-4">
+                @for (passengerGroup of passengersArray.controls; track $index) {
+                  <div [formGroupName]="$index" class="rounded-xl border border-gray-600 p-4">
+                    <div class="flex items-center gap-2 mb-3">
+                      <div class="w-7 h-7 bg-gray-600 rounded-md flex items-center justify-center">
+                        <span class="text-white text-xs font-bold">{{ $index + 1 }}</span>
+                      </div>
+                      <h3 class="font-semibold">
+                        Passenger {{ $index + 1 }}
+                        <span class="text-[var(--accent)] text-sm font-normal ml-1">
+                          — Seat {{ draft()?.selectedSeats?.[$index] }}
+                        </span>
+                      </h3>
                     </div>
-                    <h3 class="font-semibold">
-                      Passenger {{ $index + 1 }}
-                      <span class="text-[var(--accent)] text-sm font-normal ml-1">
-                        — Seat {{ draft()?.selectedSeats?.[$index] }}
-                      </span>
-                    </h3>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div class="sm:col-span-2">
+                        <label class="label">Full Name *</label>
+                        <input formControlName="name" type="text" placeholder="Enter full name" class="input"
+                               [class.border-red-500]="isFieldInvalid($index, 'name')"/>
+                        @if (isFieldInvalid($index, 'name')) {
+                          <p class="mt-1 text-xs text-red-600">Name is required</p>
+                        }
+                      </div>
+
+                      <div>
+                        <label class="label">Age (optional)</label>
+                        <input formControlName="age" type="number" placeholder="e.g. 25" min="0" max="120" class="input"/>
+                      </div>
+
+                      <div>
+                        <label class="label">Seat No</label>
+                        <input formControlName="seatNo" type="text" class="input" readonly/>
+                      </div>
+                    </div>
                   </div>
+                }
+              </div>
 
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div class="sm:col-span-2">
-                      <label class="label">Full Name *</label>
-                      <input formControlName="name" type="text" placeholder="Enter full name" class="input"
-                             [class.border-red-300]="isFieldInvalid($index, 'name')"/>
-                      @if (isFieldInvalid($index, 'name')) {
-                        <p class="mt-1 text-xs text-red-600">Name is required</p>
-                      }
-                    </div>
-
-                    <div>
-                      <label class="label">Age (optional)</label>
-                      <input formControlName="age" type="number" placeholder="e.g. 25" min="0" max="120" class="input"/>
-                    </div>
-
-                    <div>
-                      <label class="label">Seat No</label>
-                      <input formControlName="seatNo" type="text" class="input" readonly/>
-                    </div>
-                  </div>
+              @if (errorMsg()) {
+                <div class="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+                  {{ errorMsg() }}
                 </div>
               }
-            </div>
 
-            @if (errorMsg()) {
-              <div class="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
-                {{ errorMsg() }}
-              </div>
-            }
-
-            <button type="submit" [disabled]="loading()" class="btn btn-primary w-full mt-4">
-              @if (loading()) {
-                <svg class="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                </svg>
-                Booking...
-              } @else {
-                Confirm Booking →
-              }
-            </button>
-          </form>
+              <button type="submit" [disabled]="loading()" class="btn btn-primary w-full mt-4">
+                @if (loading()) {
+                  <svg class="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                  </svg>
+                  Booking...
+                } @else {
+                  Confirm Booking →
+                }
+              </button>
+            </form>
+          </div>
         </div>
+
       </div>
     </section>
   `,
@@ -106,7 +110,7 @@ import { ToastService } from '../../../services/toast.service';
 export class PassengerFormComponent implements OnInit {
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
-  router = inject(Router);
+  private router = inject(Router);
   private bookingService = inject(BookingService);
   private bookingState = inject(BookingStateService);
   private toast = inject(ToastService);
@@ -147,7 +151,7 @@ export class PassengerFormComponent implements OnInit {
   draftTotal(): number {
     const d = this.draft();
     return (d?.selectedSeats.length ?? 0) * (d?.schedule?.basePrice ?? 0);
-    }
+  }
 
   goBack(): void {
     const scheduleId = this.route.snapshot.paramMap.get('scheduleId')!;
@@ -181,9 +185,8 @@ export class PassengerFormComponent implements OnInit {
       seatNo: p.seatNo,
     }));
 
-    // Use Id-based create for reliability
     this.bookingService.create({
-      scheduleId: scheduleId!,
+      scheduleId: scheduleId,
       passengers,
     }).subscribe({
       next: (booking) => {

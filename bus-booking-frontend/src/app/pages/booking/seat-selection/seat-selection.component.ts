@@ -11,12 +11,13 @@ import { SeatAvailabilityResponse } from '../../../models/bus-schedule.models';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <section class="container max-w-5xl pt-10">
+    <section class="min-h-screen w-full bg-[#121212] text-white px-4 py-10">
+
       <!-- Header -->
-      <div class="mb-6">
+      <div class="max-w-5xl mx-auto mb-6">
         <button
           (click)="router.navigate(['/search'], { queryParams: backParams() })"
-          class="flex items-center gap-1.5 text-sm text-[var(--accent)] hover:underline mb-4">
+          class="flex items-center gap-1.5 text-sm text-[#D32F2F] hover:underline mb-4">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
           </svg>
@@ -25,8 +26,8 @@ import { SeatAvailabilityResponse } from '../../../models/bus-schedule.models';
 
         <h1 class="text-2xl font-extrabold tracking-tight">Select Seats</h1>
         @if (draft()) {
-          <p class="text-muted text-sm mt-1">
-            Bus <span class="font-semibold">{{ draft()!.schedule.busCode }}</span>
+          <p class="text-gray-400 text-sm mt-1">
+            Bus <span class="font-semibold text-white">{{ draft()!.schedule.busCode }}</span>
             · {{ draft()!.schedule.routeCode }}
             · {{ formatTime(draft()!.schedule.departureUtc) }}
           </p>
@@ -36,7 +37,7 @@ import { SeatAvailabilityResponse } from '../../../models/bus-schedule.models';
       <!-- Loading -->
       @if (loading()) {
         <div class="flex justify-center py-16">
-          <svg class="animate-spin w-8 h-8 text-[var(--accent)]" fill="none" viewBox="0 0 24 24">
+          <svg class="animate-spin w-8 h-8 text-[#D32F2F]" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
           </svg>
@@ -44,30 +45,31 @@ import { SeatAvailabilityResponse } from '../../../models/bus-schedule.models';
       }
 
       @if (!loading() && availability()) {
-        <!-- Legend -->
-        <div class="flex items-center justify-center gap-8 mb-6 text-sm text-[var(--graphite)]">
-          <div class="flex items-center gap-2">
-            <div class="w-6 h-6 bg-[#F6F6F6] border border-[var(--border)] rounded-md"></div>
-            Available
-          </div>
-          <div class="flex items-center gap-2">
-            <div class="w-6 h-6 bg-[var(--accent)] rounded-md"></div>
-            Selected
-          </div>
-          <div class="flex items-center gap-2">
-            <div class="w-6 h-6 bg-[#ECECEC] text-[#A5A5A5] border border-[#E0E0E0] rounded-md"></div>
-            Booked
-          </div>
-        </div>
+        <div class="max-w-5xl mx-auto space-y-6">
 
-        <!-- Seat Grid -->
-        <div class="card">
-          <div class="card-body">
-            <!-- Bus front indicator row -->
+          <!-- Legend -->
+          <div class="flex items-center justify-center gap-8 text-sm text-gray-400">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 bg-[#1f1f1f] border border-gray-700 rounded-md"></div>
+              Available
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 bg-[#D32F2F] rounded-md"></div>
+              Selected
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 bg-[#2a2a2a] text-gray-500 border border-gray-800 rounded-md"></div>
+              Booked
+            </div>
+          </div>
+
+          <!-- Seat Grid Card -->
+          <div class="bg-[#1f1f1f] border border-gray-800 rounded-2xl shadow-lg p-6">
+            <!-- Bus front row -->
             <div class="flex items-center justify-between mb-4">
-              <div class="text-xs text-muted font-medium">DRIVER</div>
-              <div class="flex-1 h-px bg-[var(--border)] mx-4"></div>
-              <div class="text-xs text-muted font-medium">
+              <div class="text-xs text-gray-400 font-medium">DRIVER</div>
+              <div class="flex-1 h-px bg-gray-700 mx-4"></div>
+              <div class="text-xs text-gray-400 font-medium">
                 {{ availability()!.availableSeats.length }} seats available
               </div>
             </div>
@@ -85,17 +87,15 @@ import { SeatAvailabilityResponse } from '../../../models/bus-schedule.models';
               }
             </div>
           </div>
-        </div>
 
-        <!-- Summary + CTA -->
-        <div class="card mt-6">
-          <div class="card-body">
+          <!-- Summary + CTA -->
+          <div class="bg-[#1f1f1f] border border-gray-800 rounded-2xl shadow-lg p-6">
             <div class="flex items-center justify-between">
               <div>
-                <div class="text-sm text-muted">Selected seats</div>
-                <div class="font-semibold">
+                <div class="text-sm text-gray-400">Selected seats</div>
+                <div class="font-semibold text-white">
                   @if (selectedSeats().length === 0) {
-                    <span class="text-muted">None selected</span>
+                    <span class="text-gray-400">None selected</span>
                   } @else {
                     {{ selectedSeats().join(', ') }}
                   }
@@ -103,8 +103,8 @@ import { SeatAvailabilityResponse } from '../../../models/bus-schedule.models';
               </div>
 
               <div class="text-right">
-                <div class="text-sm text-muted">Total</div>
-                <div class="text-2xl font-bold">
+                <div class="text-sm text-gray-400">Total</div>
+                <div class="text-2xl font-bold text-white">
                   ₹{{ (selectedSeats().length * (draft()?.schedule?.basePrice ?? 0)) }}
                 </div>
               </div>
@@ -113,10 +113,14 @@ import { SeatAvailabilityResponse } from '../../../models/bus-schedule.models';
             <button
               (click)="proceed()"
               [disabled]="selectedSeats().length === 0"
-              class="btn btn-primary w-full mt-4">
+              class="w-full py-3 mt-4 rounded-xl font-semibold text-white
+                     bg-gradient-to-r from-[#D32F2F] to-[#7f1d1d] hover:opacity-90 active:scale-95
+                     transition disabled:opacity-50"
+            >
               Continue ({{ selectedSeats().length }})
             </button>
           </div>
+
         </div>
       }
     </section>
@@ -136,12 +140,10 @@ export class SeatSelectionComponent implements OnInit {
 
   ngOnInit(): void {
     const scheduleId = this.route.snapshot.paramMap.get('scheduleId')!;
-
-    // If no draft (e.g., refresh), recover schedule for summary (non-blocking)
     if (!this.draft()) {
       this.scheduleService.getById(scheduleId).subscribe({
         next: (s) => this.bookingState.setSchedule(s),
-        error: () => {/* ignore; summary will just hide */},
+        error: () => {},
       });
     }
 
@@ -171,15 +173,12 @@ export class SeatSelectionComponent implements OnInit {
 
   seatClass(seat: string): string {
     if (this.isBooked(seat)) {
-      // Booked (gray & disabled)
-      return 'bg-[#ECECEC] text-[#A5A5A5] border border-[#E0E0E0] cursor-not-allowed';
+      return 'bg-[#2a2a2a] text-gray-500 border border-gray-800 cursor-not-allowed';
     }
     if (this.isSelected(seat)) {
-      // Selected (accent + ring)
-      return 'bg-[var(--accent)] text-white shadow-ring';
+      return 'bg-[#D32F2F] text-white shadow-lg';
     }
-    // Available (neutral, hoverable)
-    return 'bg-[#F6F6F6] border border-[var(--border)] text-[var(--graphite)] hover:bg-[#F1F1F1]';
+    return 'bg-[#1f1f1f] border border-gray-700 text-gray-400 hover:bg-[#292929]';
   }
 
   toggleSeat(seat: string): void {
@@ -203,9 +202,7 @@ export class SeatSelectionComponent implements OnInit {
   }
 
   backParams() {
-    // If you saved search params in state, you can return them here to prefill the search page.
-    // Keeping your previous shape so routing doesn't break.
     const d = this.draft();
     return d ? { from: '', to: '' } : {};
   }
-}
+} 

@@ -1,9 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-using BusTicketBooking.Dtos.Stops;
+﻿using Microsoft.AspNetCore.Mvc;
 using BusTicketBooking.Interfaces;
-using Microsoft.AspNetCore.Mvc;
+using BusTicketBooking.Dtos.Stops;
 
 namespace BusTicketBooking.Controllers
 {
@@ -11,29 +8,51 @@ namespace BusTicketBooking.Controllers
     [Route("api/[controller]")]
     public class StopsController : ControllerBase
     {
-        private readonly IStopService _stops;
-        public StopsController(IStopService stops) => _stops = stops;
+        private readonly IStopService _stopService;
 
-        /// <summary>
-        /// Returns distinct cities that have at least one stop, with stop counts.
-        /// </summary>
-        [HttpGet("cities")]
-        [ProducesResponseType(typeof(IEnumerable<CityResponseDto>), 200)]
-        public async Task<IActionResult> GetCities(CancellationToken ct)
+        public StopsController(IStopService stopService)
         {
-            var data = await _stops.GetCitiesAsync(ct);
+            _stopService = stopService;
+        }
+
+        // GET: api/Stops/cities
+        [HttpGet("cities")]
+        public async Task<ActionResult<IEnumerable<CityResponseDto>>> GetCities()
+        {
+            var data = await _stopService.GetCitiesAsync();
             return Ok(data);
         }
 
-        /// <summary>
-        /// Returns stops for the specified city (for dropdown #2).
-        /// </summary>
-        [HttpGet]
-        [ProducesResponseType(typeof(IEnumerable<StopResponseDto>), 200)]
-        public async Task<IActionResult> GetStopsByCity([FromQuery] string city, CancellationToken ct)
+        // GET: api/Stops/by-city/{city}
+        [HttpGet("by-city/{city}")]
+        public async Task<ActionResult<IEnumerable<StopResponseDto>>> GetByCity(string city)
         {
-            var data = await _stops.GetStopsByCityAsync(city, ct);
+            var data = await _stopService.GetStopsByCityAsync(city);
             return Ok(data);
+        }
+
+        // POST: api/Stops
+        [HttpPost]
+        public async Task<ActionResult<StopResponseDto>> Create(CreateStopRequestDto dto)
+        {
+            var created = await _stopService.CreateAsync(dto);
+            return Ok(created);
+        }
+
+        // PUT: api/Stops/{id}
+        [HttpPut("{id}")]
+        public async Task<ActionResult<StopResponseDto>> Update(Guid id, UpdateStopRequestDto dto)
+        {
+            var updated = await _stopService.UpdateAsync(id, dto);
+            return updated == null ? NotFound() : Ok(updated);
+        }
+
+        // DELETE: api/Stops/{id}
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> Delete(Guid id)
+        {
+            var ok = await _stopService.DeleteAsync(id);
+            return ok ? Ok() : NotFound();
         }
     }
 }

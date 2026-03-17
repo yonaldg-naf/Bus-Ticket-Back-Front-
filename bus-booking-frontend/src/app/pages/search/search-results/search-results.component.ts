@@ -31,21 +31,31 @@ interface PagedResult<T> {
   standalone: true,
   imports: [CommonModule, RouterLink, FormsModule],
   template: `
-    <section class="container max-w-5xl pt-10">
-      <!-- Heading + filters row -->
-      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+  <section class="min-h-[calc(100vh-64px)] bg-[#0f0f10] px-4 py-10">
+
+    <div class="max-w-5xl mx-auto">
+
+      <!-- Header -->
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+
         <div>
-          <h1 class="text-2xl font-extrabold tracking-tight">Search Results</h1>
-          <p class="text-muted">From <span class="font-semibold">{{ fromCity() }}</span> to <span class="font-semibold">{{ toCity() }}</span> · {{ dateDisplay() }}</p>
+          <h1 class="text-2xl font-bold text-white">Available Buses</h1>
+          <p class="text-gray-400 text-sm mt-1">
+            {{ fromCity() }} → {{ toCity() }} · {{ dateDisplay() }}
+          </p>
         </div>
+
         <div class="flex gap-2">
-          <select class="input w-44" [(ngModel)]="sortBy" (ngModelChange)="reload()">
-            <option value="departure">Sort by: Departure</option>
-            <option value="price">Sort by: Price</option>
-            <option value="busCode">Sort by: Bus</option>
-            <option value="routeCode">Sort by: Route</option>
+          <select [(ngModel)]="sortBy" (ngModelChange)="reload()"
+            class="px-3 py-2 rounded-lg bg-[#161618] border border-[#2a2a2d] text-gray-300 text-sm">
+            <option value="departure">Departure</option>
+            <option value="price">Price</option>
+            <option value="busCode">Bus</option>
+            <option value="routeCode">Route</option>
           </select>
-          <select class="input w-28" [(ngModel)]="sortDir" (ngModelChange)="reload()">
+
+          <select [(ngModel)]="sortDir" (ngModelChange)="reload()"
+            class="px-3 py-2 rounded-lg bg-[#161618] border border-[#2a2a2d] text-gray-300 text-sm">
             <option value="asc">ASC</option>
             <option value="desc">DESC</option>
           </select>
@@ -54,13 +64,11 @@ interface PagedResult<T> {
 
       <!-- Loading -->
       @if (loading()) {
-        <div class="space-y-3">
+        <div class="space-y-4">
           @for (_ of [1,2,3,4]; track $index) {
-            <div class="card">
-              <div class="card-body">
-                <div class="h-4 bg-[#efefef] rounded w-40 mb-3"></div>
-                <div class="h-3 bg-[#f4f4f4] rounded w-64"></div>
-              </div>
+            <div class="bg-[#161618] border border-[#2a2a2d] rounded-xl p-5 animate-pulse">
+              <div class="h-4 bg-[#2a2a2d] rounded w-40 mb-3"></div>
+              <div class="h-3 bg-[#1f1f22] rounded w-60"></div>
             </div>
           }
         </div>
@@ -68,53 +76,85 @@ interface PagedResult<T> {
 
       <!-- Empty -->
       @if (!loading() && items().length === 0) {
-        <div class="text-center py-16">
-          <div class="text-4xl mb-3">🗺️</div>
-          <h3 class="font-semibold text-lg">No buses found</h3>
-          <p class="text-muted mt-1">Try changing date or city.</p>
-          <a routerLink="/home" class="btn btn-secondary mt-4">Back to Home</a>
+        <div class="text-center py-20">
+          <div class="text-5xl mb-3">🗺️</div>
+          <h3 class="text-white text-lg font-semibold">No buses found</h3>
+          <p class="text-gray-500 mt-1">Try different date or route</p>
+
+          <a routerLink="/home"
+             class="inline-block mt-5 px-5 py-2 rounded-lg
+                    bg-gradient-to-r from-[#D32F2F] to-[#7f1d1d]
+                    text-white text-sm font-medium">
+            Back to Home
+          </a>
         </div>
       }
 
       <!-- Results -->
-      <div class="space-y-3">
+      <div class="space-y-4">
+
         @for (s of items(); track s.id) {
-          <div class="card hover:card-soft transition-shadow">
-            <div class="card-body">
-              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <!-- Left: bus & route -->
-                <div class="min-w-0">
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <span class="font-bold text-lg">{{ s.busCode }}</span>
-                    <span class="badge badge-neutral">{{ s.registrationNumber }}</span>
-                    <span class="text-muted">·</span>
-                    <span class="text-sm text-[var(--graphite)]">{{ s.routeCode }}</span>
-                  </div>
-                  <p class="text-sm text-muted mt-1 flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    {{ formatDateTime(s.departureUtc) }}
-                  </p>
+
+          <div class="bg-[#161618] border border-[#2a2a2d] rounded-xl p-5
+                      hover:border-[#D32F2F]/40 transition">
+
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+              <!-- Left -->
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+
+                  <span class="text-white font-semibold text-lg">
+                    {{ s.busCode }}
+                  </span>
+
+                  <span class="text-xs px-2 py-1 rounded bg-[#0f0f10] border border-[#2a2a2d] text-gray-400">
+                    {{ s.registrationNumber }}
+                  </span>
+
+                  <span class="text-gray-500">•</span>
+
+                  <span class="text-sm text-gray-400">
+                    {{ s.routeCode }}
+                  </span>
+
                 </div>
 
-                <!-- Right: price & CTA -->
-                <div class="flex items-center gap-4">
-                  <div class="text-right">
-                    <div class="text-xs text-muted">Starts from</div>
-                    <div class="text-xl font-bold">₹{{ s.basePrice }}</div>
-                  </div>
-                  <button class="btn btn-primary" (click)="goToSeats(s)">View seats</button>
-                </div>
+                <p class="text-sm text-gray-400 mt-2 flex items-center gap-1.5">
+                  🕒 {{ formatDateTime(s.departureUtc) }}
+                </p>
               </div>
+
+              <!-- Right -->
+              <div class="flex items-center gap-6">
+
+                <div class="text-right">
+                  <div class="text-xs text-gray-500">Starts from</div>
+                  <div class="text-xl font-bold text-white">
+                    ₹{{ s.basePrice }}
+                  </div>
+                </div>
+
+                <button
+                  (click)="goToSeats(s)"
+                  class="px-5 py-2 rounded-lg text-white text-sm font-medium
+                         bg-gradient-to-r from-[#D32F2F] to-[#7f1d1d]
+                         hover:opacity-90 active:scale-95 transition">
+                  View Seats
+                </button>
+
+              </div>
+
             </div>
+
           </div>
+
         }
+
       </div>
 
-      <!-- Pager (if you want to add later) -->
-    </section>
+    </div>
+  </section>
   `,
 })
 export class SearchResultsComponent implements OnInit {
@@ -135,9 +175,14 @@ export class SearchResultsComponent implements OnInit {
   sortBy = 'departure';
   sortDir = 'asc';
 
-  dateDisplay = computed(() => new Date(this.date()).toLocaleDateString('en-IN', {
-    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
-  }));
+  dateDisplay = computed(() =>
+    new Date(this.date()).toLocaleDateString('en-IN', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+  );
 
   ngOnInit(): void {
     this.route.queryParamMap.subscribe((qp) => {
@@ -150,16 +195,19 @@ export class SearchResultsComponent implements OnInit {
 
   reload(): void {
     if (!this.fromCity() || !this.toCity() || !this.date()) return;
+
     this.loading.set(true);
+
     const body = {
       fromCity: this.fromCity(),
       toCity: this.toCity(),
-      date: this.date(), // yyyy-MM-dd
+      date: this.date(),
       sortBy: this.sortBy,
       sortDir: this.sortDir,
       page: 1,
       pageSize: 50,
     };
+
     this.scheduleService.searchByKeys(body as any).subscribe({
       next: (res: PagedResult<ScheduleResponse>) => {
         this.items.set(res.items ?? []);
@@ -169,19 +217,22 @@ export class SearchResultsComponent implements OnInit {
       error: () => {
         this.loading.set(false);
         this.toast.error('Failed to load search results.');
-      }
+      },
     });
   }
 
   goToSeats(s: ScheduleResponse): void {
-    // persist for next screens
     this.bookingState.setSchedule(s as any);
     this.router.navigate(['/booking/seats', s.id]);
   }
 
   formatDateTime(utc: string): string {
     return new Date(utc).toLocaleString('en-IN', {
-      weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   }
 }

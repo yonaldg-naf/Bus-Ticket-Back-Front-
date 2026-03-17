@@ -54,20 +54,20 @@ export class AuthService {
 
   login(dto: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.base}/login`, dto).pipe(
-  tap((res) => {
-    this.saveSession(res);
+      tap((res) => {
+        this.saveSession(res);
 
-    // --- Role-based redirect (fix) ---
-    if (res.role === 'Admin') {
-      this.router.navigate(['/admin']);
-    } else if (res.role === 'Operator') {
-      this.router.navigate(['/operator']);
-    } else {
-      this.router.navigate(['/home']);
-    }
-  })
-);
-
+        // CORRECTED LOGIC
+        if (res.role === 'Admin') {
+          this.router.navigate(['/admin']);
+        } else if (res.role === 'Operator') {
+          this.router.navigate(['/operator']);
+        } else {
+          // CUSTOMER → HOME
+          this.router.navigate(['/home']);
+        }
+      })
+    );
   }
 
   register(dto: RegisterRequest): Observable<AuthResponse> {

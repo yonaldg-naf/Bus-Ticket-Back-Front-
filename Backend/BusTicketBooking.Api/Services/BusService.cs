@@ -7,7 +7,6 @@ using BusTicketBooking.Dtos.Bus;
 using BusTicketBooking.Interfaces;
 using BusTicketBooking.Models;
 using BusTicketBooking.Models.Enums;
-using BusTicketBooking.Repositories;
 
 namespace BusTicketBooking.Services
 {
@@ -24,25 +23,109 @@ namespace BusTicketBooking.Services
             _users = users;
         }
 
-        // ===== Existing (Id-based) =====
-
-        public async Task<BusResponseDto> CreateAsync(CreateBusRequestDto dto, CancellationToken ct = default)
+        // ------------------------------------------------------------------------------------
+        // SECURED: GetAll — admin sees all, operator sees only own buses
+        // ------------------------------------------------------------------------------------
+        public async Task<IEnumerable<BusResponseDto>> GetAllSecuredAsync(Guid userId, string role, CancellationToken ct)
         {
-            var exists = (await _buses.FindAsync(b => b.OperatorId == dto.OperatorId && b.Code == dto.Code, ct)).Any();
-            if (exists) throw new InvalidOperationException("Bus code already exists for this operator.");
-
-            var entity = new Bus
+            if (role == Roles.Admin)
             {
-                OperatorId = dto.OperatorId,
-                Code = dto.Code.Trim(),
-                RegistrationNumber = dto.RegistrationNumber.Trim(),
-                BusType = dto.BusType,
-                TotalSeats = dto.TotalSeats,
-                Status = dto.Status
-            };
-            entity = await _buses.AddAsync(entity, ct);
-            return Map(entity);
+                var all = await _buses.GetAllAsync(ct);
+                return all.Select(Map);
+            }
+
+            var op = (await _operators.FindAsync(o => o.UserId == userId, ct)).FirstOrDefault();
+            if (op == null) return Enumerable.Empty<BusResponseDto>();
+
+            var list = await _buses.FindAsync(b => b.OperatorId == op.Id, ct);
+            return list.Select(Map);
         }
+
+        // ------------------------------------------------------------------------------------
+        // SECURED: GetById — operator allowed ONLY if owns it
+        // ------------------------------------------------------------------------------------
+        public async Task<BusResponseDto?> GetByIdSecuredAsync(Guid id, Guid userId, string role, CancellationToken ct)
+        {
+            var bus = await _buses.GetByIdAsync(id, ct);
+            if (bus == null) return null;
+
+            if (role == Roles.Admin) return Map(bus);
+
+            var op = (await _operators.FindAsync(o => o.UserId == userId, ct)).FirstOrDefault();
+            if (op == null || bus.OperatorId != op.Id) return null;
+
+            return Map(bus);
+        }
+
+        // ------------------------------------------------------------------------------------
+        // SECURED UPDATE
+        // ------------------------------------------------------------------------------------
+        public async Task<BusResponseDto?> UpdateSecuredAsync(Guid id, UpdateBusRequestDto dto, Guid userId, string role, CancellationToken ct)
+        {
+            var bus = await _buses.GetByIdAsync(id, ct);
+            if (bus == null) return null;
+
+            // Only admin or bus owner
+            if (role != Roles.Admin)
+            {
+                var op = (await _operators.FindAsync(o => o.UserId == userId, ct)).FirstOrDefault();
+                if (op == null || bus.OperatorId != op.Id)
+                    return null;
+            }
+
+            bus.RegistrationNumber = dto.RegistrationNumber.Trim();
+            bus.BusType = dto.BusType;
+            bus.TotalSeats = dto.TotalSeats;
+            bus.Status = dto.Status;
+            bus.UpdatedAtUtc = DateTime.UtcNow;
+
+            await _buses.UpdateAsync(bus, ct);
+            return Map(bus);
+        }
+
+        // ------------------------------------------------------------------------------------
+        // SECURED UPDATE STATUS
+        // ------------------------------------------------------------------------------------
+        public async Task<BusResponseDto?> UpdateStatusSecuredAsync(Guid id, BusStatus status, Guid userId, string role, CancellationToken ct)
+        {
+            var bus = await _buses.GetByIdAsync(id, ct);
+            if (bus == null) return null;
+
+            if (role != Roles.Admin)
+            {
+                var op = (await _operators.FindAsync(o => o.UserId == userId, ct)).FirstOrDefault();
+                if (op == null || bus.OperatorId != op.Id)
+                    return null;
+            }
+
+            bus.Status = status;
+            bus.UpdatedAtUtc = DateTime.UtcNow;
+            await _buses.UpdateAsync(bus, ct);
+            return Map(bus);
+        }
+
+        // ------------------------------------------------------------------------------------
+        // SECURED DELETE
+        // ------------------------------------------------------------------------------------
+        public async Task<bool> DeleteSecuredAsync(Guid id, Guid userId, string role, CancellationToken ct)
+        {
+            var bus = await _buses.GetByIdAsync(id, ct);
+            if (bus == null) return false;
+
+            if (role != Roles.Admin)
+            {
+                var op = (await _operators.FindAsync(o => o.UserId == userId, ct)).FirstOrDefault();
+                if (op == null || bus.OperatorId != op.Id)
+                    return false;
+            }
+
+            await _buses.RemoveAsync(bus, ct);
+            return true;
+        }
+
+        // ============================================================
+        // Existing ORIGINAL ID-based methods (unchanged internal use)
+        // ============================================================
 
         public async Task<IEnumerable<BusResponseDto>> GetAllAsync(CancellationToken ct = default)
         {
@@ -90,7 +173,9 @@ namespace BusTicketBooking.Services
             return Map(entity);
         }
 
-        // ===== NEW (by-keys) =====
+        // ============================================================
+        // by-operator
+        // ============================================================
 
         public async Task<BusResponseDto> CreateByOperatorAsync(CreateBusByOperatorDto dto, CancellationToken ct = default)
         {
@@ -112,16 +197,16 @@ namespace BusTicketBooking.Services
             return Map(e);
         }
 
-        public async Task<BusResponseDto?> GetByCodeAsync(string operatorUsernameOrCompany, string busCode, CancellationToken ct = default)
+        public async Task<BusResponseDto?> GetByCodeAsync(string opName, string busCode, CancellationToken ct = default)
         {
-            var opId = await ResolveOperatorIdAsync(operatorUsernameOrCompany, operatorUsernameOrCompany, ct);
+            var opId = await ResolveOperatorIdAsync(opName, opName, ct);
             var bus = (await _buses.FindAsync(b => b.OperatorId == opId && b.Code == busCode, ct)).FirstOrDefault();
             return bus is null ? null : Map(bus);
         }
 
-        public async Task<BusResponseDto?> UpdateStatusByCodeAsync(string operatorUsernameOrCompany, string busCode, BusStatus status, CancellationToken ct = default)
+        public async Task<BusResponseDto?> UpdateStatusByCodeAsync(string opName, string busCode, BusStatus status, CancellationToken ct = default)
         {
-            var opId = await ResolveOperatorIdAsync(operatorUsernameOrCompany, operatorUsernameOrCompany, ct);
+            var opId = await ResolveOperatorIdAsync(opName, opName, ct);
             var bus = (await _buses.FindAsync(b => b.OperatorId == opId && b.Code == busCode, ct)).FirstOrDefault();
             if (bus is null) return null;
 
@@ -131,17 +216,20 @@ namespace BusTicketBooking.Services
             return Map(bus);
         }
 
-        // ===== Helpers =====
+        // ============================================================
+        // Helpers
+        // ============================================================
 
         private async Task<Guid> ResolveOperatorIdAsync(string? username, string? companyName, CancellationToken ct)
         {
-            // Prefer username if provided
             if (!string.IsNullOrWhiteSpace(username))
             {
                 var user = (await _users.FindAsync(u => u.Username == username, ct)).FirstOrDefault()
                            ?? throw new InvalidOperationException("Operator user not found.");
+
                 var op = (await _operators.FindAsync(o => o.UserId == user.Id, ct)).FirstOrDefault()
-                         ?? throw new InvalidOperationException("Operator profile not found for user.");
+                         ?? throw new InvalidOperationException("Operator profile not found.");
+
                 return op.Id;
             }
 
@@ -149,6 +237,7 @@ namespace BusTicketBooking.Services
             {
                 var op = (await _operators.FindAsync(o => o.CompanyName == companyName, ct)).FirstOrDefault()
                          ?? throw new InvalidOperationException("Operator with given company name not found.");
+
                 return op.Id;
             }
 
@@ -167,5 +256,10 @@ namespace BusTicketBooking.Services
             CreatedAtUtc = e.CreatedAtUtc,
             UpdatedAtUtc = e.UpdatedAtUtc
         };
+
+        public Task<BusResponseDto> CreateAsync(CreateBusRequestDto dto, CancellationToken ct = default)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

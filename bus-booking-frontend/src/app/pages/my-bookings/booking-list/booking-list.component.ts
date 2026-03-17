@@ -10,95 +10,103 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <section class="container max-w-5xl pt-10">
-      <!-- Header -->
-      <div class="flex items-center justify-between mb-6">
-        <div>
-          <h1 class="text-2xl font-extrabold tracking-tight">My Bookings</h1>
-          <p class="text-muted">Your recent and upcoming trips</p>
-        </div>
-        <a routerLink="/home" class="btn btn-primary h-9 px-3">+ Book a ticket</a>
-      </div>
+    <section class="min-h-screen w-full bg-[#121212] text-white py-10 px-4 flex justify-center">
+      <div class="w-full max-w-5xl space-y-6">
 
-      <!-- Loading -->
-      @if (loading()) {
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h1 class="text-2xl font-extrabold tracking-tight">My Bookings</h1>
+            <p class="text-gray-400">Your recent and upcoming trips</p>
+          </div>
+          <a routerLink="/home" class="btn btn-primary h-9 px-3">+ Book a ticket</a>
+        </div>
+
+        <!-- Loading Skeleton -->
+        @if (loading()) {
+          <div class="space-y-3">
+            @for (_ of [1,2,3]; track $index) {
+              <div class="card bg-gray-800 border border-gray-700 animate-pulse">
+                <div class="card-body">
+                  <div class="h-4 bg-gray-600 rounded w-48 mb-2"></div>
+                  <div class="h-3 bg-gray-600 rounded w-32"></div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Empty state -->
+        @if (!loading() && bookings().length === 0) {
+          <div class="text-center py-16">
+            <div class="w-16 h-16 bg-gray-800 border border-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">🎫</div>
+            <h3 class="font-semibold text-lg">No bookings yet</h3>
+            <p class="text-gray-400 mt-1">Search for buses and book your first ticket.</p>
+            <a routerLink="/home" class="btn btn-primary mt-4">Find buses</a>
+          </div>
+        }
+
+        <!-- Booking list -->
         <div class="space-y-3">
-          @for (_ of [1,2,3]; track $index) {
-            <div class="card">
-              <div class="card-body animate-pulse">
-                <div class="h-4 bg-[#efefef] rounded w-48 mb-2"></div>
-                <div class="h-3 bg-[#f4f4f4] rounded w-32"></div>
+          @for (b of bookings(); track b.id) {
+            <div class="card bg-gray-800 border border-gray-700 hover:bg-gray-700 transition">
+              <div class="card-body">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+
+                  <!-- Booking info -->
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="font-bold text-lg text-white">{{ b.busCode }}</span>
+                      <span class="badge" [ngClass]="badgeClass(b.status)">{{ statusLabel(b.status) }}</span>
+                      <span class="text-gray-400">·</span>
+                      <span class="text-sm text-gray-300">{{ b.routeCode }}</span>
+                    </div>
+                    <p class="text-sm text-gray-400 mt-1 flex items-center gap-1.5">
+                      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      {{ formatDateTime(b.departureUtc) }}
+                    </p>
+                    <div class="mt-2 flex items-center gap-3 text-xs text-gray-400">
+                      <span>{{ b.passengers.length }} passenger(s)</span>
+                      <span>·</span>
+                      <span>Seats: {{ b.passengers.map(p => p.seatNo).join(', ') }}</span>
+                      <span>·</span>
+                      <span class="font-semibold text-gray-200">₹{{ b.totalAmount }}</span>
+                    </div>
+                  </div>
+
+                  <!-- Actions -->
+                  <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+                    <a [routerLink]="['/my-bookings', b.id]"
+                       class="btn btn-secondary h-9">
+                      View details
+                    </a>
+
+                    @if (b.status === BookingStatus.Pending) {
+                      <a [routerLink]="['/booking/confirm', b.id]"
+                         class="btn btn-success h-9">
+                        Pay now
+                      </a>
+                    }
+
+                    @if (b.status === BookingStatus.Pending || b.status === BookingStatus.Confirmed) {
+                      <button
+                        (click)="cancelBooking(b.id)"
+                        [disabled]="cancellingId() === b.id"
+                        class="btn btn-ghost h-9 border border-red-600 text-red-400 hover:bg-red-700 hover:text-white disabled:opacity-50">
+                        @if (cancellingId() === b.id) { Cancelling... } @else { Cancel }
+                      </button>
+                    }
+                  </div>
+
+                </div>
               </div>
             </div>
           }
         </div>
-      }
 
-      <!-- Empty -->
-      @if (!loading() && bookings().length === 0) {
-        <div class="text-center py-16">
-          <div class="w-16 h-16 bg-[var(--card)] border border-[var(--border)] rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">🎫</div>
-          <h3 class="font-semibold text-lg">No bookings yet</h3>
-          <p class="text-muted mt-1">Search for buses and book your first ticket.</p>
-          <a routerLink="/home" class="btn btn-primary mt-4">Find buses</a>
-        </div>
-      }
-
-      <!-- List -->
-      <div class="space-y-3">
-        @for (b of bookings(); track b.id) {
-          <div class="card hover:card-soft transition">
-            <div class="card-body">
-              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <!-- Left info -->
-                <div class="min-w-0">
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <span class="font-bold text-lg">{{ b.busCode }}</span>
-                    <span class="badge" [ngClass]="badgeClass(b.status)">{{ statusLabel(b.status) }}</span>
-                    <span class="text-muted">·</span>
-                    <span class="text-sm text-[var(--graphite)]">{{ b.routeCode }}</span>
-                  </div>
-                  <p class="text-sm text-muted mt-1 flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    {{ formatDateTime(b.departureUtc) }}
-                  </p>
-                  <div class="mt-2 flex items-center gap-3 text-xs text-muted">
-                    <span>{{ b.passengers.length }} passenger(s)</span>
-                    <span>·</span>
-                    <span>Seats: {{ b.passengers.map(p => p.seatNo).join(', ') }}</span>
-                    <span>·</span>
-                    <span class="font-semibold text-[var(--graphite)]">₹{{ b.totalAmount }}</span>
-                  </div>
-                </div>
-
-                <!-- Right actions -->
-                <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-                  <a [routerLink]="['/my-bookings', b.id]" class="btn btn-secondary h-9">
-                    View details
-                  </a>
-
-                  @if (b.status === BookingStatus.Pending) {
-                    <a [routerLink]="['/booking/confirm', b.id]" class="btn btn-success h-9">
-                      Pay now
-                    </a>
-                  }
-
-                  @if (b.status === BookingStatus.Pending || b.status === BookingStatus.Confirmed) {
-                    <button
-                      (click)="cancelBooking(b.id)"
-                      [disabled]="cancellingId() === b.id"
-                      class="btn btn-ghost h-9 border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50">
-                      @if (cancellingId() === b.id) { Cancelling... } @else { Cancel }
-                    </button>
-                  }
-                </div>
-              </div>
-            </div>
-          </div>
-        }
       </div>
     </section>
   `,
@@ -168,4 +176,3 @@ export class BookingListComponent implements OnInit {
     });
   }
 }
-``
