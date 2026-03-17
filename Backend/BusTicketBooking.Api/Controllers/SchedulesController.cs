@@ -1,0 +1,235 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using BusTicketBooking.Dtos.Common;
+using BusTicketBooking.Dtos.Schedules;
+using BusTicketBooking.Interfaces;
+using BusTicketBooking.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+// kept from your previous controller
+using BusTicketBooking.Contexts;
+using Microsoft.EntityFrameworkCore;
+
+namespace BusTicketBooking.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class SchedulesController : ControllerBase
+    {
+        private readonly IScheduleService _schedules;
+        private readonly AppDbContext _db; // you were already injecting this for city-based GET search
+
+        public SchedulesController(IScheduleService schedules, AppDbContext db)
+        {
+            _schedules = schedules;
+            _db = db;
+        }
+
+        // ===== Id-based (kept) =====
+
+        [Authorize(Roles = $"{Roles.Admin},{Roles.Operator}")]
+        [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<ScheduleResponseDto>), 200)]
+        public async Task<ActionResult<IEnumerable<ScheduleResponseDto>>> GetAll(CancellationToken ct)
+            => Ok(await _schedules.GetAllAsync(ct));
+
+        [AllowAnonymous]
+        [HttpGet("{id:guid}")]
+        [ProducesResponseType(typeof(ScheduleResponseDto), 200)]
+        public async Task<ActionResult<ScheduleResponseDto>> GetById([FromRoute] Guid id, CancellationToken ct)
+        {
+            var item = await _schedules.GetByIdAsync(id, ct);
+            return item is null ? NotFound() : Ok(item);
+        }
+
+        [Authorize(Roles = $"{Roles.Admin},{Roles.Operator}")]
+        [HttpPost]
+        [ProducesResponseType(typeof(ScheduleResponseDto), 201)]
+        public async Task<ActionResult<ScheduleResponseDto>> Create([FromBody] CreateScheduleRequestDto dto, CancellationToken ct)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            try
+            {
+                var created = await _schedules.CreateAsync(dto, ct);
+                return Created($"/api/schedules/{created.Id}", created);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Roles = $"{Roles.Admin},{Roles.Operator}")]
+        [HttpPut("{id:guid}")]
+        [ProducesResponseType(typeof(ScheduleResponseDto), 200)]
+        public async Task<ActionResult<ScheduleResponseDto>> Update([FromRoute] Guid id, [FromBody] UpdateScheduleRequestDto dto, CancellationToken ct)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            try
+            {
+                var updated = await _schedules.UpdateAsync(id, dto, ct);
+                return updated is null ? NotFound() : Ok(updated);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Roles = $"{Roles.Admin},{Roles.Operator}")]
+        [HttpDelete("{id:guid}")]
+        [ProducesResponseType(204)]
+        public async Task<ActionResult> Delete([FromRoute] Guid id, CancellationToken ct)
+        {
+            var ok = await _schedules.DeleteAsync(id, ct);
+            return ok ? NoContent() : NotFound();
+        }
+
+        // ===== Your GET search endpoints (kept) =====
+
+        [AllowAnonymous]
+        [HttpGet("search")]
+        [ProducesResponseType(typeof(PagedResult<ScheduleResponseDto>), 200)]
+        public async Task<ActionResult<PagedResult<ScheduleResponseDto>>> Search(
+            [FromQuery] Guid fromStopId,
+            [FromQuery] Guid toStopId,
+            [FromQuery] DateTime date,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? sortBy = "departure",
+            [FromQuery] string? sortDir = "asc",
+            CancellationToken ct = default)
+        {
+            if (fromStopId == Guid.Empty || toStopId == Guid.Empty)
+                return BadRequest(new { message = "fromStopId and toStopId are required." });
+
+            var req = new PagedRequestDto { Page = page, PageSize = pageSize, SortBy = sortBy, SortDir = sortDir };
+            var dateOnly = DateOnly.FromDateTime(date);
+            var res = await _schedules.SearchAsync(fromStopId, toStopId, dateOnly, req, ct);
+            return Ok(res);
+        }
+
+        [AllowAnonymous]
+        [HttpGet("search-by-city")]
+        [ProducesResponseType(typeof(PagedResult<ScheduleResponseDto>), 200)]
+        public async Task<ActionResult<PagedResult<ScheduleResponseDto>>> SearchByCity(
+            [FromQuery] string fromCity,
+            [FromQuery] string toCity,
+            [FromQuery] DateTime date,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? sortBy = "departure",
+            [FromQuery] string? sortDir = "asc",
+            CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(fromCity) || string.IsNullOrWhiteSpace(toCity))
+                return BadRequest(new { message = "fromCity and toCity are required." });
+
+            var fc = fromCity.Trim();
+            var tc = toCity.Trim();
+
+            var fromStops = await _db.Stops.AsNoTracking().Where(s => s.City == fc).OrderBy(s => s.Name).ToListAsync(ct);
+            var toStops = await _db.Stops.AsNoTracking().Where(s => s.City == tc).OrderBy(s => s.Name).ToListAsync(ct);
+
+            if (fromStops.Count == 0 || toStops.Count == 0)
+                return NotFound(new { message = "Could not find one or both cities. Check spelling or seed data." });
+
+            var req = new PagedRequestDto { Page = page, PageSize = pageSize, SortBy = sortBy, SortDir = sortDir };
+            var dateOnly = DateOnly.FromDateTime(date);
+
+            var unique = new Dictionary<Guid, ScheduleResponseDto>();
+            foreach (var fs in fromStops)
+                foreach (var ts in toStops)
+                {
+                    var pageResult = await _schedules.SearchAsync(fs.Id, ts.Id, dateOnly, req, ct);
+                    foreach (var item in pageResult.Items)
+                        unique[item.Id] = item;
+                }
+
+            var filtered = unique.Values.AsEnumerable();
+            var desc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
+            filtered = (sortBy ?? "departure").Trim().ToLowerInvariant() switch
+            {
+                "price" => desc ? filtered.OrderByDescending(x => x.BasePrice) : filtered.OrderBy(x => x.BasePrice),
+                "buscode" => desc ? filtered.OrderByDescending(x => x.BusCode) : filtered.OrderBy(x => x.BusCode),
+                "routecode" => desc ? filtered.OrderByDescending(x => x.RouteCode) : filtered.OrderBy(x => x.RouteCode),
+                _ => desc ? filtered.OrderByDescending(x => x.DepartureUtc) : filtered.OrderBy(x => x.DepartureUtc),
+            };
+
+            var total = filtered.LongCount();
+            var skip = Math.Max(0, (page - 1) * pageSize);
+            var take = Math.Max(1, pageSize);
+
+            return Ok(new PagedResult<ScheduleResponseDto>
+            {
+                Page = page,
+                PageSize = pageSize,
+                TotalCount = total,
+                Items = filtered.Skip(skip).Take(take).ToList()
+            });
+        }
+
+        [AllowAnonymous]
+        [HttpGet("{id:guid}/seats")]
+        [ProducesResponseType(typeof(SeatAvailabilityResponseDto), 200)]
+        public async Task<ActionResult<SeatAvailabilityResponseDto>> GetSeatAvailability([FromRoute] Guid id, CancellationToken ct)
+        {
+            try
+            {
+                var result = await _schedules.GetAvailabilityAsync(id, ct);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
+        // ===== NEW: by-keys =====
+
+        /// <summary>Create a schedule by operator + busCode + routeCode (UTC or Local+TZ).</summary>
+        [HttpPost("by-keys")]
+        [Authorize(Roles = Roles.Operator)]
+        [ProducesResponseType(typeof(ScheduleResponseDto), 200)]
+        public async Task<IActionResult> CreateByKeys([FromBody] CreateScheduleByKeysRequestDto dto, CancellationToken ct)
+            => Ok(await _schedules.CreateByKeysAsync(dto, ct));
+
+        /// <summary>Search schedules by From/To names + date (body).</summary>
+        [HttpPost("search-by-keys")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(PagedResult<ScheduleResponseDto>), 200)]
+        public async Task<IActionResult> SearchByKeys([FromBody] SearchSchedulesByKeysRequestDto dto, CancellationToken ct)
+            => Ok(await _schedules.SearchByKeysAsync(dto, ct));
+
+        /// <summary>Seat availability by busCode + departureUtc (ISO UTC).</summary>
+        [HttpGet("{busCode}/{departureUtc}/availability")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(SeatAvailabilityResponseDto), 200)]
+        public async Task<IActionResult> GetAvailabilityByKeys([FromRoute] string busCode, [FromRoute] DateTime departureUtc, CancellationToken ct)
+            => Ok(await _schedules.GetAvailabilityByKeysAsync(busCode, departureUtc, ct));
+
+        /// <summary>Get a schedule by busCode + departureUtc (ISO UTC).</summary>
+        [HttpGet("{busCode}/{departureUtc}")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ScheduleResponseDto), 200)]
+        public async Task<IActionResult> GetByKeys([FromRoute] string busCode, [FromRoute] DateTime departureUtc, CancellationToken ct)
+        {
+            var result = await _schedules.GetByBusCodeAndDepartureAsync(busCode, departureUtc, ct);
+            return result is null ? NotFound() : Ok(result);
+        }
+
+        /// <summary>Delete a schedule by busCode + departureUtc.</summary>
+        [HttpDelete("{busCode}/{departureUtc}")]
+        [Authorize(Roles = Roles.Operator + "," + Roles.Admin)]
+        [ProducesResponseType(204)]
+        public async Task<IActionResult> DeleteByKeys([FromRoute] string busCode, [FromRoute] DateTime departureUtc, CancellationToken ct)
+        {
+            var ok = await _schedules.DeleteByKeysAsync(busCode, departureUtc, ct);
+            return ok ? NoContent() : NotFound();
+        }
+    }
+}
