@@ -317,7 +317,7 @@ namespace BusTicketBooking.Services
             RegistrationNumber = bus.RegistrationNumber,
             RouteCode = route.RouteCode,
             DepartureUtc = e.DepartureUtc,
-            BasePrice = e.BasePrice,
+            BasePrice = e.BasePrice, 
             CreatedAtUtc = e.CreatedAtUtc,
             UpdatedAtUtc = e.UpdatedAtUtc
         };
