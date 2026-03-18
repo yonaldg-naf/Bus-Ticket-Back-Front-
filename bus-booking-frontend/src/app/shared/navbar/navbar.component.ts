@@ -27,7 +27,7 @@ import { AuthService } from '../../services/auth.service';
           </div>
 
           <span class="text-white font-semibold tracking-tight text-lg">
-            BusGo
+            SwiftRoute
           </span>
         </a>
 

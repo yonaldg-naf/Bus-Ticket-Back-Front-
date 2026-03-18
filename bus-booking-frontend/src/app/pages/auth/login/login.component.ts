@@ -14,9 +14,9 @@ import { ToastService } from '../../../services/toast.service';
 
     <div class="w-full max-w-md">
 
-      <h1 class="text-4xl font-bold text-white text-center mb-2">BusGo</h1>
+      <h1 class="text-4xl font-bold text-white text-center mb-2">SwiftRoute</h1>
       <p class="text-gray-400 text-center mb-8">
-        Book safe and affordable bus tickets instantly
+        Where comfort meets convenience
       </p>
 
       <div class="bg-[#161618] border border-[#2a2a2d] rounded-2xl shadow-2xl p-8">
