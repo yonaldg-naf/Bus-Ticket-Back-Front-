@@ -2,11 +2,17 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+
 import { BusService } from '../../../services/bus-route.service';
 import { AuthService } from '../../../services/auth.service';
 import { ToastService } from '../../../services/toast.service';
+
 import {
-  BusResponse, BusType, BusStatus, CreateBusByOperatorRequest, UpdateBusRequest
+  BusResponse,
+  BusType,
+  BusStatus,
+  CreateBusByOperatorRequest,
+  UpdateBusRequest
 } from '../../../services/bus-route.service';
 
 @Component({
@@ -14,133 +20,182 @@ import {
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
-    <section class="min-h-screen w-full bg-[#121212] text-white py-10 px-4 flex justify-center">
-      <div class="w-full max-w-6xl space-y-6">
+  <div class="min-h-screen w-full bg-[#0f0f10] px-4 py-10 text-white">
 
-        <!-- Header -->
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <a routerLink="/operator" class="text-sm text-indigo-400 hover:underline">← Operator Panel</a>
-            <h1 class="text-2xl font-extrabold tracking-tight mt-1">Manage Buses</h1>
-            <p class="text-gray-400">Add, edit and manage your fleet.</p>
-          </div>
-          <button (click)="openForm()" class="btn btn-primary h-9 px-4">+ Add Bus</button>
+    <div class="max-w-6xl mx-auto">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <a routerLink="/operator" class="text-[#D32F2F] hover:underline text-sm">← Operator Panel</a>
+          <h1 class="text-3xl font-bold mt-1">Manage Buses</h1>
+          <p class="text-gray-400">Add, edit and manage your fleet.</p>
         </div>
 
-        <!-- Add/Edit Form -->
-        @if (showForm()) {
-          <div class="card bg-gray-800 border border-gray-700 mb-6">
-            <div class="card-body">
-              <h3 class="font-semibold text-lg mb-4">{{ editingId() ? 'Edit Bus' : 'Add New Bus' }}</h3>
-              <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <button (click)="openForm()"
+          class="py-2 px-4 rounded-xl font-semibold text-white
+                 bg-gradient-to-r from-[#D32F2F] to-[#7f1d1d]
+                 hover:opacity-90 active:scale-95 transition">
+          + Add Bus
+        </button>
+      </div>
 
-                <div>
-                  <label class="label">Bus Code *</label>
-                  <input formControlName="code" type="text" placeholder="e.g. BUS-001" class="input bg-gray-700 text-white"/>
-                  @if (isInvalid('code')) {
-                    <p class="text-xs text-red-500 mt-1">Code is required (max 50 chars)</p>
-                  }
-                </div>
+      <!-- Form -->
+      <div *ngIf="showForm()" class="bg-[#161618] border border-[#2a2a2d] rounded-2xl shadow-2xl p-6 mb-6">
 
-                <div>
-                  <label class="label">Registration No *</label>
-                  <input formControlName="registrationNumber" type="text" placeholder="e.g. MH12AB1234" class="input bg-gray-700 text-white"/>
-                  @if (isInvalid('registrationNumber')) {
-                    <p class="text-xs text-red-500 mt-1">Registration is required (max 50 chars)</p>
-                  }
-                </div>
+        <h3 class="text-xl font-semibold mb-4">
+          {{ editingId() ? 'Edit Bus' : 'Add New Bus' }}
+        </h3>
 
-                <div>
-                  <label class="label">Bus Type *</label>
-                  <select formControlName="busType" class="input bg-gray-700 text-white">
-                    <option [value]="1">Seater</option>
-                    <option [value]="2">Semi Sleeper</option>
-                    <option [value]="3">Sleeper</option>
-                    <option [value]="4">AC</option>
-                    <option [value]="5">Non-AC</option>
-                  </select>
-                </div>
+        <form [formGroup]="form" (ngSubmit)="onSubmit()"
+              class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-                <div>
-                  <label class="label">Total Seats *</label>
-                  <input formControlName="totalSeats" type="number" min="1" max="100" placeholder="40" class="input bg-gray-700 text-white"/>
-                  @if (isInvalid('totalSeats')) {
-                    <p class="text-xs text-red-500 mt-1">Seats must be between 1 and 100</p>
-                  }
-                </div>
-
-                <div>
-                  <label class="label">Status</label>
-                  <select formControlName="status" class="input bg-gray-700 text-white">
-                    <option [value]="1">Available</option>
-                    <option [value]="2">Under Repair</option>
-                    <option [value]="3">Not Available</option>
-                  </select>
-                </div>
-
-                <div class="sm:col-span-2 flex gap-2 pt-2">
-                  <button type="button" class="btn btn-ghost flex-1" (click)="cancelForm()">Cancel</button>
-                  <button type="submit" [disabled]="saving()" class="btn btn-primary flex-1">
-                    {{ saving() ? 'Saving…' : (editingId() ? 'Update' : 'Add Bus') }}
-                  </button>
-                </div>
-
-              </form>
-            </div>
+          <!-- Code -->
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">Bus Code *</label>
+            <input formControlName="code"
+              type="text"
+              placeholder="BUS-001"
+              class="w-full px-4 py-3 rounded-xl bg-[#0f0f10] border border-[#2a2a2d] text-white
+                     focus:border-[#D32F2F] focus:ring-2 focus:ring-[#D32F2F] outline-none"/>
+            <p *ngIf="isInvalid('code')" class="text-red-500 text-xs mt-1">
+              Code is required
+            </p>
           </div>
-        }
 
-        <!-- Loading skeleton -->
-        @if (loading()) {
-          <div class="space-y-3">
-            @for (_ of [1,2,3,4]; track $index) {
-              <div class="card bg-gray-800 border border-gray-700 animate-pulse">
-                <div class="card-body">
-                  <div class="h-4 bg-gray-600 rounded w-40 mb-2"></div>
-                  <div class="h-3 bg-gray-600 rounded w-64"></div>
-                </div>
-              </div>
-            }
+          <!-- Registration -->
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">Registration *</label>
+            <input formControlName="registrationNumber"
+              type="text"
+              placeholder="MH12AB1234"
+              class="w-full px-4 py-3 rounded-xl bg-[#0f0f10] border border-[#2a2a2d] text-white
+                     focus:border-[#D32F2F] focus:ring-2 focus:ring-[#D32F2F] outline-none"/>
+            <p *ngIf="isInvalid('registrationNumber')" class="text-red-500 text-xs mt-1">
+              Registration is required
+            </p>
           </div>
-        }
 
-        <!-- Bus List -->
-        <div class="space-y-3">
-          @for (bus of buses(); track bus.id) {
-            <div class="card bg-gray-800 border border-gray-700 hover:bg-gray-700 transition">
-              <div class="card-body flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div class="min-w-0">
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <span class="font-bold text-lg">{{ bus.code }}</span>
-                    <span class="badge badge-neutral">{{ bus.registrationNumber }}</span>
-                    <span class="badge badge-accent">{{ busTypeLabel(bus.busType) }}</span>
-                    <span class="badge" [ngClass]="statusBadge(bus.status)">{{ busStatusLabel(bus.status) }}</span>
-                  </div>
-                  <p class="text-sm text-gray-400 mt-1">Seats: {{ bus.totalSeats }}</p>
-                </div>
-                <div class="flex items-center gap-2">
-                  <button class="btn btn-secondary h-9" (click)="editBus(bus)">Edit</button>
-                  <button class="btn btn-ghost h-9 border border-red-600 text-red-400 hover:bg-red-700 hover:text-white"
-                          (click)="deleteBus(bus.id)">Delete</button>
-                </div>
+          <!-- Bus Type -->
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">Bus Type *</label>
+            <select formControlName="busType"
+              class="w-full px-4 py-3 rounded-xl bg-[#0f0f10] border border-[#2a2a2d] text-white
+                     focus:border-[#D32F2F] focus:ring-2 focus:ring-[#D32F2F] outline-none">
+              <option [value]="1">Seater</option>
+              <option [value]="2">Semi Sleeper</option>
+              <option [value]="3">Sleeper</option>
+              <option [value]="4">AC</option>
+              <option [value]="5">Non-AC</option>
+            </select>
+          </div>
+
+          <!-- Seats -->
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">Seats *</label>
+            <input formControlName="totalSeats"
+              type="number" min="1" max="100"
+              class="w-full px-4 py-3 rounded-xl bg-[#0f0f10] border border-[#2a2a2d] text-white
+                     focus:border-[#D32F2F] focus:ring-2 focus:ring-[#D32F2F] outline-none"/>
+            <p *ngIf="isInvalid('totalSeats')" class="text-red-500 text-xs mt-1">
+              Seats must be between 1–100
+            </p>
+          </div>
+
+          <!-- Status -->
+          <div>
+            <label class="text-xs text-gray-400 mb-1 block">Status</label>
+            <select formControlName="status"
+              class="w-full px-4 py-3 rounded-xl bg-[#0f0f10] border border-[#2a2a2d] text-white
+                     focus:border-[#D32F2F] focus:ring-2 focus:ring-[#D32F2F] outline-none">
+              <option [value]="1">Available</option>
+              <option [value]="2">Under Repair</option>
+              <option [value]="3">Not Available</option>
+            </select>
+          </div>
+
+          <!-- Buttons -->
+          <div class="sm:col-span-2 flex gap-2 pt-2">
+            <button type="submit"
+              [disabled]="saving()"
+              class="flex-1 py-3 rounded-xl font-semibold text-white
+                     bg-gradient-to-r from-[#D32F2F] to-[#7f1d1d]
+                     hover:opacity-90 active:scale-95 transition disabled:opacity-50">
+              {{ saving() ? 'Saving…' : (editingId() ? 'Update' : 'Add Bus') }}
+            </button>
+
+            <button type="button" (click)="cancelForm()"
+              class="flex-1 py-3 rounded-xl font-semibold text-white bg-gray-800 hover:bg-gray-700 transition">
+              Cancel
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- Loading -->
+      <div *ngIf="loading()" class="space-y-3">
+        <div *ngFor="let _ of [1,2,3,4]">
+          <div class="bg-[#161618] rounded-xl p-4 animate-pulse">
+            <div class="h-4 bg-gray-700 rounded w-40 mb-2"></div>
+            <div class="h-3 bg-gray-700 rounded w-64"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bus List -->
+      <div class="space-y-3">
+
+        <div *ngFor="let bus of buses()"
+          class="bg-[#161618] border border-[#2a2a2d] rounded-2xl p-4 hover:bg-gray-900 transition">
+
+          <div class="flex justify-between items-start gap-4">
+
+            <div class="flex-1 min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-bold text-white">{{ bus.code }}</span>
+                <span class="text-gray-400 text-xs">{{ bus.registrationNumber }}</span>
+                <span class="text-gray-400">·</span>
+                <span class="text-gray-400 text-sm">{{ busTypeLabel(bus.busType) }}</span>
+                <span class="text-gray-400 text-sm">· {{ busStatusLabel(bus.status) }}</span>
               </div>
-            </div>
-          }
 
-          @if (!loading() && buses().length === 0) {
-            <div class="text-center py-16">
-              <div class="text-4xl mb-3">🚌</div>
-              <h3 class="font-semibold text-lg">No buses added yet</h3>
-              <p class="text-gray-400 mt-1">Click “Add Bus” to create your first bus.</p>
+              <p class="text-gray-400 text-sm mt-2">
+                Seats: <span class="text-white font-semibold">{{ bus.totalSeats }}</span>
+              </p>
             </div>
-          }
+
+            <div class="flex items-center gap-2">
+              <button (click)="editBus(bus)"
+                class="py-2 px-4 rounded-xl font-semibold text-white bg-gray-700 hover:bg-gray-600 transition">
+                Edit
+              </button>
+
+              <button (click)="deleteBus(bus.id)"
+                class="py-2 px-4 rounded-xl font-semibold text-white bg-red-700 hover:bg-red-600 transition">
+                Delete
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Empty -->
+        <div *ngIf="!loading() && buses().length === 0"
+             class="text-center py-16 text-gray-400">
+          <div class="text-4xl mb-3">🚌</div>
+          <h3 class="font-semibold text-lg">No buses added yet</h3>
+          <p class="mt-1">Click “Add Bus” to create your first bus.</p>
         </div>
 
       </div>
-    </section>
+
+    </div>
+  </div>
   `,
 })
 export class ManageBusesComponent implements OnInit {
+
   private fb = inject(FormBuilder);
   private busService = inject(BusService);
   private authService = inject(AuthService);
@@ -177,7 +232,11 @@ export class ManageBusesComponent implements OnInit {
 
   openForm(): void {
     this.editingId.set(null);
-    this.form.reset({ busType: BusType.Seater, totalSeats: 40, status: BusStatus.Available });
+    this.form.reset({
+      busType: BusType.Seater,
+      totalSeats: 40,
+      status: BusStatus.Available
+    });
     this.showForm.set(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -195,10 +254,17 @@ export class ManageBusesComponent implements OnInit {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  cancelForm(): void { this.showForm.set(false); this.editingId.set(null); }
+  cancelForm(): void {
+    this.showForm.set(false);
+    this.editingId.set(null);
+  }
 
   onSubmit(): void {
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
     this.saving.set(true);
     const v = this.form.value;
     const id = this.editingId();
@@ -210,10 +276,20 @@ export class ManageBusesComponent implements OnInit {
         totalSeats: +v.totalSeats!,
         status: +v.status!,
       };
+
       this.busService.update(id, dto).subscribe({
-        next: () => { this.toast.success('Bus updated.'); this.cancelForm(); this.loadBuses(); this.saving.set(false); },
-        error: (err) => { this.saving.set(false); this.toast.error(err.error?.message ?? 'Update failed.'); },
+        next: () => {
+          this.toast.success('Bus updated.');
+          this.cancelForm();
+          this.loadBuses();
+          this.saving.set(false);
+        },
+        error: (err) => {
+          this.saving.set(false);
+          this.toast.error(err.error?.message ?? 'Update failed.');
+        },
       });
+
     } else {
       const dto: CreateBusByOperatorRequest = {
         operatorUsername: this.authService.currentUser()?.username ?? '',
@@ -223,23 +299,41 @@ export class ManageBusesComponent implements OnInit {
         totalSeats: +v.totalSeats!,
         status: +v.status!,
       };
+
       this.busService.createByOperator(dto).subscribe({
-        next: () => { this.toast.success('Bus added!'); this.cancelForm(); this.loadBuses(); this.saving.set(false); },
-        error: (err) => { this.saving.set(false); this.toast.error(err.error?.message ?? 'Creation failed.'); },
+        next: () => {
+          this.toast.success('Bus added!');
+          this.cancelForm();
+          this.loadBuses();
+          this.saving.set(false);
+        },
+        error: (err) => {
+          this.saving.set(false);
+          this.toast.error(err.error?.message ?? 'Creation failed.');
+        },
       });
     }
   }
 
-  // Labels / badges
-  busTypeLabel(t: number): string { return {1:'Seater',2:'Semi Sleeper',3:'Sleeper',4:'AC',5:'Non-AC'}[t] ?? 'Unknown'; }
-  busStatusLabel(s: number): string { return {1:'Available',2:'Under Repair',3:'Not Available'}[s] ?? 'Unknown'; }
-  statusBadge(s: number): string { return {1:'badge-success',2:'badge-accent',3:'badge-error'}[s] ?? 'badge-neutral'; }
-
   deleteBus(id: string): void {
     if (!confirm('Delete this bus?')) return;
+
     this.busService.delete(id).subscribe({
-      next: () => { this.toast.success('Bus deleted.'); this.loadBuses(); },
-      error: (err) => this.toast.error(err.error?.message ?? 'Delete failed.'),
+      next: () => {
+        this.toast.success('Bus deleted.');
+        this.loadBuses();
+      },
+      error: (err) => {
+        this.toast.error(err.error?.message ?? 'Delete failed.');
+      },
     });
+  }
+
+  busTypeLabel(t: number): string {
+    return {1:'Seater',2:'Semi Sleeper',3:'Sleeper',4:'AC',5:'Non-AC'}[t] ?? 'Unknown';
+  }
+
+  busStatusLabel(s: number): string {
+    return {1:'Available',2:'Under Repair',3:'Not Available'}[s] ?? 'Unknown';
   }
 }
