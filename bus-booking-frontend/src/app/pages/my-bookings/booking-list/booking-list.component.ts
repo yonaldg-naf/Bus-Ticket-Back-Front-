@@ -57,17 +57,24 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
                   <div class="min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
                       <span class="font-bold text-lg text-white">{{ b.busCode }}</span>
-                      <span class="badge" [ngClass]="badgeClass(b.status)">{{ statusLabel(b.status) }}</span>
+
+                      <!-- BADGE with operator-cancelled support -->
+                      <span class="badge" [ngClass]="badgeClass(b.status)">
+                        {{ statusLabel(b.status) }}
+                      </span>
+
                       <span class="text-gray-400">·</span>
                       <span class="text-sm text-gray-300">{{ b.routeCode }}</span>
                     </div>
+
                     <p class="text-sm text-gray-400 mt-1 flex items-center gap-1.5">
                       <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                       </svg>
                       {{ formatDateTime(b.departureUtc) }}
                     </p>
+
                     <div class="mt-2 flex items-center gap-3 text-xs text-gray-400">
                       <span>{{ b.passengers.length }} passenger(s)</span>
                       <span>·</span>
@@ -79,26 +86,33 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
 
                   <!-- Actions -->
                   <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-                    <a [routerLink]="['/my-bookings', b.id]"
-                       class="btn btn-secondary h-9">
+
+                    <!-- VIEW DETAILS -->
+                    <a [routerLink]="['/my-bookings', b.id]" class="btn btn-secondary h-9">
                       View details
                     </a>
 
-                    @if (b.status === BookingStatus.Pending) {
+                    <!-- PAY NOW (Only if pending, NOT operator cancelled) -->
+                    @if (b.status === BookingStatus.Pending &&
+                         b.status !== BookingStatus.OperatorCancelled) {
                       <a [routerLink]="['/booking/confirm', b.id]"
                          class="btn btn-success h-9">
                         Pay now
                       </a>
                     }
 
-                    @if (b.status === BookingStatus.Pending || b.status === BookingStatus.Confirmed) {
+                    <!-- CANCEL BOOKING (Not allowed if OperatorCancelled) -->
+                    @if ((b.status === BookingStatus.Pending || b.status === BookingStatus.Confirmed) &&
+                          b.status !== BookingStatus.OperatorCancelled) {
                       <button
                         (click)="cancelBooking(b.id)"
                         [disabled]="cancellingId() === b.id"
-                        class="btn btn-ghost h-9 border border-red-600 text-red-400 hover:bg-red-700 hover:text-white disabled:opacity-50">
+                        class="btn btn-ghost h-9 border border-red-600 text-red-400 
+                               hover:bg-red-700 hover:text-white disabled:opacity-50">
                         @if (cancellingId() === b.id) { Cancelling... } @else { Cancel }
                       </button>
                     }
+
                   </div>
 
                 </div>
@@ -116,6 +130,7 @@ export class BookingListComponent implements OnInit {
   private toast = inject(ToastService);
 
   BookingStatus = BookingStatus;
+
   loading = signal(true);
   cancellingId = signal<string | null>(null);
   bookings = signal<BookingResponse[]>([]);
@@ -126,6 +141,7 @@ export class BookingListComponent implements OnInit {
 
   loadBookings(): void {
     this.loading.set(true);
+
     this.bookingService.getMyBookings().subscribe({
       next: (data) => {
         this.bookings.set((data ?? []).sort(
@@ -142,7 +158,9 @@ export class BookingListComponent implements OnInit {
 
   cancelBooking(id: string): void {
     if (!confirm('Are you sure you want to cancel this booking?')) return;
+
     this.cancellingId.set(id);
+
     this.bookingService.cancelPost(id).subscribe({
       next: () => {
         this.toast.success('Booking cancelled.');
@@ -160,9 +178,10 @@ export class BookingListComponent implements OnInit {
     switch (status) {
       case BookingStatus.Confirmed: return 'badge badge-success';
       case BookingStatus.Cancelled: return 'badge badge-error';
-      case BookingStatus.Refunded:  return 'badge badge-neutral';
+      case BookingStatus.OperatorCancelled: return 'badge badge-error';  // NEW
+      case BookingStatus.Refunded: return 'badge badge-neutral';
       case BookingStatus.Pending:
-      default:                      return 'badge badge-accent';
+      default: return 'badge badge-accent';
     }
   }
 
@@ -172,7 +191,11 @@ export class BookingListComponent implements OnInit {
 
   formatDateTime(utc: string): string {
     return new Date(utc).toLocaleString('en-IN', {
-      weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   }
 }

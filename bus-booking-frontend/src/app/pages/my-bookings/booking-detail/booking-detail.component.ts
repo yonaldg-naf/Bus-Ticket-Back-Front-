@@ -22,7 +22,7 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
           Back to My Bookings
         </button>
 
-        <!-- Loading Spinner -->
+        <!-- Loading -->
         @if (loading()) {
           <div class="flex justify-center py-20">
             <svg class="animate-spin w-8 h-8 text-indigo-400" fill="none" viewBox="0 0 24 24">
@@ -34,6 +34,17 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
 
         <!-- Booking Details -->
         @if (!loading() && booking()) {
+
+          <!-- OPERATOR CANCELLED BANNER -->
+          @if (booking()!.status === BookingStatus.OperatorCancelled) {
+            <div class="p-4 bg-red-900/40 border border-red-700 text-red-200 rounded-xl">
+              This trip was cancelled by the operator.
+              <div *ngIf="booking()!.scheduleCancelReason" class="text-sm text-red-300 mt-1">
+                Reason: {{ booking()!.scheduleCancelReason }}
+              </div>
+            </div>
+          }
+
           <h1 class="text-2xl font-bold mb-5">Booking Details</h1>
 
           <!-- Ticket card -->
@@ -54,11 +65,11 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
               </div>
             </div>
 
-            <!-- Dashed cut line -->
             <div class="border-dashed border-t border-gray-600 mx-6"></div>
 
             <div class="px-6 py-5 space-y-3">
-              <!-- Booking ref -->
+
+              <!-- Booking Ref -->
               <div class="flex justify-between text-sm">
                 <span class="text-gray-400">Booking Ref</span>
                 <span class="font-mono font-medium text-gray-200 text-xs bg-gray-800 px-2 py-0.5 rounded">
@@ -69,8 +80,9 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
               <!-- Status -->
               <div class="flex justify-between text-sm items-center">
                 <span class="text-gray-400">Status</span>
-                <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium"
-                      [class]="statusClass(booking()!.status)">
+                <span
+                  class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium"
+                  [class]="statusClass(booking()!.status)">
                   {{ statusLabel(booking()!.status) }}
                 </span>
               </div>
@@ -78,18 +90,24 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
               <!-- Departure -->
               <div class="flex justify-between text-sm">
                 <span class="text-gray-400">Departure</span>
-                <span class="font-medium text-gray-200">{{ formatDateTime(booking()!.departureUtc) }}</span>
+                <span class="font-medium text-gray-200">
+                  {{ formatDateTime(booking()!.departureUtc) }}
+                </span>
               </div>
 
               <!-- Booked on -->
               <div class="flex justify-between text-sm">
                 <span class="text-gray-400">Booked on</span>
-                <span class="text-gray-500">{{ formatDateTime(booking()!.createdAtUtc) }}</span>
+                <span class="text-gray-500">
+                  {{ formatDateTime(booking()!.createdAtUtc) }}
+                </span>
               </div>
 
               <!-- Passengers -->
               <div class="border-t border-gray-700 pt-3">
-                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Passengers</p>
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+                  Passengers
+                </p>
                 <div class="space-y-2">
                   @for (p of booking()!.passengers; track p.seatNo) {
                     <div class="flex items-center justify-between text-sm bg-gray-800 rounded-xl px-4 py-2.5">
@@ -112,19 +130,27 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
                 <span class="font-semibold text-gray-200">Total Amount</span>
                 <span class="text-2xl font-bold text-indigo-500">₹{{ booking()!.totalAmount }}</span>
               </div>
+
             </div>
           </div>
 
-          <!-- Actions -->
+          <!-- ACTIONS -->
           <div class="flex gap-3 mt-4">
-            @if (booking()!.status === BookingStatus.Pending) {
+
+            <!-- PAY (only pending + NOT operator cancelled) -->
+            @if (booking()!.status === BookingStatus.Pending &&
+                 booking()!.status !== BookingStatus.OperatorCancelled) {
               <a [routerLink]="['/booking/confirm', booking()!.id]"
                  class="flex-1 text-center py-3 bg-green-600 text-white rounded-xl text-sm font-semibold
                         hover:bg-green-700 transition-colors">
                 Pay Now
               </a>
             }
-            @if (booking()!.status === BookingStatus.Pending || booking()!.status === BookingStatus.Confirmed) {
+
+            <!-- CANCEL (only pending/confirmed + NOT operator cancelled) -->
+            @if ((booking()!.status === BookingStatus.Pending ||
+                  booking()!.status === BookingStatus.Confirmed) &&
+                  booking()!.status !== BookingStatus.OperatorCancelled) {
               <button (click)="cancelBooking()"
                       [disabled]="cancelling()"
                       class="flex-1 py-3 border border-red-600 text-red-400 rounded-xl text-sm font-semibold
@@ -164,6 +190,7 @@ export class BookingDetailComponent implements OnInit {
   cancelBooking(): void {
     if (!confirm('Cancel this booking?')) return;
     this.cancelling.set(true);
+
     this.bookingService.cancelPost(this.booking()!.id).subscribe({
       next: () => {
         this.toast.success('Booking cancelled.');
@@ -182,6 +209,7 @@ export class BookingDetailComponent implements OnInit {
       [BookingStatus.Confirmed]: 'bg-green-200 text-green-900',
       [BookingStatus.Cancelled]: 'bg-red-200 text-red-900',
       [BookingStatus.Refunded]:  'bg-purple-200 text-purple-900',
+      [BookingStatus.OperatorCancelled]: 'bg-red-300 text-red-900',  // NEW
     };
     return map[status] ?? 'bg-gray-200 text-gray-900';
   }

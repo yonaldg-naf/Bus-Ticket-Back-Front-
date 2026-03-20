@@ -247,11 +247,17 @@ namespace BusTicketBooking.Migrations
                     b.Property<Guid>("BusId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("CancelReason")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime>("DepartureUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsCancelledByOperator")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");

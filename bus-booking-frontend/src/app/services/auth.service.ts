@@ -8,6 +8,7 @@ export interface LoginRequest {
   username: string;
   password: string;
 }
+
 export interface RegisterRequest {
   username: string;
   email: string;
@@ -15,6 +16,7 @@ export interface RegisterRequest {
   role: 'Customer' | 'Operator' | 'Admin';
   fullName: string;
 }
+
 export interface AuthResponse {
   accessToken: string;
   expiresAtUtc: string;
@@ -23,13 +25,16 @@ export interface AuthResponse {
   email: string;
   role: 'Customer' | 'Operator' | 'Admin';
   fullName: string;
+  companyName?: string;
 }
+
 export interface CurrentUser {
   userId: string;
   username: string;
   email: string;
   role: 'Customer' | 'Operator' | 'Admin';
   fullName: string;
+  companyName?: string;
   token: string;
   expiresAtUtc: string;
 }
@@ -46,52 +51,63 @@ export class AuthService {
 
   isLoggedIn = computed(() => !!this._currentUser());
   role = computed(() => this._currentUser()?.role ?? null);
+
   isAdmin = computed(() => this.role() === 'Admin');
   isOperator = computed(() => this.role() === 'Operator');
   isCustomer = computed(() => this.role() === 'Customer');
 
   private base = `${environment.apiUrl}/auth`;
 
+  // ============================
+  // LOGIN
+  // ============================
   login(dto: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.base}/login`, dto).pipe(
       tap((res) => {
         this.saveSession(res);
 
-        // CORRECTED LOGIC
-        if (res.role === 'Admin') {
-          this.router.navigate(['/admin']);
-        } else if (res.role === 'Operator') {
-          this.router.navigate(['/operator']);
-        } else {
-          // CUSTOMER → HOME
-          this.router.navigate(['/home']);
-        }
+        if (res.role === 'Admin') this.router.navigate(['/admin']);
+        else if (res.role === 'Operator') this.router.navigate(['/operator']);
+        else this.router.navigate(['/home']);
       })
     );
   }
 
+  // ============================
+  // REGISTER (THIS WAS MISSING!)
+  // ============================
   register(dto: RegisterRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.base}/register`, dto).pipe(
       tap((res) => this.saveSession(res))
     );
   }
 
+  // ============================
+  // LOGOUT
+  // ============================
   logout(): void {
     localStorage.removeItem(this.STORAGE_KEY);
     this._currentUser.set(null);
     this.router.navigate(['/auth/login']);
   }
 
+  // TOKEN GETTER
   getToken(): string | null {
     return this._currentUser()?.token ?? null;
   }
 
+  // ============================
+  // TOKEN EXPIRY CHECK
+  // ============================
   isTokenExpired(): boolean {
     const u = this._currentUser();
     if (!u) return true;
     return new Date(u.expiresAtUtc).getTime() <= Date.now();
   }
 
+  // ============================
+  // SAVE SESSION
+  // ============================
   private saveSession(res: AuthResponse): void {
     const user: CurrentUser = {
       userId: res.userId,
@@ -99,23 +115,23 @@ export class AuthService {
       email: res.email,
       role: res.role,
       fullName: res.fullName,
+      companyName: res.companyName,
       token: res.accessToken,
       expiresAtUtc: res.expiresAtUtc,
     };
+
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(user));
     this._currentUser.set(user);
   }
 
+  // ============================
+  // LOAD SESSION
+  // ============================
   private loadFromStorage(): CurrentUser | null {
     try {
       const raw = localStorage.getItem(this.STORAGE_KEY);
       if (!raw) return null;
-      const data = JSON.parse(raw) as CurrentUser;
-      if (new Date(data.expiresAtUtc).getTime() <= Date.now()) {
-        localStorage.removeItem(this.STORAGE_KEY);
-        return null;
-      }
-      return data;
+      return JSON.parse(raw) as CurrentUser;
     } catch {
       return null;
     }

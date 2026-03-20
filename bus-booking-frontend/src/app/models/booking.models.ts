@@ -5,6 +5,7 @@ export enum BookingStatus {
   Confirmed = 2,
   Cancelled = 3,
   Refunded = 4,
+  OperatorCancelled = 5,   // <-- NEW
 }
 
 export const BookingStatusLabels: Record<BookingStatus, string> = {
@@ -12,6 +13,7 @@ export const BookingStatusLabels: Record<BookingStatus, string> = {
   [BookingStatus.Confirmed]: 'Confirmed',
   [BookingStatus.Cancelled]: 'Cancelled',
   [BookingStatus.Refunded]: 'Refunded',
+  [BookingStatus.OperatorCancelled]: 'Cancelled by operator',   // <-- NEW
 };
 
 export enum PaymentStatus {
@@ -46,11 +48,18 @@ export interface BookingResponse {
   totalAmount: number;
   createdAtUtc: string;
   updatedAtUtc?: string;
+
+  // Schedule / Bus Info
   busCode: string;
   registrationNumber: string;
   routeCode: string;
   departureUtc: string;
-  busStatus: number; // BusStatus enum
+  busStatus: number;
+
+  // NEW: Optional fields returned by updated backend
+  isScheduleCancelledByOperator?: boolean;
+  scheduleCancelReason?: string;
+
   passengers: BookingPassengerDto[];
 }
 

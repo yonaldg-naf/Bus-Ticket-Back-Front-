@@ -18,8 +18,22 @@ namespace BusTicketBooking.Dtos.Bookings
         public string RouteCode { get; set; } = string.Empty;
         public DateTime DepartureUtc { get; set; }
 
-        // <-- added: surface current bus status to the customer
+        // <-- existing: surface current bus status to the customer
         public BusStatus BusStatus { get; set; }
+
+        // ----------------------------------------------------------
+        // NEW FIELDS for operator‑cancelled schedule visibility
+        // ----------------------------------------------------------
+
+        /// <summary>
+        /// True when the operator cancels the schedule.
+        /// </summary>
+        public bool IsScheduleCancelledByOperator { get; set; }
+
+        /// <summary>
+        /// Optional reason shown to customers ("Cancelled by operator").
+        /// </summary>
+        public string? ScheduleCancelReason { get; set; }
 
         public List<BookingPassengerDto> Passengers { get; set; } = new();
     }

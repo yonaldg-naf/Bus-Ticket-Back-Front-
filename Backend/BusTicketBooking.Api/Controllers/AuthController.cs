@@ -1,10 +1,12 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
+﻿using BusTicketBooking.Contexts;
 using BusTicketBooking.Dtos.Auth;
 using BusTicketBooking.Interfaces;
 using BusTicketBooking.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace BusTicketBooking.Controllers
 {
@@ -15,18 +17,19 @@ namespace BusTicketBooking.Controllers
         private readonly IUserService _users;
         private readonly IPasswordService _passwords;
         private readonly ITokenService _tokens;
+        private readonly AppDbContext _db;
 
-        public AuthController(IUserService users, IPasswordService passwords, ITokenService tokens)
+        public AuthController(IUserService users, IPasswordService passwords, ITokenService tokens, AppDbContext db)
         {
             _users = users;
             _passwords = passwords;
             _tokens = tokens;
+            _db = db;
         }
 
-        /// <summary>Register a new user (default role: Customer).</summary>
+        // ---------------------- REGISTER ----------------------
         [AllowAnonymous]
         [HttpPost("register")]
-        [ProducesResponseType(typeof(AuthResponseDto), 200)]
         public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterRequestDto dto, CancellationToken ct)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -35,23 +38,25 @@ namespace BusTicketBooking.Controllers
             {
                 Username = dto.Username.Trim(),
                 Email = dto.Email.Trim(),
-                FullName = string.IsNullOrWhiteSpace(dto.FullName) ? dto.Username.Trim() : dto.FullName.Trim(),
-                Role = string.IsNullOrWhiteSpace(dto.Role) ? Roles.Customer : dto.Role.Trim()
+                FullName = dto.FullName.Trim(),
+                Role = dto.Role.Trim()
             };
 
             try
             {
                 var created = await _users.CreateAsync(user, dto.Password);
-                var (token, exp) = _tokens.GenerateAccessToken(created);
+                var (token, expires) = _tokens.GenerateAccessToken(created);
+
                 return Ok(new AuthResponseDto
                 {
                     AccessToken = token,
-                    //ExpiresAtUtc = exp,
-                    //UserId = created.Id.ToString(),
+                    ExpiresAtUtc = expires,
+                    UserId = created.Id.ToString(),
                     Username = created.Username,
-                    //Email = created.Email,
-                    //Role = created.Role,
-                    //FullName = created.FullName
+                    Email = created.Email,
+                    Role = created.Role,
+                    FullName = created.FullName,
+                    CompanyName = null
                 });
             }
             catch (System.Exception ex)
@@ -60,10 +65,9 @@ namespace BusTicketBooking.Controllers
             }
         }
 
-        /// <summary>Login with username + password to receive JWT access token.</summary>
+        // ---------------------- LOGIN ----------------------
         [AllowAnonymous]
         [HttpPost("login")]
-        [ProducesResponseType(typeof(AuthResponseDto), 200)]
         public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginRequestDto dto, CancellationToken ct)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -72,16 +76,30 @@ namespace BusTicketBooking.Controllers
             if (user is null) return Unauthorized("Invalid username or password.");
             if (!_passwords.Verify(user, dto.Password)) return Unauthorized("Invalid username or password.");
 
-            var (token, exp) = _tokens.GenerateAccessToken(user);
+            var (token, expires) = _tokens.GenerateAccessToken(user);
+
+            // LOAD OPERATOR PROFILE IF OPERATOR
+            string? companyName = null;
+
+            if (user.Role == Roles.Operator)
+            {
+                var op = await _db.BusOperators
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(o => o.UserId == user.Id, ct);
+
+                companyName = op?.CompanyName;
+            }
+
             return Ok(new AuthResponseDto
             {
                 AccessToken = token,
-                //ExpiresAtUtc = exp,
-                //UserId = user.Id.ToString(),
+                ExpiresAtUtc = expires,
+                UserId = user.Id.ToString(),
                 Username = user.Username,
-                //Email = user.Email,
-                Role = user.Role
-                //FullName = user.FullName
+                Email = user.Email,
+                Role = user.Role,
+                FullName = user.FullName,
+                CompanyName = companyName
             });
         }
     }

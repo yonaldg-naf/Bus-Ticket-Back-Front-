@@ -4,7 +4,10 @@
     {
         Pending = 1,
         Confirmed = 2,
-        Cancelled = 3,
-        Refunded = 4
+        Cancelled = 3,          // Cancelled by customer
+        Refunded = 4,
+
+        // NEW — Used when operator cancels the schedule
+        OperatorCancelled = 5
     }
 }

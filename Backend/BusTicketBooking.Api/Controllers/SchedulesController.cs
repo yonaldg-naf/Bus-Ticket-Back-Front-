@@ -37,6 +37,7 @@ namespace BusTicketBooking.Controllers
         public async Task<ActionResult<IEnumerable<ScheduleResponseDto>>> GetAll(CancellationToken ct)
             => Ok(await _schedules.GetAllAsync(ct));
 
+        ///
         [AllowAnonymous]
         [HttpGet("{id:guid}")]
         [ProducesResponseType(typeof(ScheduleResponseDto), 200)]

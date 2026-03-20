@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BusTicketBooking.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260223110601_Init")]
-    partial class Init
+    [Migration("20260320041633_RemoveCancelFields")]
+    partial class RemoveCancelFields
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -143,6 +143,9 @@ namespace BusTicketBooking.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
                     b.Property<int>("TotalSeats")
                         .HasColumnType("int");
 
@@ -247,11 +250,17 @@ namespace BusTicketBooking.Migrations
                     b.Property<Guid>("BusId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("CancelReason")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime>("DepartureUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsCancelledByOperator")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");

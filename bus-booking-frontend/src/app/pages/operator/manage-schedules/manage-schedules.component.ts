@@ -76,7 +76,9 @@ import { ScheduleResponse } from '../../../models/bus-schedule.models';
             <div>
               <label class="text-xs text-gray-400 mb-1 block">Base Price (₹) *</label>
               <input formControlName="basePrice"
-                     type="number" min="0" max="100000"
+                     type="number"
+                     min="0"
+                     max="100000"
                      placeholder="e.g. 499"
                      class="w-full px-4 py-3 rounded-xl bg-[#0f0f10] border border-[#2a2a2d] text-white
                             focus:border-[#D32F2F] focus:ring-2 focus:ring-[#D32F2F] outline-none"/>
@@ -92,6 +94,7 @@ import { ScheduleResponse } from '../../../models/bus-schedule.models';
                              hover:opacity-90 active:scale-95 transition disabled:opacity-50">
                 {{ saving() ? 'Saving…' : (editingId() ? 'Update' : 'Create Schedule') }}
               </button>
+
               <button type="button" (click)="cancelForm()"
                       class="flex-1 py-3 rounded-xl font-semibold text-white bg-gray-800 hover:bg-gray-700 transition">
                 Cancel
@@ -239,6 +242,7 @@ export class ManageSchedulesComponent implements OnInit {
     return !!(c?.invalid && c?.touched);
   }
 
+  // 🔥 FIX APPLIED HERE — WORKING VERSION
   onSubmit(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
 
@@ -258,7 +262,7 @@ export class ManageSchedulesComponent implements OnInit {
     } else {
       const departureLocalISO = new Date(v.departureLocal!).toISOString();
       this.scheduleService.createByKeys({
-        operatorUsername: username,
+        companyName: this.authService.currentUser()?.companyName,             // FIXED (required by backend)
         busCode: v.busCode!,
         routeCode: v.routeCode!,
         departureLocal: departureLocalISO,

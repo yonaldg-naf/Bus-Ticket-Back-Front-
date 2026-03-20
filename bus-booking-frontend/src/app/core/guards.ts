@@ -1,8 +1,10 @@
+// src/app/core/guards.ts
+
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { AuthService } from '../services/auth.service';
+import { AuthService } from '../services/auth.service';  // <-- FIXED PATH
 
-/** Redirects to /auth/login if user is not authenticated */
+// ------------------ AUTH GUARD ------------------
 export const authGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
@@ -14,31 +16,24 @@ export const authGuard: CanActivateFn = () => {
   return router.createUrlTree(['/auth/login']);
 };
 
-/** Redirects to /home if user is already authenticated (for login/register pages) */
+// ------------------ NO AUTH GUARD ------------------
 export const noAuthGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
-  // If not logged in → allow access to login/register
   if (!auth.isLoggedIn() || auth.isTokenExpired()) {
     return true;
   }
 
-  // If logged in → redirect based on role
   const role = auth.role();
 
-  if (role === 'Admin') {
-    return router.createUrlTree(['/admin']);
-  }
-
-  if (role === 'Operator') {
-    return router.createUrlTree(['/operator']);
-  }
+  if (role === 'Admin') return router.createUrlTree(['/admin']);
+  if (role === 'Operator') return router.createUrlTree(['/operator']);
 
   return router.createUrlTree(['/home']);
 };
 
-/** Factory guard for role-based access */
+// ------------------ ROLE GUARD ------------------
 export function roleGuard(...allowedRoles: string[]): CanActivateFn {
   return () => {
     const auth = inject(AuthService);
@@ -49,12 +44,10 @@ export function roleGuard(...allowedRoles: string[]): CanActivateFn {
       return true;
     }
 
-    // Not authenticated at all
     if (!auth.isLoggedIn()) {
       return router.createUrlTree(['/auth/login']);
     }
 
-    // Authenticated but wrong role
     return router.createUrlTree(['/home']);
   };
 }

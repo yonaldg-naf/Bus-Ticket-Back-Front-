@@ -24,7 +24,7 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
           </div>
         }
 
-        <!-- CONFIRMED SUCCESS SCREEN -->
+        <!-- SUCCESS CONFIRMATION -->
         @if (!loading() && booking() && booking()!.status === BookingStatus.Confirmed) {
           <div class="text-center mb-10">
             <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -38,8 +38,18 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
           </div>
         }
 
-        <!-- MAIN BOOKING DETAILS -->
+        <!-- MAIN CONTENT -->
         @if (!loading() && booking()) {
+
+          <!-- OPERATOR CANCEL BANNER -->
+          @if (booking()!.status === BookingStatus.OperatorCancelled) {
+            <div class="p-4 bg-red-900/40 border border-red-700 text-red-200 rounded-xl mb-3">
+              This trip was cancelled by the operator.
+              <div *ngIf="booking()!.scheduleCancelReason" class="text-sm text-red-300 mt-1">
+                Reason: {{ booking()!.scheduleCancelReason }}
+              </div>
+            </div>
+          }
 
           <!-- STATUS BADGE -->
           <div class="mb-4">
@@ -48,7 +58,7 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
             </span>
           </div>
 
-          <!-- BOOKING INFO -->
+          <!-- BOOKING CARD -->
           <div class="card bg-[#1E1E1E] border border-gray-700">
             <div class="card-body">
               <h2 class="text-xl font-bold mb-3 text-white">Booking Details</h2>
@@ -90,18 +100,20 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
                 <span class="text-2xl font-bold text-white">₹{{ booking()!.totalAmount }}</span>
               </div>
 
-              <!-- PAYMENT + CANCEL (if Pending) -->
+              <!-- ACTION BUTTONS -->
               <div class="flex flex-col sm:flex-row gap-3 mt-6">
-                
-                <!-- PAY NOW -->
-                @if (booking()!.status === BookingStatus.Pending) {
+
+                <!-- PAY BUTTON (DISABLED IF operator cancelled) -->
+                @if (booking()!.status === BookingStatus.Pending &&
+                     booking()!.status !== BookingStatus.OperatorCancelled) {
                   <button (click)="processPayment()"
                           [disabled]="payLoading()"
                           class="btn btn-primary flex-1">
                     @if (payLoading()) {
                       <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        <path class="opacity-75" fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                       </svg>
                       Processing...
                     } @else {
@@ -110,8 +122,10 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
                   </button>
                 }
 
-                <!-- CANCEL BOOKING -->
-                @if (booking()!.status === BookingStatus.Pending || booking()!.status === BookingStatus.Confirmed) {
+                <!-- CANCEL BUTTON (NOT ALLOWED IF operator cancelled) -->
+                @if ((booking()!.status === BookingStatus.Pending ||
+                      booking()!.status === BookingStatus.Confirmed) &&
+                      booking()!.status !== BookingStatus.OperatorCancelled) {
                   <button (click)="cancelBooking()"
                           class="btn btn-ghost flex-1 border border-red-600 text-red-500 hover:bg-red-700/10">
                     Cancel Booking
@@ -121,7 +135,7 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
             </div>
           </div>
 
-          <!-- FOOTER ACTIONS -->
+          <!-- FOOTER -->
           <div class="flex gap-3 mt-6">
             <a routerLink="/my-bookings" class="btn btn-secondary flex-1 h-[48px]">My Bookings</a>
             <a routerLink="/home" class="btn btn-primary flex-1 h-[48px]">Book Another</a>
@@ -159,9 +173,9 @@ export class BookingConfirmComponent implements OnInit {
     switch (status) {
       case BookingStatus.Confirmed: return 'badge-success';
       case BookingStatus.Cancelled: return 'badge-error';
-      case BookingStatus.Refunded:  return 'badge-neutral';
-      case BookingStatus.Pending:
-      default:                      return 'badge-accent';
+      case BookingStatus.OperatorCancelled: return 'badge-error'; // NEW
+      case BookingStatus.Refunded: return 'badge-neutral';
+      default: return 'badge-accent';
     }
   }
 
@@ -177,13 +191,12 @@ export class BookingConfirmComponent implements OnInit {
   }
 
   processPayment(): void {
-    const b = this.booking();
-    if (!b) return;
+    if (!this.booking()) return;
 
     this.payLoading.set(true);
 
-    this.bookingService.pay(b.id, {
-      amount: b.totalAmount,
+    this.bookingService.pay(this.booking()!.id, {
+      amount: this.booking()!.totalAmount,
       providerReference: `PAY-${Date.now()}`
     }).subscribe({
       next: (updated) => {
@@ -202,8 +215,7 @@ export class BookingConfirmComponent implements OnInit {
     if (!this.booking()) return;
     if (!confirm('Cancel this booking?')) return;
 
-    const id = this.booking()!.id;
-    this.bookingService.cancelPost(id).subscribe({
+    this.bookingService.cancelPost(this.booking()!.id).subscribe({
       next: () => {
         this.toast.success('Booking cancelled.');
         this.router.navigate(['/my-bookings']);

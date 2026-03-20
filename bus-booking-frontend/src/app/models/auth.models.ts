@@ -31,4 +31,5 @@ export interface CurrentUser {
   fullName: string;
   token: string;
   expiresAtUtc: string;
+  companyName?: string;
 }
