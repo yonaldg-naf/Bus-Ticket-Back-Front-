@@ -17,13 +17,15 @@ export interface RegisterRequest {
   fullName: string;
 }
 
+export type UserRole = 'Customer' | 'Operator' | 'Admin' | 'PendingOperator';
+
 export interface AuthResponse {
   accessToken: string;
   expiresAtUtc: string;
   userId: string;
   username: string;
   email: string;
-  role: 'Customer' | 'Operator' | 'Admin';
+  role: UserRole;
   fullName: string;
   companyName?: string;
 }
@@ -32,7 +34,7 @@ export interface CurrentUser {
   userId: string;
   username: string;
   email: string;
-  role: 'Customer' | 'Operator' | 'Admin';
+  role: UserRole;
   fullName: string;
   companyName?: string;
   token: string;

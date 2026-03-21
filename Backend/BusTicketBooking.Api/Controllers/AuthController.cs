@@ -34,12 +34,18 @@ namespace BusTicketBooking.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
+            // If registering as Operator, set to PendingOperator until admin approves
+            var requestedRole = dto.Role.Trim();
+            var assignedRole = requestedRole == Roles.Operator
+                                    ? Roles.PendingOperator
+                                    : requestedRole;
+
             var user = new User
             {
                 Username = dto.Username.Trim(),
                 Email = dto.Email.Trim(),
                 FullName = dto.FullName.Trim(),
-                Role = dto.Role.Trim()
+                Role = assignedRole
             };
 
             try

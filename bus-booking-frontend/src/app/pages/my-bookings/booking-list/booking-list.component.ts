@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { BookingService } from '../../../services/booking.service';
@@ -10,192 +10,169 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <section class="min-h-screen w-full bg-[#121212] text-white py-10 px-4 flex justify-center">
-      <div class="w-full max-w-5xl space-y-6">
+  <div class="min-h-screen bg-gray-50">
 
-        <!-- Header -->
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <h1 class="text-2xl font-extrabold tracking-tight">My Bookings</h1>
-            <p class="text-gray-400">Your recent and upcoming trips</p>
-          </div>
-          <a routerLink="/home" class="btn btn-primary h-9 px-3">+ Book a ticket</a>
+    <!-- Header -->
+    <div class="bg-white border-b border-gray-200 shadow-sm">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between">
+        <div>
+          <h1 class="text-xl font-bold text-gray-900">My Bookings</h1>
+          <p class="text-sm text-gray-500 mt-0.5">Your upcoming and past trips</p>
         </div>
+        <a routerLink="/home" class="btn-primary">+ New Booking</a>
+      </div>
+    </div>
 
-        <!-- Loading Skeleton -->
-        @if (loading()) {
-          <div class="space-y-3">
-            @for (_ of [1,2,3]; track $index) {
-              <div class="card bg-gray-800 border border-gray-700 animate-pulse">
-                <div class="card-body">
-                  <div class="h-4 bg-gray-600 rounded w-48 mb-2"></div>
-                  <div class="h-3 bg-gray-600 rounded w-32"></div>
-                </div>
-              </div>
-            }
-          </div>
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+
+      <!-- Filter tabs -->
+      <div class="flex gap-1 bg-white border border-gray-200 rounded-xl p-1 mb-6 w-fit">
+        @for (tab of tabs; track tab.id) {
+          <button (click)="activeFilter.set(tab.id)"
+            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            [class]="activeFilter() === tab.id ? 'bg-red-600 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'">
+            {{ tab.label }}
+          </button>
         }
+      </div>
 
-        <!-- Empty state -->
-        @if (!loading() && bookings().length === 0) {
-          <div class="text-center py-16">
-            <div class="w-16 h-16 bg-gray-800 border border-gray-700 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">🎫</div>
-            <h3 class="font-semibold text-lg">No bookings yet</h3>
-            <p class="text-gray-400 mt-1">Search for buses and book your first ticket.</p>
-            <a routerLink="/home" class="btn btn-primary mt-4">Find buses</a>
-          </div>
-        }
-
-        <!-- Booking list -->
-        <div class="space-y-3">
-          @for (b of bookings(); track b.id) {
-            <div class="card bg-gray-800 border border-gray-700 hover:bg-gray-700 transition">
-              <div class="card-body">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-
-                  <!-- Booking info -->
-                  <div class="min-w-0">
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <span class="font-bold text-lg text-white">{{ b.busCode }}</span>
-
-                      <!-- BADGE with operator-cancelled support -->
-                      <span class="badge" [ngClass]="badgeClass(b.status)">
-                        {{ statusLabel(b.status) }}
-                      </span>
-
-                      <span class="text-gray-400">·</span>
-                      <span class="text-sm text-gray-300">{{ b.routeCode }}</span>
-                    </div>
-
-                    <p class="text-sm text-gray-400 mt-1 flex items-center gap-1.5">
-                      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                      </svg>
-                      {{ formatDateTime(b.departureUtc) }}
-                    </p>
-
-                    <div class="mt-2 flex items-center gap-3 text-xs text-gray-400">
-                      <span>{{ b.passengers.length }} passenger(s)</span>
-                      <span>·</span>
-                      <span>Seats: {{ b.passengers.map(p => p.seatNo).join(', ') }}</span>
-                      <span>·</span>
-                      <span class="font-semibold text-gray-200">₹{{ b.totalAmount }}</span>
-                    </div>
-                  </div>
-
-                  <!-- Actions -->
-                  <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-
-                    <!-- VIEW DETAILS -->
-                    <a [routerLink]="['/my-bookings', b.id]" class="btn btn-secondary h-9">
-                      View details
-                    </a>
-
-                    <!-- PAY NOW (Only if pending, NOT operator cancelled) -->
-                    @if (b.status === BookingStatus.Pending &&
-                         b.status !== BookingStatus.OperatorCancelled) {
-                      <a [routerLink]="['/booking/confirm', b.id]"
-                         class="btn btn-success h-9">
-                        Pay now
-                      </a>
-                    }
-
-                    <!-- CANCEL BOOKING (Not allowed if OperatorCancelled) -->
-                    @if ((b.status === BookingStatus.Pending || b.status === BookingStatus.Confirmed) &&
-                          b.status !== BookingStatus.OperatorCancelled) {
-                      <button
-                        (click)="cancelBooking(b.id)"
-                        [disabled]="cancellingId() === b.id"
-                        class="btn btn-ghost h-9 border border-red-600 text-red-400 
-                               hover:bg-red-700 hover:text-white disabled:opacity-50">
-                        @if (cancellingId() === b.id) { Cancelling... } @else { Cancel }
-                      </button>
-                    }
-
-                  </div>
-
+      <!-- Loading -->
+      @if (loading()) {
+        <div class="space-y-4">
+          @for (_ of [1,2,3]; track $index) {
+            <div class="card p-5 animate-pulse">
+              <div class="flex justify-between items-start">
+                <div class="space-y-2">
+                  <div class="h-5 skeleton w-36 rounded"></div>
+                  <div class="h-4 skeleton w-52 rounded"></div>
+                  <div class="h-4 skeleton w-40 rounded"></div>
                 </div>
+                <div class="h-9 skeleton w-20 rounded-lg"></div>
               </div>
             </div>
           }
         </div>
+      }
 
+      <!-- Empty state -->
+      @if (!loading() && filtered().length === 0) {
+        <div class="flex flex-col items-center justify-center py-20 text-center">
+          <div class="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center text-4xl mb-4">🎫</div>
+          <h3 class="text-lg font-bold text-gray-800">No bookings found</h3>
+          <p class="text-gray-500 mt-1.5 text-sm">
+            {{ activeFilter() === 'all' ? 'You have not made any bookings yet.' : 'No ' + activeFilter() + ' bookings.' }}
+          </p>
+          <a routerLink="/home" class="btn-primary mt-6">Find Buses</a>
+        </div>
+      }
+
+      <!-- Booking cards -->
+      <div class="space-y-4">
+        @for (b of filtered(); track b.id) {
+          <div class="card hover:shadow-md transition-all group">
+            <div class="p-5">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+
+                <div class="flex items-start gap-4 flex-1 min-w-0">
+                  <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl"
+                    [class]="statusBg(b.status)">🎫</div>
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap mb-1">
+                      <span class="font-bold text-gray-900 text-base">{{ b.busCode }}</span>
+                      <span class="badge" [class]="badgeClass(b.status)">{{ statusLabel(b.status) }}</span>
+                      <span class="text-sm text-gray-500 font-mono">{{ b.routeCode }}</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-sm text-gray-600 mb-1">
+                      <svg class="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      {{ formatDateTime(b.departureUtc) }}
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-gray-400 mt-1 flex-wrap">
+                      <span>{{ b.passengers.length }} passenger{{ b.passengers.length !== 1 ? 's' : '' }}</span>
+                      <span>·</span>
+                      <span class="font-semibold text-gray-700">₹{{ b.totalAmount | number:'1.0-0' }}</span>
+                      <span>·</span>
+                      <span>Seats: {{ b.passengers.map(p => p.seatNo).join(', ') }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <a [routerLink]="['/my-bookings', b.id]"
+                  class="btn-secondary self-start sm:self-center flex-shrink-0
+                         group-hover:border-red-300 group-hover:text-red-600 transition-colors">
+                  View Details →
+                </a>
+              </div>
+            </div>
+          </div>
+        }
       </div>
-    </section>
+    </div>
+  </div>
   `,
 })
 export class BookingListComponent implements OnInit {
-  private bookingService = inject(BookingService);
-  private toast = inject(ToastService);
+  private bookingSvc = inject(BookingService);
+  private toast      = inject(ToastService);
 
-  BookingStatus = BookingStatus;
+  loading      = signal(true);
+  bookings     = signal<BookingResponse[]>([]);
+  activeFilter = signal<string>('all');
 
-  loading = signal(true);
-  cancellingId = signal<string | null>(null);
-  bookings = signal<BookingResponse[]>([]);
+  tabs = [
+    { id: 'all',       label: 'All'       },
+    { id: 'upcoming',  label: 'Upcoming'  },
+    { id: 'completed', label: 'Completed' },
+    { id: 'cancelled', label: 'Cancelled' },
+  ];
 
-  ngOnInit(): void {
-    this.loadBookings();
-  }
+  filtered = computed(() => {
+    const all = this.bookings();
+    const f   = this.activeFilter();
+    if (f === 'all')       return all;
+    if (f === 'upcoming')  return all.filter(b => b.status === BookingStatus.Pending || b.status === BookingStatus.Confirmed);
+    if (f === 'completed') return all.filter(b => b.status === BookingStatus.Refunded);
+    if (f === 'cancelled') return all.filter(b => b.status === BookingStatus.Cancelled || b.status === BookingStatus.OperatorCancelled);
+    return all;
+  });
 
-  loadBookings(): void {
-    this.loading.set(true);
-
-    this.bookingService.getMyBookings().subscribe({
-      next: (data) => {
-        this.bookings.set((data ?? []).sort(
-          (a, b) => new Date(b.createdAtUtc).getTime() - new Date(a.createdAtUtc).getTime()
-        ));
-        this.loading.set(false);
-      },
-      error: () => {
-        this.loading.set(false);
-        this.toast.error('Failed to load bookings.');
-      },
+  ngOnInit() {
+    this.bookingSvc.getMyBookings().subscribe({
+      next:  d  => { this.bookings.set(d); this.loading.set(false); },
+      error: () => { this.loading.set(false); this.toast.error('Failed to load bookings.'); },
     });
   }
 
-  cancelBooking(id: string): void {
-    if (!confirm('Are you sure you want to cancel this booking?')) return;
-
-    this.cancellingId.set(id);
-
-    this.bookingService.cancelPost(id).subscribe({
-      next: () => {
-        this.toast.success('Booking cancelled.');
-        this.loadBookings();
-        this.cancellingId.set(null);
-      },
-      error: (err) => {
-        this.cancellingId.set(null);
-        this.toast.error(err.error?.message ?? 'Cancellation failed.');
-      },
+  formatDateTime(iso: string): string {
+    return new Date(iso).toLocaleString('en-IN', {
+      weekday: 'short', day: 'numeric', month: 'short',
+      year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true,
     });
   }
 
-  badgeClass(status: BookingStatus): string {
-    switch (status) {
-      case BookingStatus.Confirmed: return 'badge badge-success';
-      case BookingStatus.Cancelled: return 'badge badge-error';
-      case BookingStatus.OperatorCancelled: return 'badge badge-error';  // NEW
-      case BookingStatus.Refunded: return 'badge badge-neutral';
-      case BookingStatus.Pending:
-      default: return 'badge badge-accent';
-    }
+  statusLabel(s: BookingStatus): string { return BookingStatusLabels[s] ?? String(s); }
+
+  badgeClass(s: BookingStatus): string {
+    const map: Record<number, string> = {
+      [BookingStatus.Pending]:           'badge badge-warning',
+      [BookingStatus.Confirmed]:         'badge badge-success',
+      [BookingStatus.Refunded]:          'badge badge-gray',
+      [BookingStatus.Cancelled]:         'badge badge-error',
+      [BookingStatus.OperatorCancelled]: 'badge badge-error',
+    };
+    return map[s] ?? 'badge badge-gray';
   }
 
-  statusLabel(status: BookingStatus): string {
-    return BookingStatusLabels[status] ?? 'Unknown';
-  }
-
-  formatDateTime(utc: string): string {
-    return new Date(utc).toLocaleString('en-IN', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+  statusBg(s: BookingStatus): string {
+    const map: Record<number, string> = {
+      [BookingStatus.Pending]:           'bg-yellow-50',
+      [BookingStatus.Confirmed]:         'bg-green-50',
+      [BookingStatus.Refunded]:          'bg-gray-100',
+      [BookingStatus.Cancelled]:         'bg-red-50',
+      [BookingStatus.OperatorCancelled]: 'bg-red-50',
+    };
+    return map[s] ?? 'bg-gray-100';
   }
 }

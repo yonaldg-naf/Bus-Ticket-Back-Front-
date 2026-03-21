@@ -17,6 +17,7 @@ namespace BusTicketBooking.Contexts
         public DbSet<Booking> Bookings => Set<Booking>();
         public DbSet<BookingPassenger> BookingPassengers => Set<BookingPassenger>();
         public DbSet<Payment> Payments => Set<Payment>();
+        public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -152,6 +153,25 @@ namespace BusTicketBooking.Contexts
             {
                 e.Property(p => p.Amount).HasPrecision(10, 2);
                 e.Property(p => p.ProviderReference).HasMaxLength(100);
+            });
+
+            // AuditLog
+            modelBuilder.Entity<AuditLog>(e =>
+            {
+                e.HasKey(l => l.Id);
+                e.Property(l => l.LogType).HasMaxLength(10).IsRequired();
+                e.Property(l => l.Action).HasMaxLength(50).IsRequired();
+                e.Property(l => l.Description).HasMaxLength(500).IsRequired();
+                e.Property(l => l.Detail).HasMaxLength(4000);
+                e.Property(l => l.Username).HasMaxLength(100);
+                e.Property(l => l.UserRole).HasMaxLength(30);
+                e.Property(l => l.EntityType).HasMaxLength(50);
+                e.Property(l => l.EntityId).HasMaxLength(100);
+                e.Property(l => l.HttpMethod).HasMaxLength(10);
+                e.Property(l => l.Endpoint).HasMaxLength(250);
+                e.HasIndex(l => l.CreatedAtUtc);
+                e.HasIndex(l => l.LogType);
+                e.HasIndex(l => l.UserId);
             });
 
             base.OnModelCreating(modelBuilder);

@@ -1,221 +1,182 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
+import { RouterLink, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../services/auth.service';
 import { ToastService } from '../../../services/toast.service';
-
-function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
-  const pass = control.get('password');
-  const confirm = control.get('confirmPassword');
-  return pass && confirm && pass.value !== confirm.value ? { passwordMismatch: true } : null;
-}
 
 @Component({
   selector: 'app-register',
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink, CommonModule],
   template: `
-  <div class="min-h-screen flex items-center justify-center bg-[#0f0f10] px-4 py-12 relative overflow-hidden">
+  <div class="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
+    <div class="w-full max-w-lg">
 
-    <!-- Background glow -->
-    <div class="absolute w-[500px] h-[500px] bg-[#D32F2F]/20 blur-[120px] rounded-full -top-20 -left-20"></div>
-    <div class="absolute w-[400px] h-[400px] bg-[#ff5252]/10 blur-[100px] rounded-full bottom-0 right-0"></div>
-
-    <div class="w-full max-w-md">
-
-      <!-- Header -->
+      <!-- Logo -->
       <div class="text-center mb-8">
-        <h1 class="text-3xl font-bold text-white">Create account</h1>
-        <p class="text-gray-400 text-sm mt-2">Join BusGo and start booking</p>
+        <a routerLink="/home" class="inline-flex items-center gap-2.5">
+          <div class="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center shadow-sm">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm9 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM4 11V9l1-4h14l1 4v2H4z"/>
+            </svg>
+          </div>
+          <span class="text-xl font-bold text-gray-900">SwiftRoute</span>
+        </a>
+        <h1 class="text-2xl font-bold text-gray-900 mt-4">Create your account</h1>
+        <p class="text-gray-500 text-sm mt-1">Join millions of travelers booking smarter</p>
       </div>
 
-      <!-- Card -->
-      <div class="bg-[#161618] border border-[#2a2a2d] shadow-2xl rounded-2xl p-8">
-
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-7">
         <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-5">
 
-          <!-- Full Name -->
-          <div>
-            <label class="text-xs text-gray-400">Full Name</label>
-            <input formControlName="fullName" type="text" placeholder="John Doe"
-              class="w-full mt-1 px-4 py-3 rounded-lg bg-[#0f0f10] border border-[#2a2a2d]
-                     text-white placeholder-gray-500
-                     focus:outline-none focus:ring-2 focus:ring-[#D32F2F]" />
-            @if (isInvalid('fullName')) {
-              <p class="text-xs text-red-500 mt-1">Full name is required</p>
-            }
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="form-label">Full Name</label>
+              <input formControlName="fullName" type="text" placeholder="John Doe" class="form-input"/>
+              @if (isInvalid('fullName')) {
+                <p class="form-error"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>Required</p>
+              }
+            </div>
+            <div>
+              <label class="form-label">Username</label>
+              <input formControlName="username" type="text" placeholder="johndoe" class="form-input"/>
+              @if (isInvalid('username')) {
+                <p class="form-error"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>Required</p>
+              }
+            </div>
           </div>
 
-          <!-- Email -->
           <div>
-            <label class="text-xs text-gray-400">Email</label>
-            <input formControlName="email" type="email" placeholder="you@example.com"
-              class="w-full mt-1 px-4 py-3 rounded-lg bg-[#0f0f10] border border-[#2a2a2d]
-                     text-white placeholder-gray-500
-                     focus:outline-none focus:ring-2 focus:ring-[#D32F2F]" />
+            <label class="form-label">Email Address</label>
+            <input formControlName="email" type="email" placeholder="john@example.com" class="form-input"/>
             @if (isInvalid('email')) {
-              <p class="text-xs text-red-500 mt-1">Valid email required</p>
+              <p class="form-error"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>Valid email required</p>
             }
           </div>
 
-          <!-- Username -->
           <div>
-            <label class="text-xs text-gray-400">Username</label>
-            <input formControlName="username" type="text" placeholder="johndoe"
-              class="w-full mt-1 px-4 py-3 rounded-lg bg-[#0f0f10] border border-[#2a2a2d]
-                     text-white placeholder-gray-500
-                     focus:outline-none focus:ring-2 focus:ring-[#D32F2F]" />
-            @if (isInvalid('username')) {
-              <p class="text-xs text-red-500 mt-1">Username is required</p>
+            <label class="form-label">Password</label>
+            <div class="relative">
+              <input formControlName="password" [type]="showPwd() ? 'text' : 'password'" placeholder="Min. 6 characters" class="form-input pr-12"/>
+              <button type="button" (click)="showPwd.update(v=>!v)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1">
+                @if (showPwd()) {
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
+                } @else {
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                }
+              </button>
+            </div>
+            @if (isInvalid('password')) {
+              <p class="form-error"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>Min. 6 characters</p>
             }
           </div>
 
-          <!-- Role -->
           <div>
-            <label class="text-xs text-gray-400">Account Type</label>
-
-            <div class="grid grid-cols-2 gap-3 mt-2">
+            <label class="form-label">Account Type</label>
+            <div class="grid grid-cols-2 gap-3">
               @for (r of roles; track r.value) {
-                <label class="cursor-pointer">
-                  <input type="radio" formControlName="role" [value]="r.value" class="hidden" />
-
-                  <div class="px-4 py-3 rounded-lg text-sm flex items-center gap-2 justify-center
-                              border transition"
-                       [class]="form.get('role')?.value === r.value
-                         ? 'bg-[#D32F2F]/20 border-[#D32F2F] text-white'
-                         : 'bg-[#0f0f10] border-[#2a2a2d] text-gray-400 hover:border-gray-500'">
-
-                    <span>{{ r.icon }}</span>
-                    <span>{{ r.label }}</span>
+                <label class="flex items-center gap-3 p-3.5 border-2 rounded-xl cursor-pointer transition-all"
+                  [class]="form.get('role')?.value === r.value ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:border-gray-300'">
+                  <input type="radio" formControlName="role" [value]="r.value" class="sr-only"/>
+                  <span class="text-xl">{{ r.icon }}</span>
+                  <div>
+                    <p class="text-sm font-semibold text-gray-800">{{ r.label }}</p>
+                    <p class="text-xs text-gray-500">{{ r.desc }}</p>
                   </div>
                 </label>
               }
             </div>
           </div>
 
-          <!-- Password -->
-          <div>
-            <label class="text-xs text-gray-400">Password</label>
-            <input formControlName="password" type="password" placeholder="Min 6 characters"
-              class="w-full mt-1 px-4 py-3 rounded-lg bg-[#0f0f10] border border-[#2a2a2d]
-                     text-white placeholder-gray-500
-                     focus:outline-none focus:ring-2 focus:ring-[#D32F2F]" />
-            @if (isInvalid('password')) {
-              <p class="text-xs text-red-500 mt-1">Minimum 6 characters</p>
-            }
-          </div>
-
-          <!-- Confirm Password -->
-          <div>
-            <label class="text-xs text-gray-400">Confirm Password</label>
-            <input formControlName="confirmPassword" type="password" placeholder="Repeat password"
-              class="w-full mt-1 px-4 py-3 rounded-lg bg-[#0f0f10] border border-[#2a2a2d]
-                     text-white placeholder-gray-500
-                     focus:outline-none focus:ring-2 focus:ring-[#D32F2F]" />
-
-            @if (form.errors?.['passwordMismatch'] && form.get('confirmPassword')?.touched) {
-              <p class="text-xs text-red-500 mt-1">Passwords do not match</p>
-            }
-          </div>
-
-          <!-- Error -->
-          @if (errorMsg()) {
-            <div class="bg-red-900/20 border border-red-700 text-red-400 text-sm p-3 rounded-lg">
-              {{ errorMsg() }}
+          <!-- Operator pending notice -->
+          @if (form.get('role')?.value === 'Operator') {
+            <div class="p-3 bg-orange-50 border border-orange-200 rounded-xl flex items-start gap-2.5">
+              <span class="text-orange-500 text-base flex-shrink-0">ℹ️</span>
+              <p class="text-xs text-orange-700">
+                Operator accounts require <strong>admin approval</strong> before you can add buses or schedules.
+                You'll be registered as a <strong>Pending Operator</strong> and can login, but full access is granted once approved.
+              </p>
             </div>
           }
 
-          <!-- Button -->
-          <button type="submit" [disabled]="loading()"
-            class="w-full py-3 rounded-lg font-semibold text-white
-                   bg-gradient-to-r from-[#D32F2F] to-[#7f1d1d]
-                   hover:opacity-90 active:scale-95
-                   transition shadow-lg disabled:opacity-50">
+          @if (errorMsg()) {
+            <div class="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+              <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+              </svg>
+              <p class="text-sm text-red-700">{{ errorMsg() }}</p>
+            </div>
+          }
 
+          <button type="submit" [disabled]="loading()"
+            class="btn-primary w-full py-3.5 text-base">
             @if (loading()) {
-              <span class="flex items-center justify-center gap-2">
-                <svg class="animate-spin w-4 h-4" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="10" stroke="white" stroke-width="3" fill="none"/>
-                </svg>
-                Creating account...
-              </span>
-            } @else {
-              Create account
-            }
+              <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              Creating account…
+            } @else { Create Account }
           </button>
 
-          <!-- Footer -->
-          <p class="text-center text-sm text-gray-500 mt-2">
+          <p class="text-center text-sm text-gray-500">
             Already have an account?
-            <a routerLink="/auth/login" class="text-[#ff5252] hover:underline ml-1">
-              Sign in
-            </a>
+            <a routerLink="/auth/login" class="text-red-600 font-semibold hover:underline ml-1">Sign in</a>
           </p>
-
         </form>
       </div>
-
     </div>
   </div>
   `,
 })
 export class RegisterComponent {
-  private fb = inject(FormBuilder);
-  private auth = inject(AuthService);
-  private router = inject(Router);
+  private fb    = inject(FormBuilder);
+  private auth  = inject(AuthService);
   private toast = inject(ToastService);
+  private router = inject(Router);
 
-  loading = signal(false);
+  loading  = signal(false);
   errorMsg = signal('');
+  showPwd  = signal(false);
 
   roles = [
-    { value: 'Customer', label: 'Customer', icon: '🧳' },
-    { value: 'Operator', label: 'Operator', icon: '🚌' },
-  ] as const;
+    { value: 'Customer', label: 'Traveller',    icon: '🧳', desc: 'Book bus tickets'  },
+    { value: 'Operator', label: 'Bus Operator', icon: '🚌', desc: 'Manage your fleet · Needs admin approval' },
+  ];
 
   form = this.fb.group({
-    fullName: ['', [Validators.required, Validators.maxLength(200)]],
-    email: ['', [Validators.required, Validators.email, Validators.maxLength(256)]],
-    username: ['', [Validators.required, Validators.maxLength(100)]],
-    role: ['Customer', Validators.required],
-    password: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(100)]],
-    confirmPassword: ['', Validators.required],
-  }, { validators: passwordMatchValidator });
+    fullName: ['', Validators.required],
+    username: ['', Validators.required],
+    email:    ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]],
+    role:     ['Customer'],
+  });
 
-  isInvalid(field: string): boolean {
-    const c = this.form.get(field);
-    return !!(c?.invalid && c?.touched);
-  }
+  isInvalid(f: string) { const c = this.form.get(f); return !!(c?.invalid && c?.touched); }
 
-  onSubmit(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    this.loading.set(true);
-    this.errorMsg.set('');
-
-    const { fullName, email, username, role, password } = this.form.value;
-
-    const narrowedRole = (role! as 'Customer' | 'Operator' | 'Admin');
-
-    this.auth.register({
-      fullName: fullName!,
-      email: email!,
-      username: username!,
-      role: narrowedRole,
-      password: password!,
-    }).subscribe({
-      next: () => {
-        this.toast.success('Account created! Welcome to BusGo 🎉');
-        this.router.navigate(['/home']);
-      },
-      error: (err) => {
+  onSubmit() {
+    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+    this.loading.set(true); this.errorMsg.set('');
+    const v = this.form.value;
+    this.auth.register({ fullName: v.fullName!, username: v.username!, email: v.email!, password: v.password!, role: v.role as any }).subscribe({
+      next: (res) => {
         this.loading.set(false);
-        this.errorMsg.set(err.error?.message ?? err.error ?? 'Registration failed.');
+        if (res.role === 'PendingOperator') {
+          this.toast.success('Account created! Your operator request is pending admin approval. 🕐');
+          this.router.navigate(['/home']);
+        } else if (res.role === 'Admin') {
+          this.toast.success('Welcome, Admin!');
+          this.router.navigate(['/admin']);
+        } else if (res.role === 'Operator') {
+          this.toast.success('Welcome to SwiftRoute! 🎉');
+          this.router.navigate(['/operator']);
+        } else {
+          this.toast.success('Account created! Welcome to SwiftRoute 🎉');
+          this.router.navigate(['/home']);
+        }
       },
+      error: (err) => { this.loading.set(false); this.errorMsg.set(err.error?.message ?? 'Registration failed. Please try again.'); },
     });
   }
 }

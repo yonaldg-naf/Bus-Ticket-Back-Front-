@@ -82,6 +82,10 @@ builder.Services.AddScoped<IBookingService, BookingService>();
 
 // ? NEW: needed for From/To dropdowns (cities & stops)
 builder.Services.AddScoped<IStopService, StopService>();
+
+// Audit & error logging
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddScoped<BusTicketBooking.Middlewares.GlobalExceptionMiddleware>();
 #endregion
 
 #region Repositories
@@ -145,6 +149,9 @@ app.UseHttpsRedirection();
 
 // Keep your existing default CORS usage
 app.UseCors();
+
+app.UseMiddleware<BusTicketBooking.Middlewares.AuditMiddleware>();
+app.UseMiddleware<BusTicketBooking.Middlewares.GlobalExceptionMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
