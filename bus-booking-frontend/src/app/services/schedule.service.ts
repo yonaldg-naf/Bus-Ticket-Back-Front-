@@ -18,6 +18,8 @@ export interface ScheduleResponse {
   busCode: string;
   registrationNumber: string;
   routeCode: string;
+  busType: number;        // 1=Seater 2=SemiSleeper 3=Sleeper 4=AC 5=NonAC
+  totalSeats: number;
   departureUtc: string;   // ISO string
   basePrice: number;
   createdAtUtc: string;   // ISO string
@@ -130,7 +132,7 @@ export class ScheduleService {
   }
 
   /** PUT /api/Schedules/{id} */
-  update(id: string, body: { departureUtc: string; basePrice: number }): Observable<ScheduleResponse> {
+  update(id: string, body: { busId: string; routeId: string; departureUtc: string; basePrice: number }): Observable<ScheduleResponse> {
     return this.http.put<ScheduleResponse>(`${this.base}/${id}`, body);
   }
 

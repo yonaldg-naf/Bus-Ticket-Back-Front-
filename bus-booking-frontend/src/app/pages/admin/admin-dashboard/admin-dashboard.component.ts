@@ -150,6 +150,7 @@ export class AdminDashboardComponent implements OnInit {
     { title: 'Manage Stops',  desc: 'Add & manage bus stops',          icon: '📍', bg: 'bg-orange-50', link: '/admin/stops' },
     { title: 'Audit Logs',    desc: 'System activity & error logs',    icon: '📋', bg: 'bg-gray-100',  link: '/admin/audit-logs' },
     { title: 'Operator Approvals', desc: 'Review pending operator requests', icon: '🚌', bg: 'bg-orange-50', link: '/admin/operator-approvals' },
+    { title: 'Manage Users',       desc: 'View all users and their roles',    icon: '👥', bg: 'bg-blue-50',   link: '/admin/manage-users' },
     { title: 'All Buses',     desc: 'View all registered buses',       icon: '🚌', bg: 'bg-red-50',   link: '/operator/buses' },
     { title: 'All Schedules', desc: 'Manage all departure schedules',  icon: '🗓️', bg: 'bg-blue-50',  link: '/operator/schedules' },
     { title: 'All Routes',    desc: 'View routes across operators',    icon: '🗺️', bg: 'bg-green-50', link: '/operator/routes' },

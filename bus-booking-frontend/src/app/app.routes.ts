@@ -60,6 +60,7 @@ export const routes: Routes = [
       { path: 'stops',      loadComponent: () => import('./pages/admin/manage-stops/manage-stops.component').then(m => m.ManageStopsComponent) },
       { path: 'audit-logs', loadComponent: () => import('./pages/admin/audit-logs/audit-logs.component').then(m => m.AuditLogsComponent) },
       { path: 'operator-approvals', loadComponent: () => import('./pages/admin/operator-approvals/operator-approvals.component').then(m => m.OperatorApprovalsComponent) },
+      { path: 'manage-users', loadComponent: () => import('./pages/admin/manage-users/manage-users.component').then(m => m.ManageUsersComponent) },
     ],
   },
   {

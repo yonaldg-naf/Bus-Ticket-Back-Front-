@@ -1,14 +1,15 @@
-﻿using System;
+﻿using BusTicketBooking.Dtos.Bookings;
+using BusTicketBooking.Interfaces;
+using BusTicketBooking.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using BusTicketBooking.Dtos.Bookings;
-using BusTicketBooking.Interfaces;
-using BusTicketBooking.Models;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 
 namespace BusTicketBooking.Controllers
 {
@@ -17,8 +18,13 @@ namespace BusTicketBooking.Controllers
     public class BookingsController : ControllerBase
     {
         private readonly IBookingService _bookings;
+        private readonly BusTicketBooking.Contexts.AppDbContext _db;
 
-        public BookingsController(IBookingService bookings) => _bookings = bookings;
+        public BookingsController(IBookingService bookings, BusTicketBooking.Contexts.AppDbContext db)
+        {
+            _bookings = bookings;
+            _db = db;
+        }
 
         private Guid GetUserId()
         {
@@ -100,6 +106,53 @@ namespace BusTicketBooking.Controllers
             {
                 return Conflict(new { message = ex.Message });
             }
+        }
+
+        // ===== Operator Stats =====
+
+        /// <summary>Returns booking totals for all buses owned by the calling operator.</summary>
+        [Authorize(Roles = Roles.Operator)]
+        [HttpGet("operator-stats")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> GetOperatorStats(CancellationToken ct)
+        {
+            var userId = GetUserId();
+
+            // Find the operator profile
+            var op = await _db.BusOperators
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.UserId == userId, ct);
+
+            if (op is null) return Ok(new { totalBookings = 0, confirmedBookings = 0, revenue = 0m });
+
+            // Buses owned by this operator
+            var busIds = await _db.Buses
+                .AsNoTracking()
+                .Where(b => b.OperatorId == op.Id)
+                .Select(b => b.Id)
+                .ToListAsync(ct);
+
+            // Schedules for those buses
+            var scheduleIds = await _db.BusSchedules
+                .AsNoTracking()
+                .Where(s => busIds.Contains(s.BusId))
+                .Select(s => s.Id)
+                .ToListAsync(ct);
+
+            // Aggregate bookings
+            var bookings = await _db.Bookings
+                .AsNoTracking()
+                .Where(b => scheduleIds.Contains(b.ScheduleId))
+                .ToListAsync(ct);
+
+            return Ok(new
+            {
+                totalBookings = bookings.Count,
+                confirmedBookings = bookings.Count(b => b.Status == BusTicketBooking.Models.Enums.BookingStatus.Confirmed),
+                revenue = bookings
+                    .Where(b => b.Status == BusTicketBooking.Models.Enums.BookingStatus.Confirmed)
+                    .Sum(b => b.TotalAmount)
+            });
         }
 
         // ===== NEW: by-keys (FE-friendly) =====

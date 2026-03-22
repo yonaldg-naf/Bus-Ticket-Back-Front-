@@ -12,6 +12,7 @@ namespace BusTicketBooking.Interfaces
         // Existing (Id-based)
         Task<ScheduleResponseDto> CreateAsync(CreateScheduleRequestDto dto, CancellationToken ct = default);
         Task<IEnumerable<ScheduleResponseDto>> GetAllAsync(CancellationToken ct = default);
+        Task<IEnumerable<ScheduleResponseDto>> GetAllSecuredAsync(Guid userId, string role, CancellationToken ct = default);
         Task<ScheduleResponseDto?> GetByIdAsync(Guid id, CancellationToken ct = default);
         Task<ScheduleResponseDto?> UpdateAsync(Guid id, UpdateScheduleRequestDto dto, CancellationToken ct = default);
         Task<bool> DeleteAsync(Guid id, CancellationToken ct = default);

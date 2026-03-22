@@ -1,18 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+﻿// kept from your previous controller
+using BusTicketBooking.Contexts;
 using BusTicketBooking.Dtos.Common;
 using BusTicketBooking.Dtos.Schedules;
 using BusTicketBooking.Interfaces;
 using BusTicketBooking.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
-// kept from your previous controller
-using BusTicketBooking.Contexts;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace BusTicketBooking.Controllers
 {
@@ -21,7 +21,7 @@ namespace BusTicketBooking.Controllers
     public class SchedulesController : ControllerBase
     {
         private readonly IScheduleService _schedules;
-        private readonly AppDbContext _db; // you were already injecting this for city-based GET search
+        private readonly AppDbContext _db;
 
         public SchedulesController(IScheduleService schedules, AppDbContext db)
         {
@@ -29,13 +29,22 @@ namespace BusTicketBooking.Controllers
             _db = db;
         }
 
+        private Guid CurrentUserId =>
+            Guid.TryParse(User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier)
+                       ?? User.FindFirstValue("sub"), out var id) ? id : Guid.Empty;
+
+        private string CurrentRole =>
+            User.FindFirstValue(System.Security.Claims.ClaimTypes.Role)
+            ?? User.Claims.FirstOrDefault(c => c.Type.Contains("role"))?.Value
+            ?? string.Empty;
+
         // ===== Id-based (kept) =====
 
         [Authorize(Roles = $"{Roles.Admin},{Roles.Operator}")]
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<ScheduleResponseDto>), 200)]
         public async Task<ActionResult<IEnumerable<ScheduleResponseDto>>> GetAll(CancellationToken ct)
-            => Ok(await _schedules.GetAllAsync(ct));
+            => Ok(await _schedules.GetAllSecuredAsync(CurrentUserId, CurrentRole, ct));
 
         ///
         [AllowAnonymous]

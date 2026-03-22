@@ -112,8 +112,14 @@ import { ToastService } from '../../../services/toast.service';
                 <!-- Right: price + book -->
                 <div class="flex items-center gap-4 flex-shrink-0">
                   <div class="text-right">
+                    <div class="flex items-center justify-end gap-1.5 mb-1">
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold"
+                        [class]="busTypeBadgeClass(s.busType)">
+                        {{ busTypeLabel(s.busType) }}
+                      </span>
+                    </div>
                     <p class="text-2xl font-extrabold text-gray-900">₹{{ s.basePrice | number:'1.0-0' }}</p>
-                    <p class="text-xs text-gray-400">per seat</p>
+                    <p class="text-xs text-gray-400">per seat · {{ s.totalSeats }} seats</p>
                   </div>
                   <button (click)="selectBus(s)" class="btn-primary px-6 py-3 text-base group-hover:shadow-md">
                     Book Now

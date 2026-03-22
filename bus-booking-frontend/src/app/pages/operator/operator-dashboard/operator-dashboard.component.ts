@@ -103,9 +103,12 @@ export class OperatorDashboardComponent implements OnInit {
   private routeSvc = inject(RouteService);
 
   stats = signal([
-    { label: 'My Buses',     icon: '🚌', value: '—', loading: true, bg: 'bg-red-50'   },
-    { label: 'My Routes',    icon: '🗺️', value: '—', loading: true, bg: 'bg-blue-50'  },
-    { label: 'My Schedules', icon: '🗓️', value: '—', loading: true, bg: 'bg-green-50' },
+    { label: 'Total Bookings', icon: '🎫', value: '—', loading: true, bg: 'bg-purple-50' },
+    { label: 'Confirmed',      icon: '✅', value: '—', loading: true, bg: 'bg-green-50'  },
+    { label: 'Revenue',        icon: '💰', value: '—', loading: true, bg: 'bg-yellow-50' },
+    { label: 'My Buses',       icon: '🚌', value: '—', loading: true, bg: 'bg-red-50'    },
+    { label: 'My Routes',      icon: '🗺️', value: '—', loading: true, bg: 'bg-blue-50'   },
+    { label: 'My Schedules',   icon: '🗓️', value: '—', loading: true, bg: 'bg-orange-50' },
   ]);
 
   cards = [

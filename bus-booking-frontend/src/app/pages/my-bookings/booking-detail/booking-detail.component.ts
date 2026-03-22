@@ -1,6 +1,7 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { BookingService } from '../../../services/booking.service';
 import { ToastService } from '../../../services/toast.service';
 import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../models/booking.models';
@@ -8,7 +9,7 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
 @Component({
   selector: 'app-booking-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   template: `
   <div class="min-h-screen bg-gray-50">
 
@@ -141,15 +142,48 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
         </div>
 
         <!-- Action buttons -->
-        <div class="flex gap-3">
+        <div class="space-y-3">
+
           @if ((booking()!.status === BookingStatus.Pending || booking()!.status === BookingStatus.Confirmed)
                && booking()!.status !== BookingStatus.OperatorCancelled) {
-            <button (click)="cancelBooking()" [disabled]="cancelling()"
-              class="flex-1 py-3 text-sm font-semibold rounded-xl border border-red-200 text-red-600
-                     hover:bg-red-50 transition-colors disabled:opacity-50">
-              {{ cancelling() ? 'Cancelling…' : 'Cancel Booking' }}
-            </button>
+
+            @if (!showCancelForm()) {
+              <button (click)="showCancelForm.set(true)"
+                class="w-full py-3 text-sm font-semibold rounded-xl border border-red-200 text-red-600
+                       hover:bg-red-50 transition-colors">
+                Cancel Booking
+              </button>
+            } @else {
+              <div class="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
+                <p class="text-sm font-semibold text-red-800">Why are you cancelling?</p>
+                <div class="grid grid-cols-2 gap-2">
+                  @for (reason of cancelReasons; track reason) {
+                    <label class="flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-all text-sm"
+                      [class]="cancelReason === reason
+                        ? 'border-red-500 bg-red-100 text-red-700 font-medium'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-red-300'">
+                      <input type="radio" [(ngModel)]="cancelReason" [value]="reason" class="sr-only"/>
+                      {{ reason }}
+                    </label>
+                  }
+                </div>
+                <div class="flex gap-2 pt-1">
+                  <button (click)="cancelBooking()" [disabled]="cancelling() || !cancelReason"
+                    class="flex-1 py-2.5 text-sm font-semibold rounded-xl bg-red-600 text-white
+                           hover:bg-red-700 transition-colors disabled:opacity-50">
+                    {{ cancelling() ? 'Cancelling…' : 'Confirm Cancel' }}
+                  </button>
+                  <button (click)="showCancelForm.set(false); cancelReason = ''"
+                    class="flex-1 py-2.5 text-sm font-medium rounded-xl border border-gray-300 text-gray-700
+                           hover:bg-gray-50 transition-colors">
+                    Keep Booking
+                  </button>
+                </div>
+              </div>
+            }
           }
+
+          <div class="flex gap-3">
           <a routerLink="/my-bookings"
             class="flex-1 py-3 text-sm font-semibold rounded-xl border border-gray-300 text-gray-700
                    hover:bg-gray-50 transition-colors text-center">
@@ -160,6 +194,7 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
                    hover:bg-red-700 transition-colors text-center">
             Book Again
           </a>
+          </div>
         </div>
 
       </div>
@@ -173,10 +208,21 @@ export class BookingDetailComponent implements OnInit {
   private bookingSvc = inject(BookingService);
   private toast      = inject(ToastService);
 
-  BookingStatus = BookingStatus;
-  loading    = signal(true);
-  cancelling = signal(false);
-  booking    = signal<BookingResponse | null>(null);
+  BookingStatus   = BookingStatus;
+  loading         = signal(true);
+  cancelling      = signal(false);
+  booking         = signal<BookingResponse | null>(null);
+  showCancelForm  = signal(false);
+  cancelReason    = '';
+
+  cancelReasons = [
+    'Changed plans',
+    'Wrong date / time',
+    'Found better option',
+    'Emergency',
+    'Price too high',
+    'Other',
+  ];
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id')!;

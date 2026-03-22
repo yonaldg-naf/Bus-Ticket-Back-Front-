@@ -80,4 +80,8 @@ export class BookingService {
   pay(id: string, dto: PayBookingRequest): Observable<BookingResponse> {
     return this.http.post<BookingResponse>(`${this.base}/${id}/pay`, dto);
   }
+
+  getOperatorStats(): Observable<{ totalBookings: number; confirmedBookings: number; revenue: number }> {
+    return this.http.get<{ totalBookings: number; confirmedBookings: number; revenue: number }>(`${this.base}/operator-stats`);
+  }
 }

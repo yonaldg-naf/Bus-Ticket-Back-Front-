@@ -11,6 +11,9 @@
         public string RegistrationNumber { get; set; } = string.Empty;
         public string RouteCode { get; set; } = string.Empty;
 
+        public int BusType { get; set; }    // 1=Seater 2=SemiSleeper 3=Sleeper 4=AC 5=NonAC
+        public int TotalSeats { get; set; }
+
         public DateTime DepartureUtc { get; set; }
         public decimal BasePrice { get; set; }
 

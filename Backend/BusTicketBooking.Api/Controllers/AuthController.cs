@@ -108,5 +108,48 @@ namespace BusTicketBooking.Controllers
                 CompanyName = companyName
             });
         }
+    
+
+        // ---------------------- ADMIN: LIST ALL USERS ----------------------
+        [Authorize(Roles = Roles.Admin)]
+        [HttpGet("users")]
+        public async Task<IActionResult> GetAllUsers(
+            [FromQuery] string? role,
+            [FromQuery] string? search,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            CancellationToken ct = default)
+        {
+            var query = _db.Users.AsNoTracking().AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(role))
+                query = query.Where(u => u.Role == role.Trim());
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim().ToLower();
+                query = query.Where(u => u.Username.ToLower().Contains(s)
+                                      || u.Email.ToLower().Contains(s)
+                                      || u.FullName.ToLower().Contains(s));
+            }
+
+            var total = await query.LongCountAsync(ct);
+
+            var users = await query
+                .OrderByDescending(u => u.CreatedAtUtc)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(u => new {
+                    u.Id,
+                    u.Username,
+                    u.Email,
+                    u.FullName,
+                    u.Role,
+                    u.CreatedAtUtc
+                })
+                .ToListAsync(ct);
+
+            return Ok(new { total, page, pageSize, items = users });
+        }
     }
 }

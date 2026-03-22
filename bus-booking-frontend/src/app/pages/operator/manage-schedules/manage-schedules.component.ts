@@ -161,7 +161,9 @@ export class ManageSchedulesComponent implements OnInit {
   loading   = signal(true);
   saving    = signal(false);
   showForm  = signal(false);
-  editingId = signal<string | null>(null);
+  editingId      = signal<string | null>(null);
+  editingBusId   = signal<string>('');
+  editingRouteId = signal<string>('');
   schedules = signal<ScheduleResponse[]>([]);
   formError = signal('');
 
@@ -189,7 +191,10 @@ export class ManageSchedulesComponent implements OnInit {
   }
 
   editSchedule(s: ScheduleResponse) {
-    this.editingId.set(s.id); this.formError.set('');
+    this.editingId.set(s.id);
+    this.editingBusId.set(s.busId);
+    this.editingRouteId.set(s.routeId);
+    this.formError.set('');
     const d = new Date(s.departureUtc);
     const pad = (n: number) => String(n).padStart(2, '0');
     const local = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -197,7 +202,13 @@ export class ManageSchedulesComponent implements OnInit {
     this.showForm.set(true); window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  cancelForm() { this.showForm.set(false); this.editingId.set(null); this.formError.set(''); }
+  cancelForm() {
+    this.showForm.set(false);
+    this.editingId.set(null);
+    this.editingBusId.set('');
+    this.editingRouteId.set('');
+    this.formError.set('');
+  }
 
   isInvalid(f: string) { const c = this.form.get(f); return !!(c?.invalid && c?.touched); }
 
@@ -208,7 +219,12 @@ export class ManageSchedulesComponent implements OnInit {
     const id = this.editingId();
 
     if (id) {
-      this.scheduleService.update(id, { departureUtc: new Date(v.departureLocal!).toISOString(), basePrice: +v.basePrice! }).subscribe({
+      this.scheduleService.update(id, {
+        busId:        this.editingBusId(),
+        routeId:      this.editingRouteId(),
+        departureUtc: new Date(v.departureLocal!).toISOString(),
+        basePrice:    +v.basePrice!,
+      }).subscribe({
         next:  () => { this.toast.success('Schedule updated.'); this.cancelForm(); this.loadSchedules(); this.saving.set(false); },
         error: err => { this.saving.set(false); this.formError.set(err.error?.message ?? 'Update failed.'); },
       });

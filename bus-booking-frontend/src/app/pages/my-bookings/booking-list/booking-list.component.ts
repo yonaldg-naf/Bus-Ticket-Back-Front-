@@ -120,6 +120,8 @@ export class BookingListComponent implements OnInit {
   loading      = signal(true);
   bookings     = signal<BookingResponse[]>([]);
   activeFilter = signal<string>('all');
+  currentPage  = signal(1);
+  pageSize     = 8;
 
   tabs = [
     { id: 'all',       label: 'All'       },

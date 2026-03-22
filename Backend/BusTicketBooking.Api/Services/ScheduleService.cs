@@ -79,6 +79,31 @@ namespace BusTicketBooking.Services
             return list.Select(e => Map(e, e.Bus!, e.Route!));
         }
 
+        // ========================= GET ALL SECURED (operator-scoped) =========================
+        public async Task<IEnumerable<ScheduleResponseDto>> GetAllSecuredAsync(Guid userId, string role, CancellationToken ct = default)
+        {
+            if (role == Roles.Admin)
+                return await GetAllAsync(ct);  // Admin sees all
+
+            // Operator: find their BusOperator profile, then filter by their buses
+            var operatorProfile = await _db.BusOperators
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.UserId == userId, ct);
+
+            if (operatorProfile == null)
+                return Enumerable.Empty<ScheduleResponseDto>();
+
+            var list = await _db.BusSchedules
+                .Include(s => s.Bus)
+                .Include(s => s.Route)
+                .AsNoTracking()
+                .Where(s => s.Bus!.OperatorId == operatorProfile.Id)
+                .OrderBy(s => s.DepartureUtc)
+                .ToListAsync(ct);
+
+            return list.Select(e => Map(e, e.Bus!, e.Route!));
+        }
+
         // ========================= GET BY ID =========================
         public async Task<ScheduleResponseDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
         {
@@ -456,6 +481,8 @@ namespace BusTicketBooking.Services
                 BusCode = bus.Code,
                 RegistrationNumber = bus.RegistrationNumber,
                 RouteCode = route.RouteCode,
+                BusType = (int)bus.BusType,
+                TotalSeats = bus.TotalSeats,
                 DepartureUtc = e.DepartureUtc,
                 BasePrice = e.BasePrice,
                 CreatedAtUtc = e.CreatedAtUtc,

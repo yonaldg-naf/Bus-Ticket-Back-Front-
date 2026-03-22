@@ -2,7 +2,7 @@ import { Component, inject, signal, HostListener } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
- 
+
 @Component({
   selector: 'app-navbar',
   standalone: true,
@@ -91,17 +91,28 @@ import { AuthService } from '../../services/auth.service';
         </div>
       </div>
     </header>
+
+    <!-- Pending Operator Banner -->
+    @if (auth.currentUser()?.role === 'PendingOperator') {
+      <div class="bg-orange-50 border-b border-orange-200 px-4 py-2">
+        <div class="max-w-7xl mx-auto flex items-center justify-center gap-2 text-sm text-orange-700">
+          <span class="text-base">⏳</span>
+          <strong>Operator approval pending.</strong>
+          <span>Admin will review your request shortly. You'll get full operator access once approved.</span>
+        </div>
+      </div>
+    }
   `,
 })
 export class NavbarComponent {
   auth = inject(AuthService);
   private router = inject(Router);
   dropOpen = signal(false);
- 
+
   @HostListener('document:click', ['$event'])
   onDocClick(e: MouseEvent) {
     if (!(e.target as HTMLElement).closest('button,a,div.relative')) this.dropOpen.set(false);
   }
- 
+
   logout() { this.dropOpen.set(false); this.auth.logout(); }
 }
