@@ -398,10 +398,17 @@ export class SearchResultsComponent implements OnInit {
   reload() {
     if (!this.fromCity() || !this.toCity() || !this.travelDate()) return;
     this.loading.set(true);
+    // Pass sort to backend, keep client-side filters for instant UX
+    const [field, dir] = this.sortBy.split('-');
+    const sortByMap: Record<string, string> = {
+      'departure': 'departure', 'price': 'price', 'seats': 'seats', 'busCode': 'busCode'
+    };
     this.scheduleSvc.searchByKeys({
       fromCity: this.fromCity(),
       toCity:   this.toCity(),
       date:     this.travelDate(),
+      sortBy:   sortByMap[field] ?? 'departure',
+      sortDir:  dir ?? 'asc',
     }).subscribe({
       next: (res: any) => {
         const items: ScheduleResponse[] = res?.items ?? res ?? [];
@@ -417,7 +424,10 @@ export class SearchResultsComponent implements OnInit {
     });
   }
 
-  applySort() { /* filteredItems computed auto-updates */ }
+  applySort() {
+    // Re-fetch from backend with new sort params
+    this.reload();
+  }
 
   toggleBusType(val: number) {
     this.filterBusTypes = this.filterBusTypes.includes(val)

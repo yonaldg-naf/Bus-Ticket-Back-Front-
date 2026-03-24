@@ -5,6 +5,7 @@ import { ScheduleService } from '../../../services/schedule.service';
 import { BookingStateService } from '../../../services/booking-state.service';
 import { ToastService } from '../../../services/toast.service';
 import { SeatAvailabilityResponse } from '../../../models/bus-schedule.models';
+import { Location } from '@angular/common';
 
 @Component({
   selector: 'app-seat-selection',
@@ -17,7 +18,7 @@ import { SeatAvailabilityResponse } from '../../../models/bus-schedule.models';
     <div class="bg-white border-b border-gray-100 shadow-sm">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4">
         <div class="flex items-center gap-3 mb-4">
-          <button (click)="router.navigate(['/search'], { queryParams: backParams() })"
+          <button (click)="goBack()"
             class="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 hover:border-red-300 hover:bg-red-50 transition-colors text-gray-500 hover:text-red-600">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -218,6 +219,7 @@ import { SeatAvailabilityResponse } from '../../../models/bus-schedule.models';
 export class SeatSelectionComponent implements OnInit {
   router              = inject(Router);
   private route       = inject(ActivatedRoute);
+  private location    = inject(Location);
   private scheduleSvc = inject(ScheduleService);
   private bookingState= inject(BookingStateService);
   private toast       = inject(ToastService);
@@ -280,4 +282,16 @@ export class SeatSelectionComponent implements OnInit {
   }
 
   backParams() { return {}; }
+
+  goBack() {
+    const s = this.draft()?.schedule;
+    if (s) {
+      // Try to reconstruct search params from the schedule's route info
+      const date = new Date(s.departureUtc).toISOString().split('T')[0];
+      // Navigate back to search with whatever we have, or just use browser back
+      this.location.back();
+    } else {
+      this.location.back();
+    }
+  }
 }

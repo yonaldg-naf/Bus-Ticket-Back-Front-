@@ -12,85 +12,108 @@ import { BookingService } from '../../../services/booking.service';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-slate-50">
 
     <!-- Header -->
-    <div class="bg-white border-b border-gray-200 shadow-sm">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between flex-wrap gap-3">
+    <div class="bg-white border-b border-slate-200 shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white text-xl shadow-sm">🚌</div>
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center shadow-md shadow-red-200">
+            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10z"/>
+            </svg>
+          </div>
           <div>
-            <h1 class="text-lg font-bold text-gray-900">Operator Panel</h1>
-            <p class="text-sm text-gray-500">Welcome, <span class="font-semibold text-red-600">{{ auth.currentUser()?.fullName }}</span></p>
+            <h1 class="text-base font-bold text-slate-900">Operator Dashboard</h1>
+            <p class="text-xs text-slate-500">
+              Welcome back, <span class="font-semibold text-red-600">{{ auth.currentUser()?.fullName }}</span>
+            </p>
           </div>
         </div>
-        @if (auth.currentUser()?.companyName) {
-          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-700 border border-blue-200">
-            🏢 {{ auth.currentUser()?.companyName }}
-          </span>
-        }
+        <div class="flex items-center gap-3">
+          @if (auth.currentUser()?.companyName) {
+            <div class="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg">
+              <span class="text-sm">🏢</span>
+              <span class="text-xs font-semibold text-blue-700">{{ auth.currentUser()?.companyName }}</span>
+            </div>
+          }
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white text-sm font-bold shadow-sm">
+              {{ auth.currentUser()?.fullName?.[0]?.toUpperCase() }}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
-      <!-- KPI Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <!-- KPI Cards — 2 rows: booking stats + fleet stats -->
+      <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
         @for (s of stats(); track s.label) {
-          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-            <div class="flex items-start justify-between mb-3">
-              <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl" [class]="s.bg">{{ s.icon }}</div>
-              <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">Live</span>
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl" [class]="s.bg">{{ s.icon }}</div>
+              <span class="text-xs font-medium px-2 py-0.5 rounded-full" [class]="s.badgeCls">{{ s.badge }}</span>
             </div>
             @if (s.loading) {
-              <div class="h-8 bg-gray-100 rounded-lg animate-pulse w-14 mb-1"></div>
+              <div class="h-8 bg-slate-100 rounded-lg animate-pulse w-16 mb-1"></div>
             } @else {
-              <p class="text-3xl font-bold text-gray-900">{{ s.value }}</p>
+              <p class="text-3xl font-extrabold text-slate-900 tabular-nums">{{ s.value }}</p>
             }
-            <p class="text-sm text-gray-500 mt-0.5">{{ s.label }}</p>
+            <p class="text-xs text-slate-500 mt-1 font-medium">{{ s.label }}</p>
           </div>
         }
       </div>
 
-      <!-- Quick Actions -->
-      <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
-        <div class="px-5 py-4 border-b border-gray-100">
-          <h2 class="font-semibold text-gray-800">Quick Actions</h2>
-          <p class="text-xs text-gray-400 mt-0.5">Manage your fleet, routes and schedules</p>
-        </div>
-        <div class="p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          @for (card of cards; track card.title) {
-            <a [routerLink]="card.link"
-              class="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-gray-100
-                     hover:border-red-200 hover:bg-red-50/30 transition-all group text-center">
-              <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-sm" [class]="card.bg">
-                {{ card.icon }}
-              </div>
-              <div>
-                <h3 class="font-bold text-gray-900 group-hover:text-red-700 transition-colors">{{ card.title }}</h3>
-                <p class="text-xs text-gray-400 mt-0.5">{{ card.desc }}</p>
-              </div>
-              <span class="text-xs font-semibold text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                Open →
-              </span>
-            </a>
-          }
-        </div>
-      </div>
+      <!-- Quick Actions + Tips -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-      <!-- Tips -->
-      <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-        <h3 class="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-          <span class="text-yellow-500">💡</span> Operator Tips
-        </h3>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          @for (tip of tips; track tip.text) {
-            <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-              <span class="text-lg flex-shrink-0">{{ tip.icon }}</span>
-              <p class="text-sm text-gray-600">{{ tip.text }}</p>
-            </div>
-          }
+        <!-- Quick Actions -->
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-100">
+            <h2 class="font-bold text-slate-900">Fleet Management</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Manage your buses, routes and schedules</p>
+          </div>
+          <div class="p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            @for (card of cards; track card.title) {
+              <a [routerLink]="card.link"
+                class="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-slate-100
+                       hover:border-red-200 hover:bg-red-50/40 transition-all group text-center cursor-pointer">
+                <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-sm transition-transform group-hover:scale-110" [class]="card.bg">
+                  {{ card.icon }}
+                </div>
+                <div>
+                  <h3 class="font-bold text-slate-900 group-hover:text-red-700 transition-colors text-sm">{{ card.title }}</h3>
+                  <p class="text-xs text-slate-400 mt-0.5 leading-relaxed">{{ card.desc }}</p>
+                </div>
+                <span class="text-xs font-semibold text-red-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                  Open
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                </span>
+              </a>
+            }
+          </div>
         </div>
+
+        <!-- Tips Panel -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+            <span class="text-lg">💡</span>
+            <h2 class="font-bold text-slate-900">Quick Tips</h2>
+          </div>
+          <div class="p-4 space-y-3">
+            @for (tip of tips; track tip.text) {
+              <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0" [class]="tip.bg">{{ tip.icon }}</div>
+                <p class="text-xs text-slate-600 leading-relaxed">{{ tip.text }}</p>
+              </div>
+            }
+          </div>
+        </div>
+
       </div>
 
     </div>
@@ -98,39 +121,40 @@ import { BookingService } from '../../../services/booking.service';
   `,
 })
 export class OperatorDashboardComponent implements OnInit {
-  auth             = inject(AuthService);
+  auth            = inject(AuthService);
   private busSvc      = inject(BusService);
   private schedSvc    = inject(ScheduleService);
   private routeSvc    = inject(RouteService);
   private bookingSvc  = inject(BookingService);
 
   stats = signal([
-    { label: 'Total Bookings', icon: '🎫', value: '—', loading: true, bg: 'bg-purple-50' },
-    { label: 'Confirmed',      icon: '✅', value: '—', loading: true, bg: 'bg-green-50'  },
-    { label: 'Revenue',        icon: '💰', value: '—', loading: true, bg: 'bg-yellow-50' },
-    { label: 'My Buses',       icon: '🚌', value: '—', loading: true, bg: 'bg-red-50'    },
-    { label: 'My Routes',      icon: '🗺️', value: '—', loading: true, bg: 'bg-blue-50'   },
-    { label: 'My Schedules',   icon: '🗓️', value: '—', loading: true, bg: 'bg-orange-50' },
+    { label: 'Total Bookings', icon: '🎫', value: '—', loading: true, bg: 'bg-purple-50', badge: 'Bookings', badgeCls: 'bg-purple-100 text-purple-600' },
+    { label: 'Confirmed',      icon: '✅', value: '—', loading: true, bg: 'bg-green-50',  badge: 'Paid',     badgeCls: 'bg-green-100 text-green-600'   },
+    { label: 'Revenue',        icon: '💰', value: '—', loading: true, bg: 'bg-yellow-50', badge: 'Earned',   badgeCls: 'bg-yellow-100 text-yellow-600'  },
+    { label: 'My Buses',       icon: '🚌', value: '—', loading: true, bg: 'bg-red-50',    badge: 'Fleet',    badgeCls: 'bg-red-100 text-red-600'        },
+    { label: 'My Routes',      icon: '🗺️', value: '—', loading: true, bg: 'bg-blue-50',   badge: 'Routes',   badgeCls: 'bg-blue-100 text-blue-600'      },
+    { label: 'My Schedules',   icon: '🗓️', value: '—', loading: true, bg: 'bg-orange-50', badge: 'Trips',    badgeCls: 'bg-orange-100 text-orange-600'  },
   ]);
 
   cards = [
-    { title: 'Manage Buses',     desc: 'Add, edit and manage your fleet',    icon: '🚌', bg: 'bg-red-50',   link: '/operator/buses'     },
-    { title: 'Manage Routes',    desc: 'Create and update bus routes',        icon: '🗺️', bg: 'bg-blue-50',  link: '/operator/routes'    },
-    { title: 'Manage Schedules', desc: 'Schedule departures and set prices',  icon: '🗓️', bg: 'bg-green-50', link: '/operator/schedules' },
+    { title: 'Manage Buses',     desc: 'Add, edit and manage your fleet',   icon: '🚌', bg: 'bg-red-50',   link: '/operator/buses'     },
+    { title: 'Manage Routes',    desc: 'Create and update bus routes',       icon: '🗺️', bg: 'bg-blue-50',  link: '/operator/routes'    },
+    { title: 'Manage Schedules', desc: 'Schedule departures and set prices', icon: '🗓️', bg: 'bg-green-50', link: '/operator/schedules' },
   ];
 
   tips = [
-    { icon: '✅', text: 'Set bus status to Available to allow customer bookings.' },
-    { icon: '🕐', text: 'Keep schedules updated with correct departure times.'    },
-    { icon: '🔧', text: 'Mark buses as Under Repair if temporarily unavailable.'  },
+    { icon: '✅', bg: 'bg-green-50',  text: 'Set bus status to Available to allow customer bookings.' },
+    { icon: '🕐', bg: 'bg-blue-50',   text: 'Keep schedules updated with correct departure times.'    },
+    { icon: '🔧', bg: 'bg-orange-50', text: 'Mark buses as Under Repair if temporarily unavailable.'  },
+    { icon: '💰', bg: 'bg-yellow-50', text: 'Competitive pricing increases your booking rate.'         },
   ];
 
   ngOnInit() {
-    // Indices 3,4,5 = My Buses, My Routes, My Schedules
-    this.busSvc.getAll().subscribe({ next: d => this.update(3, String(d.length)), error: () => this.update(3, 'err') });
-    this.routeSvc.getAll().subscribe({ next: d => this.update(4, String(d.length)), error: () => this.update(4, 'err') });
-    this.schedSvc.getAll().subscribe({ next: d => this.update(5, String(d.length)), error: () => this.update(5, 'err') });
-    // Indices 0,1,2 = Total Bookings, Confirmed, Revenue
+    // Fleet stats (indices 3, 4, 5)
+    this.busSvc.getAll().subscribe({ next: d => this.update(3, String(d.length)), error: () => this.update(3, '—') });
+    this.routeSvc.getAll().subscribe({ next: d => this.update(4, String(d.length)), error: () => this.update(4, '—') });
+    this.schedSvc.getAll().subscribe({ next: d => this.update(5, String(d.length)), error: () => this.update(5, '—') });
+    // Booking stats (indices 0, 1, 2)
     this.bookingSvc.getOperatorStats().subscribe({
       next: s => {
         this.update(0, String(s.totalBookings));
