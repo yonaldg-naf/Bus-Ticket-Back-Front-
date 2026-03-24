@@ -265,6 +265,7 @@ namespace BusTicketBooking.Services
             return new SeatAvailabilityResponseDto
             {
                 ScheduleId = scheduleId,
+                BusCode = schedule.Bus?.Code ?? string.Empty,
                 TotalSeats = totalSeats,
                 BookedCount = bookedSet.Count,
                 AvailableCount = availableSeats.Count,
@@ -497,14 +498,36 @@ namespace BusTicketBooking.Services
                 UpdatedAtUtc = e.UpdatedAtUtc
             };
 
-        public Task<SeatAvailabilityResponseDto> GetAvailabilityByKeysAsync(string busCode, DateTime departureUtc, CancellationToken ct = default)
+        public async Task<SeatAvailabilityResponseDto> GetAvailabilityByKeysAsync(string busCode, DateTime departureUtc, CancellationToken ct = default)
         {
-            throw new NotImplementedException();
+            var depUtc = EnsureUtc(departureUtc);
+            var schedule = await _db.BusSchedules
+                .Include(s => s.Bus)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s =>
+                    s.Bus!.Code == busCode &&
+                    s.DepartureUtc >= depUtc.AddSeconds(-30) &&
+                    s.DepartureUtc <= depUtc.AddSeconds(30),
+                    ct)
+                ?? throw new InvalidOperationException("Schedule not found for given busCode and departure time.");
+
+            return await GetAvailabilityAsync(schedule.Id, ct);
         }
 
-        public Task<ScheduleResponseDto?> GetByBusCodeAndDepartureAsync(string busCode, DateTime departureUtc, CancellationToken ct = default)
+        public async Task<ScheduleResponseDto?> GetByBusCodeAndDepartureAsync(string busCode, DateTime departureUtc, CancellationToken ct = default)
         {
-            throw new NotImplementedException();
+            var depUtc = EnsureUtc(departureUtc);
+            var e = await _db.BusSchedules
+                .Include(s => s.Bus)
+                .Include(s => s.Route)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s =>
+                    s.Bus!.Code == busCode &&
+                    s.DepartureUtc >= depUtc.AddSeconds(-30) &&
+                    s.DepartureUtc <= depUtc.AddSeconds(30),
+                    ct);
+
+            return e is null ? null : Map(e, e.Bus!, e.Route!);
         }
     }
 }

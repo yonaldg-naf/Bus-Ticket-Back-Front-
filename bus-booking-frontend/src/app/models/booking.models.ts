@@ -60,6 +60,11 @@ export interface BookingResponse {
   isScheduleCancelledByOperator?: boolean;
   scheduleCancelReason?: string;
 
+  // Refund policy
+  refundAmount?: number;
+  refundPercent?: number;
+  refundPolicy?: string;
+
   passengers: BookingPassengerDto[];
 }
 

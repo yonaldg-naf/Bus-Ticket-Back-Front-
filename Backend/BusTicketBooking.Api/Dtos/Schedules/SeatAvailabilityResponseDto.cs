@@ -3,6 +3,7 @@
     public class SeatAvailabilityResponseDto
     {
         public Guid ScheduleId { get; set; }
+        public string BusCode { get; set; } = string.Empty;
         public int TotalSeats { get; set; }
         public int BookedCount { get; set; }
         public int AvailableCount { get; set; }

@@ -1,14 +1,16 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { BookingService } from '../../../services/booking.service';
 import { ToastService } from '../../../services/toast.service';
+import { PromoCodeService, ValidatePromoResponse } from '../../../services/promo-code.service';
 import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../models/booking.models';
 
 @Component({
   selector: 'app-booking-confirm',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   template: `
   <div class="min-h-screen bg-gray-50">
 
@@ -142,13 +144,47 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 sticky top-20">
               <h2 class="font-semibold text-gray-800 mb-4">Payment Summary</h2>
 
+              <!-- Promo Code (only for pending) -->
+              @if (booking()!.status === BookingStatus.Pending) {
+                <div class="mb-4">
+                  <label class="block text-xs font-semibold text-gray-600 mb-1.5">Promo Code</label>
+                  <div class="flex gap-2">
+                    <input [(ngModel)]="promoInput" placeholder="Enter code" [disabled]="!!promoResult()"
+                      class="flex-1 text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 uppercase disabled:bg-gray-50 disabled:text-gray-400"/>
+                    @if (!promoResult()) {
+                      <button (click)="applyPromo()" [disabled]="promoLoading() || !promoInput"
+                        class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-xl transition-colors disabled:opacity-50">
+                        Apply
+                      </button>
+                    } @else {
+                      <button (click)="removePromo()" class="px-3 py-2 border border-gray-200 text-gray-500 text-xs font-medium rounded-xl hover:bg-gray-50 transition-colors">
+                        Remove
+                      </button>
+                    }
+                  </div>
+                  @if (promoResult()) {
+                    <p class="text-xs text-green-600 font-semibold mt-1.5">✅ {{ promoResult()!.message ?? 'Discount applied!' }}</p>
+                  }
+                  @if (promoError()) {
+                    <p class="text-xs text-red-500 mt-1.5">{{ promoError() }}</p>
+                  }
+                </div>
+              }
+
               <div class="space-y-2 text-sm mb-5">
                 <div class="flex justify-between text-gray-600">
                   <span>{{ booking()!.passengers.length }} passenger{{ booking()!.passengers.length !== 1 ? 's' : '' }}</span>
+                  <span>₹{{ booking()!.totalAmount | number:'1.0-0' }}</span>
                 </div>
+                @if (promoResult()) {
+                  <div class="flex justify-between text-green-600 font-medium">
+                    <span>Discount ({{ promoInput }})</span>
+                    <span>-₹{{ promoResult()!.discountAmount | number:'1.0-0' }}</span>
+                  </div>
+                }
                 <div class="flex justify-between font-bold text-gray-900 text-xl pt-2 border-t border-gray-100">
                   <span>Total</span>
-                  <span class="text-red-600">₹{{ booking()!.totalAmount | number:'1.0-0' }}</span>
+                  <span class="text-red-600">₹{{ finalAmount() | number:'1.0-0' }}</span>
                 </div>
               </div>
 
@@ -163,7 +199,7 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
                     </svg>
                     Processing…
                   } @else {
-                    🔒 Pay ₹{{ booking()!.totalAmount | number:'1.0-0' }}
+                    🔒 Pay ₹{{ finalAmount() | number:'1.0-0' }}
                   }
                 </button>
               }
@@ -172,6 +208,14 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
                 <div class="bg-green-50 border border-green-200 rounded-xl p-3 text-center mb-3">
                   <p class="text-green-700 font-semibold text-sm">✅ Payment Complete</p>
                 </div>
+                <!-- E-Ticket Download -->
+                <button (click)="downloadTicket()"
+                  class="w-full py-2.5 text-sm font-semibold rounded-xl border-2 border-red-200 text-red-600 hover:bg-red-50 transition-colors flex items-center justify-center gap-2 mb-3">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                  </svg>
+                  Download E-Ticket
+                </button>
               }
 
               <!-- Cancel -->
@@ -210,11 +254,23 @@ export class BookingConfirmComponent implements OnInit {
   private router     = inject(Router);
   private bookingSvc = inject(BookingService);
   private toast      = inject(ToastService);
+  private promoSvc   = inject(PromoCodeService);
 
   BookingStatus = BookingStatus;
-  loading    = signal(true);
-  payLoading = signal(false);
-  booking    = signal<BookingResponse | null>(null);
+  loading     = signal(true);
+  payLoading  = signal(false);
+  promoLoading = signal(false);
+  booking     = signal<BookingResponse | null>(null);
+  promoResult = signal<ValidatePromoResponse | null>(null);
+  promoError  = signal('');
+  promoInput  = '';
+
+  finalAmount(): number {
+    const b = this.booking();
+    if (!b) return 0;
+    const pr = this.promoResult();
+    return pr ? pr.finalAmount : b.totalAmount;
+  }
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('bookingId')!;
@@ -222,6 +278,65 @@ export class BookingConfirmComponent implements OnInit {
       next:  b  => { this.booking.set(b); this.loading.set(false); },
       error: () => { this.toast.error('Booking not found.'); this.router.navigate(['/my-bookings']); },
     });
+  }
+
+  applyPromo() {
+    if (!this.promoInput || !this.booking()) return;
+    this.promoLoading.set(true);
+    this.promoError.set('');
+    this.promoSvc.validate(this.promoInput.toUpperCase(), this.booking()!.totalAmount).subscribe({
+      next: r => {
+        this.promoLoading.set(false);
+        if (r.isValid) { this.promoResult.set(r); }
+        else { this.promoError.set(r.message ?? 'Invalid promo code.'); }
+      },
+      error: err => { this.promoLoading.set(false); this.promoError.set(err.error?.message ?? 'Invalid promo code.'); },
+    });
+  }
+
+  removePromo() { this.promoResult.set(null); this.promoError.set(''); this.promoInput = ''; }
+
+  downloadTicket() {
+    const b = this.booking();
+    if (!b) return;
+    const win = window.open('', '_blank');
+    if (!win) return;
+    const seats = b.passengers.map(p => p.seatNo).join(', ');
+    const names = b.passengers.map(p => `<tr><td style="padding:6px 12px;border-bottom:1px solid #f1f5f9">${p.name}</td><td style="padding:6px 12px;border-bottom:1px solid #f1f5f9">${p.age ?? '—'}</td><td style="padding:6px 12px;border-bottom:1px solid #f1f5f9;font-weight:700">${p.seatNo}</td></tr>`).join('');
+    win.document.write(`<!DOCTYPE html><html><head><title>BusGo E-Ticket</title>
+    <style>body{font-family:Arial,sans-serif;margin:0;padding:24px;background:#f8fafc;color:#1e293b}
+    .ticket{max-width:600px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.1)}
+    .header{background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff;padding:24px 28px}
+    .header h1{margin:0;font-size:24px;font-weight:900;letter-spacing:-0.5px}
+    .header p{margin:4px 0 0;opacity:.8;font-size:13px}
+    .body{padding:24px 28px}
+    .row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:14px}
+    .label{color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+    .value{font-weight:700;color:#0f172a}
+    table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+    th{background:#f8fafc;padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;color:#64748b;letter-spacing:.5px}
+    .footer{background:#f8fafc;padding:16px 28px;text-align:center;font-size:12px;color:#94a3b8;border-top:1px solid #e2e8f0}
+    .badge{display:inline-block;background:#dcfce7;color:#16a34a;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700}
+    @media print{body{padding:0}.ticket{box-shadow:none;border-radius:0}}</style></head><body>
+    <div class="ticket">
+      <div class="header">
+        <h1>🚌 BusGo</h1>
+        <p>E-Ticket · Booking #${b.id.slice(0, 8).toUpperCase()}</p>
+      </div>
+      <div class="body">
+        <div class="row"><span class="label">Status</span><span class="badge">✅ Confirmed</span></div>
+        <div class="row"><span class="label">Bus</span><span class="value">${b.busCode} · ${b.registrationNumber}</span></div>
+        <div class="row"><span class="label">Route</span><span class="value">${b.routeCode}</span></div>
+        <div class="row"><span class="label">Departure</span><span class="value">${new Date(b.departureUtc).toLocaleString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></div>
+        <div class="row"><span class="label">Seats</span><span class="value">${seats}</span></div>
+        <div class="row"><span class="label">Total Paid</span><span class="value" style="color:#dc2626;font-size:18px">₹${b.totalAmount.toLocaleString('en-IN')}</span></div>
+        <h3 style="margin:20px 0 8px;font-size:13px;color:#64748b;text-transform:uppercase;letter-spacing:.5px">Passengers</h3>
+        <table><thead><tr><th>Name</th><th>Age</th><th>Seat</th></tr></thead><tbody>${names}</tbody></table>
+      </div>
+      <div class="footer">Generated by BusGo · ${new Date().toLocaleString('en-IN')} · Have a safe journey! 🙏</div>
+    </div>
+    <script>window.onload=()=>{window.print();}<\/script></body></html>`);
+    win.document.close();
   }
 
   statusBadgeClass(s: BookingStatus): string {
@@ -248,7 +363,7 @@ export class BookingConfirmComponent implements OnInit {
     if (!this.booking()) return;
     this.payLoading.set(true);
     this.bookingSvc.pay(this.booking()!.id, {
-      amount: this.booking()!.totalAmount,
+      amount: this.finalAmount(),
       providerReference: `PAY-${Date.now()}`,
     }).subscribe({
       next:  b  => { this.booking.set(b); this.payLoading.set(false); this.toast.success('Payment successful! 🎉'); },

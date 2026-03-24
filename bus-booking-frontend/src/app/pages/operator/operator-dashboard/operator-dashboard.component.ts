@@ -75,7 +75,7 @@ import { BookingService } from '../../../services/booking.service';
             <h2 class="font-bold text-slate-900">Fleet Management</h2>
             <p class="text-xs text-slate-400 mt-0.5">Manage your buses, routes and schedules</p>
           </div>
-          <div class="p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             @for (card of cards; track card.title) {
               <a [routerLink]="card.link"
                 class="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-slate-100
@@ -137,9 +137,11 @@ export class OperatorDashboardComponent implements OnInit {
   ]);
 
   cards = [
-    { title: 'Manage Buses',     desc: 'Add, edit and manage your fleet',   icon: '🚌', bg: 'bg-red-50',   link: '/operator/buses'     },
-    { title: 'Manage Routes',    desc: 'Create and update bus routes',       icon: '🗺️', bg: 'bg-blue-50',  link: '/operator/routes'    },
-    { title: 'Manage Schedules', desc: 'Schedule departures and set prices', icon: '🗓️', bg: 'bg-green-50', link: '/operator/schedules' },
+    { title: 'Manage Buses',     desc: 'Add, edit and manage your fleet',   icon: '🚌', bg: 'bg-red-50',    link: '/operator/buses'      },
+    { title: 'Manage Routes',    desc: 'Create and update bus routes',       icon: '🗺️', bg: 'bg-blue-50',   link: '/operator/routes'     },
+    { title: 'Manage Schedules', desc: 'Schedule departures and set prices', icon: '🗓️', bg: 'bg-green-50',  link: '/operator/schedules'  },
+    { title: 'Revenue Analytics',desc: 'Track earnings and performance',     icon: '📊', bg: 'bg-yellow-50', link: '/operator/analytics'  },
+    { title: 'Promo Codes',      desc: 'Create discount codes for customers',icon: '🏷️', bg: 'bg-purple-50', link: '/operator/promo-codes'},
   ];
 
   tips = [

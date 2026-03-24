@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BookingService } from '../../../services/booking.service';
+import { ReviewService, ReviewResponse } from '../../../services/review.service';
 import { ToastService } from '../../../services/toast.service';
 import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../models/booking.models';
 
@@ -29,7 +30,6 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
       </div>
     </div>
 
-    <!-- Loading -->
     @if (loading()) {
       <div class="flex items-center justify-center py-24 gap-3 text-gray-400">
         <svg class="animate-spin w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24">
@@ -60,8 +60,6 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
 
         <!-- Ticket Card -->
         <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-
-          <!-- Ticket top header - red strip -->
           <div class="bg-red-600 px-6 py-5">
             <div class="flex items-start justify-between">
               <div>
@@ -79,13 +77,11 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
             </div>
           </div>
 
-          <!-- Dashed divider -->
           <div class="relative border-t-2 border-dashed border-gray-200 mx-6">
             <div class="absolute -left-9 -top-3.5 w-7 h-7 rounded-full bg-gray-50 border border-gray-200"></div>
             <div class="absolute -right-9 -top-3.5 w-7 h-7 rounded-full bg-gray-50 border border-gray-200"></div>
           </div>
 
-          <!-- Ticket body -->
           <div class="px-6 py-5 space-y-3">
             <div class="flex justify-between text-sm">
               <span class="text-gray-500">Booking Ref</span>
@@ -107,13 +103,11 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
             </div>
           </div>
 
-          <!-- Dashed divider 2 -->
           <div class="relative border-t-2 border-dashed border-gray-200 mx-6">
             <div class="absolute -left-9 -top-3.5 w-7 h-7 rounded-full bg-gray-50 border border-gray-200"></div>
             <div class="absolute -right-9 -top-3.5 w-7 h-7 rounded-full bg-gray-50 border border-gray-200"></div>
           </div>
 
-          <!-- Passengers -->
           <div class="px-6 py-5">
             <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Passengers</p>
             <div class="space-y-2">
@@ -128,29 +122,105 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
                       @if (p.age) { <p class="text-xs text-gray-400">Age {{ p.age }}</p> }
                     </div>
                   </div>
-                  <span class="badge badge-info text-xs">💺 Seat {{ p.seatNo }}</span>
+                  <span class="badge badge-info text-xs">Seat {{ p.seatNo }}</span>
                 </div>
               }
             </div>
           </div>
 
-          <!-- Total -->
           <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
             <span class="text-sm text-gray-500">Total Amount</span>
             <span class="text-2xl font-extrabold text-red-600">₹{{ booking()!.totalAmount | number:'1.0-0' }}</span>
           </div>
         </div>
 
+        <!-- Refund Policy Card (only for confirmed bookings) -->
+        @if (booking()!.status === BookingStatus.Confirmed && booking()!.refundPolicy) {
+          <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <div class="flex items-start gap-3">
+              <div class="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/>
+                </svg>
+              </div>
+              <div>
+                <p class="font-semibold text-blue-800 text-sm">Cancellation Refund Policy</p>
+                <p class="text-sm text-blue-700 mt-0.5">{{ booking()!.refundPolicy }}</p>
+                @if ((booking()!.refundPercent ?? 0) > 0) {
+                  <p class="text-sm font-bold text-blue-800 mt-1">
+                    You'll receive ₹{{ booking()!.refundAmount | number:'1.0-0' }} ({{ booking()!.refundPercent }}% refund)
+                  </p>
+                } @else {
+                  <p class="text-sm font-bold text-red-700 mt-1">No refund available</p>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Review Section (only for confirmed past trips) -->
+        @if (booking()!.status === BookingStatus.Confirmed && isPastTrip()) {
+          <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-100">
+              <h2 class="font-semibold text-gray-800">Rate Your Trip</h2>
+              <p class="text-xs text-gray-400 mt-0.5">Share your experience to help other travelers</p>
+            </div>
+
+            @if (existingReview()) {
+              <div class="p-5">
+                <div class="flex items-center gap-1 mb-2">
+                  @for (star of [1,2,3,4,5]; track star) {
+                    <svg class="w-5 h-5" [class]="star <= existingReview()!.rating ? 'text-amber-400' : 'text-gray-200'"
+                      fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                    </svg>
+                  }
+                  <span class="text-sm text-gray-500 ml-2">Your review</span>
+                </div>
+                @if (existingReview()!.comment) {
+                  <p class="text-sm text-gray-700 italic">"{{ existingReview()!.comment }}"</p>
+                }
+              </div>
+            } @else {
+              <div class="p-5 space-y-4">
+                <!-- Star rating -->
+                <div>
+                  <p class="text-sm font-medium text-gray-700 mb-2">Rating</p>
+                  <div class="flex items-center gap-1">
+                    @for (star of [1,2,3,4,5]; track star) {
+                      <button (click)="reviewRating = star"
+                        class="transition-transform hover:scale-110">
+                        <svg class="w-8 h-8" [class]="star <= reviewRating ? 'text-amber-400' : 'text-gray-200'"
+                          fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        </svg>
+                      </button>
+                    }
+                    <span class="text-sm text-gray-500 ml-2">{{ ratingLabel(reviewRating) }}</span>
+                  </div>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-gray-700 mb-1">Comment (optional)</p>
+                  <textarea [(ngModel)]="reviewComment" rows="3" placeholder="How was your journey?"
+                    class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors resize-none">
+                  </textarea>
+                </div>
+                <button (click)="submitReview()" [disabled]="reviewRating === 0 || submittingReview()"
+                  class="px-5 py-2.5 bg-red-600 text-white text-sm font-semibold rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors">
+                  {{ submittingReview() ? 'Submitting…' : 'Submit Review' }}
+                </button>
+              </div>
+            }
+          </div>
+        }
+
         <!-- Action buttons -->
         <div class="space-y-3">
-
           @if ((booking()!.status === BookingStatus.Pending || booking()!.status === BookingStatus.Confirmed)
                && booking()!.status !== BookingStatus.OperatorCancelled) {
-
             @if (!showCancelForm()) {
               <button (click)="showCancelForm.set(true)"
-                class="w-full py-3 text-sm font-semibold rounded-xl border border-red-200 text-red-600
-                       hover:bg-red-50 transition-colors">
+                class="w-full py-3 text-sm font-semibold rounded-xl border border-red-200 text-red-600 hover:bg-red-50 transition-colors">
                 Cancel Booking
               </button>
             } @else {
@@ -167,15 +237,18 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
                     </label>
                   }
                 </div>
+                @if (booking()!.refundPolicy && (booking()!.refundPercent ?? 0) > 0) {
+                  <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                    Refund: ₹{{ booking()!.refundAmount | number:'1.0-0' }} ({{ booking()!.refundPercent }}%) — {{ booking()!.refundPolicy }}
+                  </div>
+                }
                 <div class="flex gap-2 pt-1">
                   <button (click)="cancelBooking()" [disabled]="cancelling() || !cancelReason"
-                    class="flex-1 py-2.5 text-sm font-semibold rounded-xl bg-red-600 text-white
-                           hover:bg-red-700 transition-colors disabled:opacity-50">
+                    class="flex-1 py-2.5 text-sm font-semibold rounded-xl bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50">
                     {{ cancelling() ? 'Cancelling…' : 'Confirm Cancel' }}
                   </button>
                   <button (click)="showCancelForm.set(false); cancelReason = ''"
-                    class="flex-1 py-2.5 text-sm font-medium rounded-xl border border-gray-300 text-gray-700
-                           hover:bg-gray-50 transition-colors">
+                    class="flex-1 py-2.5 text-sm font-medium rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">
                     Keep Booking
                   </button>
                 </div>
@@ -184,16 +257,14 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
           }
 
           <div class="flex gap-3">
-          <a routerLink="/my-bookings"
-            class="flex-1 py-3 text-sm font-semibold rounded-xl border border-gray-300 text-gray-700
-                   hover:bg-gray-50 transition-colors text-center">
-            ← All Bookings
-          </a>
-          <a routerLink="/home"
-            class="flex-1 py-3 text-sm font-semibold rounded-xl bg-red-600 text-white
-                   hover:bg-red-700 transition-colors text-center">
-            Book Again
-          </a>
+            <a routerLink="/my-bookings"
+              class="flex-1 py-3 text-sm font-semibold rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors text-center">
+              ← All Bookings
+            </a>
+            <a routerLink="/home"
+              class="flex-1 py-3 text-sm font-semibold rounded-xl bg-red-600 text-white hover:bg-red-700 transition-colors text-center">
+              Book Again
+            </a>
           </div>
         </div>
 
@@ -206,6 +277,7 @@ export class BookingDetailComponent implements OnInit {
   private route      = inject(ActivatedRoute);
   router             = inject(Router);
   private bookingSvc = inject(BookingService);
+  private reviewSvc  = inject(ReviewService);
   private toast      = inject(ToastService);
 
   BookingStatus   = BookingStatus;
@@ -215,39 +287,69 @@ export class BookingDetailComponent implements OnInit {
   showCancelForm  = signal(false);
   cancelReason    = '';
 
-  cancelReasons = [
-    'Changed plans',
-    'Wrong date / time',
-    'Found better option',
-    'Emergency',
-    'Price too high',
-    'Other',
-  ];
+  existingReview    = signal<ReviewResponse | null>(null);
+  submittingReview  = signal(false);
+  reviewRating      = 0;
+  reviewComment     = '';
+
+  cancelReasons = ['Changed plans', 'Wrong date / time', 'Found better option', 'Emergency', 'Price too high', 'Other'];
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id')!;
     this.bookingSvc.getById(id).subscribe({
-      next:  b  => { this.booking.set(b); this.loading.set(false); },
+      next: b => {
+        this.booking.set(b);
+        this.loading.set(false);
+        if (b.status === BookingStatus.Confirmed && this.isPastTrip()) {
+          this.reviewSvc.getMyReview(b.id).subscribe({
+            next: r => this.existingReview.set(r),
+            error: () => {} // 404 = no review yet
+          });
+        }
+      },
       error: () => { this.loading.set(false); this.toast.error('Booking not found.'); this.router.navigate(['/my-bookings']); },
     });
+  }
+
+  isPastTrip(): boolean {
+    const b = this.booking();
+    if (!b) return false;
+    return new Date(b.departureUtc) < new Date();
   }
 
   cancelBooking() {
     if (!confirm('Cancel this booking?')) return;
     this.cancelling.set(true);
     this.bookingSvc.cancelPost(this.booking()!.id).subscribe({
-      next:  () => { this.toast.success('Booking cancelled.'); this.router.navigate(['/my-bookings']); },
+      next: () => { this.toast.success('Booking cancelled.'); this.router.navigate(['/my-bookings']); },
       error: err => { this.cancelling.set(false); this.toast.error(err.error?.message ?? 'Cancellation failed.'); },
     });
   }
 
+  submitReview() {
+    if (this.reviewRating === 0) return;
+    this.submittingReview.set(true);
+    this.reviewSvc.create({
+      bookingId: this.booking()!.id,
+      rating: this.reviewRating,
+      comment: this.reviewComment.trim() || undefined
+    }).subscribe({
+      next: r => { this.existingReview.set(r); this.submittingReview.set(false); this.toast.success('Review submitted!'); },
+      error: err => { this.submittingReview.set(false); this.toast.error(err.error?.message ?? 'Failed to submit review.'); }
+    });
+  }
+
+  ratingLabel(r: number): string {
+    return ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][r] ?? '';
+  }
+
   statusBadge(s: BookingStatus): string {
     const map: Record<number, string> = {
-      [BookingStatus.Pending]:           'badge badge-warning',
-      [BookingStatus.Confirmed]:         'badge badge-success',
-      [BookingStatus.Cancelled]:         'badge badge-error',
+      [BookingStatus.Pending]: 'badge badge-warning',
+      [BookingStatus.Confirmed]: 'badge badge-success',
+      [BookingStatus.Cancelled]: 'badge badge-error',
       [BookingStatus.OperatorCancelled]: 'badge badge-error',
-      [BookingStatus.Refunded]:          'badge badge-gray',
+      [BookingStatus.Refunded]: 'badge badge-gray',
     };
     return map[s] ?? 'badge badge-gray';
   }

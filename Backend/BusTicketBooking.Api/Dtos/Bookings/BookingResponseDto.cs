@@ -36,5 +36,10 @@ namespace BusTicketBooking.Dtos.Bookings
         public string? ScheduleCancelReason { get; set; }
 
         public List<BookingPassengerDto> Passengers { get; set; } = new();
+
+        // Refund policy fields
+        public decimal? RefundAmount { get; set; }
+        public int? RefundPercent { get; set; }
+        public string? RefundPolicy { get; set; }
     }
 }

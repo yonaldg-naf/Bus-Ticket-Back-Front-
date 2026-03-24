@@ -265,7 +265,8 @@ namespace BusTicketBooking.Services
                 .AsNoTracking()
                 .FirstOrDefaultAsync(
                     s => s.Bus!.Code == dto.BusCode &&
-                         s.DepartureUtc == depUtc,
+                         s.DepartureUtc >= depUtc.AddSeconds(-30) &&
+                         s.DepartureUtc <= depUtc.AddSeconds(30),
                     ct)
                 ?? throw new InvalidOperationException("Schedule not found for given busCode & departureUtc.");
 
@@ -371,7 +372,7 @@ namespace BusTicketBooking.Services
         // ===========================
         private static BookingResponseDto Map(Booking e)
         {
-            return new BookingResponseDto
+            var dto = new BookingResponseDto
             {
                 Id = e.Id,
                 UserId = e.UserId,
@@ -388,7 +389,6 @@ namespace BusTicketBooking.Services
 
                 BusStatus = e.Schedule?.Bus?.Status ?? BusStatus.Available,
 
-                // NEW FIELDS ADDED
                 IsScheduleCancelledByOperator = e.Schedule?.IsCancelledByOperator ?? false,
                 ScheduleCancelReason = e.Schedule?.CancelReason,
 
@@ -401,6 +401,26 @@ namespace BusTicketBooking.Services
                     })
                     .ToList()
             };
+
+            // Refund policy: calculate based on hours before departure
+            if (e.Schedule != null && e.Status == BookingStatus.Confirmed)
+            {
+                var hoursUntilDeparture = (e.Schedule.DepartureUtc - DateTime.UtcNow).TotalHours;
+                int refundPct;
+                string policy;
+
+                if (hoursUntilDeparture >= 48) { refundPct = 100; policy = "Full refund (48h+ before departure)"; }
+                else if (hoursUntilDeparture >= 24) { refundPct = 75; policy = "75% refund (24–48h before departure)"; }
+                else if (hoursUntilDeparture >= 6) { refundPct = 50; policy = "50% refund (6–24h before departure)"; }
+                else if (hoursUntilDeparture >= 0) { refundPct = 25; policy = "25% refund (0–6h before departure)"; }
+                else { refundPct = 0; policy = "No refund (trip already departed)"; }
+
+                dto.RefundPercent = refundPct;
+                dto.RefundAmount = Math.Round(e.TotalAmount * refundPct / 100, 2);
+                dto.RefundPolicy = policy;
+            }
+
+            return dto;
         }
 
         // ===========================

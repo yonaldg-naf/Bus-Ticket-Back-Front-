@@ -18,6 +18,8 @@ namespace BusTicketBooking.Contexts
         public DbSet<BookingPassenger> BookingPassengers => Set<BookingPassenger>();
         public DbSet<Payment> Payments => Set<Payment>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+        public DbSet<Review> Reviews => Set<Review>();
+        public DbSet<PromoCode> PromoCodes => Set<PromoCode>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -172,6 +174,27 @@ namespace BusTicketBooking.Contexts
                 e.HasIndex(l => l.CreatedAtUtc);
                 e.HasIndex(l => l.LogType);
                 e.HasIndex(l => l.UserId);
+            });
+
+            // Review
+            modelBuilder.Entity<Review>(e =>
+            {
+                e.Property(r => r.Comment).HasMaxLength(1000);
+                e.HasIndex(r => r.BookingId).IsUnique(); // one review per booking
+                e.HasOne(r => r.Booking).WithMany().HasForeignKey(r => r.BookingId).OnDelete(DeleteBehavior.Cascade);
+                e.HasOne(r => r.User).WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Restrict);
+                e.HasOne(r => r.Schedule).WithMany().HasForeignKey(r => r.ScheduleId).OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // PromoCode
+            modelBuilder.Entity<PromoCode>(e =>
+            {
+                e.Property(p => p.Code).HasMaxLength(50).IsRequired();
+                e.Property(p => p.DiscountValue).HasPrecision(10, 2);
+                e.Property(p => p.MinBookingAmount).HasPrecision(10, 2);
+                e.Property(p => p.MaxDiscountAmount).HasPrecision(10, 2);
+                e.HasIndex(p => p.Code).IsUnique();
+                e.HasOne(p => p.Operator).WithMany().HasForeignKey(p => p.OperatorId).OnDelete(DeleteBehavior.Cascade);
             });
 
             base.OnModelCreating(modelBuilder);

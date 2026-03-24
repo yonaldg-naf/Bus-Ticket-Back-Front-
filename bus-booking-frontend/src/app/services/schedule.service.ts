@@ -61,7 +61,7 @@ export class ScheduleService {
 
   /** GET /api/Schedules */
   getAll(): Observable<ScheduleResponse[]> {
-    return this.http.get<ScheduleResponse>(`${this.base}`) as unknown as Observable<ScheduleResponse[]>;
+    return this.http.get<ScheduleResponse[]>(`${this.base}`);
   }
 
   /** GET /api/Schedules/{id} */
