@@ -15,45 +15,47 @@ import { ToastService } from '../../../services/toast.service';
   <div class="min-h-screen bg-gray-50">
 
     <!-- Header -->
-    <div class="bg-white border-b border-gray-200 shadow-sm">
+    <div class="bg-white border-b border-gray-100 shadow-sm">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
         <button (click)="goBack()"
-          class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-500">
+          class="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 hover:border-red-300 hover:bg-red-50 transition-colors text-gray-500 hover:text-red-600">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
           </svg>
         </button>
         <div>
-          <h1 class="text-lg font-bold text-gray-900">Passenger Details</h1>
+          <h1 class="text-lg font-extrabold text-gray-900">Passenger Details</h1>
           @if (draft()) {
             <p class="text-sm text-gray-500">
-              <span class="font-semibold text-gray-800">{{ draft()!.schedule.busCode }}</span>
-              · {{ draft()!.schedule.routeCode }}
-              · {{ formatTime(draft()!.schedule.departureUtc) }}
+              <span class="font-semibold text-gray-700">{{ draft()!.schedule.busCode }}</span>
+              <span class="mx-1.5 text-gray-300">·</span>
+              {{ draft()!.schedule.routeCode }}
+              <span class="mx-1.5 text-gray-300">·</span>
+              {{ formatTime(draft()!.schedule.departureUtc) }}
             </p>
           }
         </div>
       </div>
 
-      <!-- Steps -->
-      <div class="max-w-5xl mx-auto px-4 sm:px-6 pb-3">
-        <div class="flex items-center gap-2 text-xs">
-          <span class="flex items-center gap-1.5 text-green-600 font-medium">
-            <span class="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center">✓</span>
-            Select Seats
-          </span>
-          <div class="flex-1 h-px bg-red-300"></div>
-          <span class="flex items-center gap-1.5 font-semibold text-red-600">
-            <span class="w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center">2</span>
-            Passenger Details
-          </span>
-          <div class="flex-1 h-px bg-gray-200"></div>
-          <span class="flex items-center gap-1.5 text-gray-400">
-            <span class="w-5 h-5 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center">3</span>
-            Payment
-          </span>
+        <!-- Steps -->
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 pb-3">
+          <div class="flex items-center gap-2">
+            <div class="step-done">
+              <span class="step-dot-done">✓</span>
+              <span class="hidden sm:inline">Select Seats</span>
+            </div>
+            <div class="flex-1 h-0.5 bg-green-300 rounded"></div>
+            <div class="step-active">
+              <span class="step-dot-active">2</span>
+              <span class="hidden sm:inline">Passenger Details</span>
+            </div>
+            <div class="flex-1 h-0.5 bg-gray-200 rounded"></div>
+            <div class="step-pending">
+              <span class="step-dot-pending">3</span>
+              <span class="hidden sm:inline">Payment</span>
+            </div>
+          </div>
         </div>
-      </div>
     </div>
 
     <div class="max-w-5xl mx-auto px-4 sm:px-6 py-6">

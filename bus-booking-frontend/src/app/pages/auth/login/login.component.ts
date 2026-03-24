@@ -11,68 +11,80 @@ import { ToastService } from '../../../services/toast.service';
   imports: [ReactiveFormsModule, RouterLink, CommonModule],
   template: `
   <div class="min-h-screen bg-gray-50 flex">
-    <!-- Left panel -->
-    <div class="hidden lg:flex lg:w-1/2 bg-red-600 flex-col justify-between p-12 relative overflow-hidden">
-      <div class="absolute inset-0 opacity-10">
+    <!-- ── Left panel ── -->
+    <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-red-600 via-red-700 to-red-800 flex-col justify-between p-12 relative overflow-hidden">
+      <div class="absolute inset-0 opacity-10 pointer-events-none">
         <div class="absolute top-20 left-10 w-64 h-64 rounded-full border-[40px] border-white"></div>
         <div class="absolute bottom-20 right-10 w-96 h-96 rounded-full border-[60px] border-white"></div>
         <div class="absolute top-1/2 left-1/2 w-48 h-48 rounded-full border-[30px] border-white -translate-x-1/2 -translate-y-1/2"></div>
       </div>
       <div class="relative z-10">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+          <div class="w-11 h-11 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/30">
             <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
               <path d="M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm9 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM4 11V9l1-4h14l1 4v2H4z"/>
             </svg>
           </div>
-          <span class="text-white text-xl font-bold">SwiftRoute</span>
+          <span class="text-white text-2xl font-extrabold">BusGo</span>
         </div>
       </div>
       <div class="relative z-10 space-y-6">
-        <h2 class="text-4xl font-bold text-white leading-tight">Travel smarter,<br/>book faster.</h2>
-        <p class="text-red-100 text-lg">India's most trusted bus booking platform. 10,000+ routes, 500+ operators.</p>
-        <div class="grid grid-cols-3 gap-4 pt-4">
-          <div class="bg-white/15 rounded-xl p-4 text-center">
-            <p class="text-2xl font-bold text-white">2M+</p>
-            <p class="text-red-100 text-xs mt-0.5">Happy Travelers</p>
+        <h2 class="text-4xl font-extrabold text-white leading-tight">Travel Further,<br/>Worry Less.</h2>
+        <p class="text-red-100 text-lg leading-relaxed">India's most trusted bus booking platform. 10,000+ routes, 500+ operators.</p>
+        <ul class="space-y-3">
+          @for (item of perks; track item) {
+            <li class="flex items-center gap-3 text-white text-sm font-medium">
+              <div class="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+              </div>
+              {{ item }}
+            </li>
+          }
+        </ul>
+        <div class="grid grid-cols-3 gap-3 pt-2">
+          <div class="bg-white/15 backdrop-blur-sm rounded-2xl p-4 text-center border border-white/20">
+            <p class="text-2xl font-extrabold text-white">2M+</p>
+            <p class="text-red-200 text-xs mt-0.5">Happy Travelers</p>
           </div>
-          <div class="bg-white/15 rounded-xl p-4 text-center">
-            <p class="text-2xl font-bold text-white">500+</p>
-            <p class="text-red-100 text-xs mt-0.5">Bus Operators</p>
+          <div class="bg-white/15 backdrop-blur-sm rounded-2xl p-4 text-center border border-white/20">
+            <p class="text-2xl font-extrabold text-white">500+</p>
+            <p class="text-red-200 text-xs mt-0.5">Bus Operators</p>
           </div>
-          <div class="bg-white/15 rounded-xl p-4 text-center">
-            <p class="text-2xl font-bold text-white">10K+</p>
-            <p class="text-red-100 text-xs mt-0.5">Routes</p>
+          <div class="bg-white/15 backdrop-blur-sm rounded-2xl p-4 text-center border border-white/20">
+            <p class="text-2xl font-extrabold text-white">10K+</p>
+            <p class="text-red-200 text-xs mt-0.5">Routes</p>
           </div>
         </div>
       </div>
-      <div class="relative z-10 text-red-200 text-sm">© 2026 SwiftRoute. All rights reserved.</div>
+      <div class="relative z-10 text-red-200 text-sm">© 2026 BusGo Technologies Pvt. Ltd.</div>
     </div>
 
-    <!-- Right panel -->
-    <div class="w-full lg:w-1/2 flex items-center justify-center px-6 py-12">
+    <!-- ── Right panel ── -->
+    <div class="w-full lg:w-1/2 flex items-center justify-center px-6 py-12 bg-white">
       <div class="w-full max-w-md">
-        <div class="mb-8">
-          <div class="flex items-center gap-2 mb-6 lg:hidden">
-            <div class="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
-              <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm9 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM4 11V9l1-4h14l1 4v2H4z"/>
-              </svg>
-            </div>
-            <span class="font-bold text-gray-900">SwiftRoute</span>
+        <!-- Mobile logo -->
+        <div class="flex items-center gap-2.5 mb-8 lg:hidden">
+          <div class="w-9 h-9 bg-red-600 rounded-xl flex items-center justify-center shadow-md shadow-red-200">
+            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10z"/>
+            </svg>
           </div>
-          <h1 class="text-2xl font-bold text-gray-900">Welcome back</h1>
-          <p class="text-gray-500 mt-1">Sign in to your account to continue</p>
+          <span class="font-extrabold text-gray-900 text-xl">BusGo</span>
+        </div>
+
+        <div class="mb-8">
+          <h1 class="text-3xl font-extrabold text-gray-900">Welcome back</h1>
+          <p class="text-gray-500 mt-1.5">Sign in to manage your bookings</p>
         </div>
 
         <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-5">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
-            <input formControlName="username" type="text" placeholder="Enter your username"
-              class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400
-                     focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 transition-colors"/>
+            <label class="form-label">Username</label>
+            <input formControlName="username" type="text" placeholder="Enter your username" class="form-input"/>
             @if (isInvalid('username')) {
-              <p class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+              <p class="form-error">
                 <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
                 Username is required
               </p>
@@ -80,13 +92,9 @@ import { ToastService } from '../../../services/toast.service';
           </div>
 
           <div>
-            <div class="flex items-center justify-between mb-1.5">
-              <label class="text-sm font-medium text-gray-700">Password</label>
-            </div>
+            <label class="form-label">Password</label>
             <div class="relative">
-              <input formControlName="password" [type]="showPwd() ? 'text' : 'password'" placeholder="Enter your password"
-                class="w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400
-                       focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-500 transition-colors pr-12"/>
+              <input formControlName="password" [type]="showPwd() ? 'text' : 'password'" placeholder="Enter your password" class="form-input pr-12"/>
               <button type="button" (click)="showPwd.update(v => !v)"
                 class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1">
                 @if (showPwd()) {
@@ -102,7 +110,7 @@ import { ToastService } from '../../../services/toast.service';
               </button>
             </div>
             @if (isInvalid('password')) {
-              <p class="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+              <p class="form-error">
                 <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
                 At least 6 characters
               </p>
@@ -110,7 +118,7 @@ import { ToastService } from '../../../services/toast.service';
           </div>
 
           @if (errorMsg()) {
-            <div class="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <div class="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl">
               <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
               </svg>
@@ -119,8 +127,7 @@ import { ToastService } from '../../../services/toast.service';
           }
 
           <button type="submit" [disabled]="loading()"
-            class="w-full py-3.5 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700
-                   disabled:opacity-60 disabled:cursor-not-allowed transition-colors shadow-sm shadow-red-200">
+            class="w-full py-3.5 rounded-2xl font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-lg shadow-red-200 text-base">
             @if (loading()) {
               <span class="flex items-center justify-center gap-2">
                 <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
@@ -129,12 +136,12 @@ import { ToastService } from '../../../services/toast.service';
                 </svg>
                 Signing in...
               </span>
-            } @else { Sign In }
+            } @else { Log In to BusGo }
           </button>
 
           <p class="text-center text-sm text-gray-500">
-            Don't have an account?
-            <a routerLink="/auth/register" class="text-red-600 font-semibold hover:underline ml-1">Create one</a>
+            New to BusGo?
+            <a routerLink="/auth/register" class="text-red-600 font-bold hover:underline ml-1">Create an account</a>
           </p>
         </form>
       </div>
@@ -150,6 +157,13 @@ export class LoginComponent {
   loading = signal(false);
   errorMsg = signal('');
   showPwd = signal(false);
+
+  perks = [
+    'Instant e-ticket confirmation',
+    '24/7 customer support',
+    'Free cancellation within 1 hour',
+    'Exclusive member discounts',
+  ];
 
   form = this.fb.group({
     username: ['', Validators.required],

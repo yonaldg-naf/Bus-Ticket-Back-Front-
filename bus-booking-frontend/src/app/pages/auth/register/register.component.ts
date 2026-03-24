@@ -16,23 +16,23 @@ import { ToastService } from '../../../services/toast.service';
       <!-- Logo -->
       <div class="text-center mb-8">
         <a routerLink="/home" class="inline-flex items-center gap-2.5">
-          <div class="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center shadow-sm">
+          <div class="w-11 h-11 bg-red-600 rounded-2xl flex items-center justify-center shadow-lg shadow-red-200">
             <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
               <path d="M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm9 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM4 11V9l1-4h14l1 4v2H4z"/>
             </svg>
           </div>
-          <span class="text-xl font-bold text-gray-900">SwiftRoute</span>
+          <span class="text-2xl font-extrabold text-gray-900">BusGo</span>
         </a>
-        <h1 class="text-2xl font-bold text-gray-900 mt-4">Create your account</h1>
-        <p class="text-gray-500 text-sm mt-1">Join millions of travelers booking smarter</p>
+        <h1 class="text-2xl font-extrabold text-gray-900 mt-5">Get started free</h1>
+        <p class="text-gray-500 text-sm mt-1.5">Join 2 million+ travelers on BusGo</p>
       </div>
 
-      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-7">
+      <div class="bg-white rounded-3xl border border-gray-100 shadow-xl p-7 sm:p-8">
         <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-5">
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="form-label">Full Name</label>
+              <label class="form-label">First Name</label>
               <input formControlName="fullName" type="text" placeholder="John Doe" class="form-input"/>
               @if (isInvalid('fullName')) {
                 <p class="form-error"><svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>Required</p>
@@ -56,6 +56,11 @@ import { ToastService } from '../../../services/toast.service';
           </div>
 
           <div>
+            <label class="form-label">Phone Number</label>
+            <input type="tel" placeholder="+91 98765 43210" class="form-input"/>
+          </div>
+
+          <div>
             <label class="form-label">Password</label>
             <div class="relative">
               <input formControlName="password" [type]="showPwd() ? 'text' : 'password'" placeholder="Min. 6 characters" class="form-input pr-12"/>
@@ -76,12 +81,12 @@ import { ToastService } from '../../../services/toast.service';
             <label class="form-label">Account Type</label>
             <div class="grid grid-cols-2 gap-3">
               @for (r of roles; track r.value) {
-                <label class="flex items-center gap-3 p-3.5 border-2 rounded-xl cursor-pointer transition-all"
-                  [class]="form.get('role')?.value === r.value ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:border-gray-300'">
+                <label class="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer transition-all"
+                  [class]="form.get('role')?.value === r.value ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:border-gray-300 bg-white'">
                   <input type="radio" formControlName="role" [value]="r.value" class="sr-only"/>
-                  <span class="text-xl">{{ r.icon }}</span>
+                  <span class="text-2xl">{{ r.icon }}</span>
                   <div>
-                    <p class="text-sm font-semibold text-gray-800">{{ r.label }}</p>
+                    <p class="text-sm font-bold text-gray-800">{{ r.label }}</p>
                     <p class="text-xs text-gray-500">{{ r.desc }}</p>
                   </div>
                 </label>
@@ -89,11 +94,10 @@ import { ToastService } from '../../../services/toast.service';
             </div>
           </div>
 
-          <!-- Operator pending notice -->
           @if (form.get('role')?.value === 'Operator') {
-            <div class="p-3 bg-orange-50 border border-orange-200 rounded-xl flex items-start gap-2.5">
-              <span class="text-orange-500 text-base flex-shrink-0">ℹ️</span>
-              <p class="text-xs text-orange-700">
+            <div class="p-4 bg-orange-50 border border-orange-200 rounded-2xl flex items-start gap-3">
+              <span class="text-orange-500 text-lg flex-shrink-0">ℹ️</span>
+              <p class="text-xs text-orange-700 leading-relaxed">
                 Operator accounts require <strong>admin approval</strong> before you can add buses or schedules.
                 You'll be registered as a <strong>Pending Operator</strong> and can login, but full access is granted once approved.
               </p>
@@ -101,7 +105,7 @@ import { ToastService } from '../../../services/toast.service';
           }
 
           @if (errorMsg()) {
-            <div class="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <div class="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl">
               <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
               </svg>
@@ -109,20 +113,19 @@ import { ToastService } from '../../../services/toast.service';
             </div>
           }
 
-          <button type="submit" [disabled]="loading()"
-            class="btn-primary w-full py-3.5 text-base">
+          <button type="submit" [disabled]="loading()" class="btn-primary w-full py-3.5 text-base rounded-2xl shadow-lg shadow-red-200">
             @if (loading()) {
               <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
               </svg>
               Creating account…
-            } @else { Create Account }
+            } @else { Create My Account }
           </button>
 
           <p class="text-center text-sm text-gray-500">
             Already have an account?
-            <a routerLink="/auth/login" class="text-red-600 font-semibold hover:underline ml-1">Sign in</a>
+            <a routerLink="/auth/login" class="text-red-600 font-bold hover:underline ml-1">Log in here</a>
           </p>
         </form>
       </div>

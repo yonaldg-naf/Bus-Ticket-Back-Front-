@@ -13,28 +13,28 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
   <div class="min-h-screen bg-gray-50">
 
     <!-- Header -->
-    <div class="bg-white border-b border-gray-200 shadow-sm">
+    <div class="bg-white border-b border-gray-100 shadow-sm">
       <div class="max-w-4xl mx-auto px-4 sm:px-6 py-4">
         <div>
-          <h1 class="text-lg font-bold text-gray-900">Booking Confirmation</h1>
+          <h1 class="text-lg font-extrabold text-gray-900">Booking Confirmation</h1>
           <p class="text-sm text-gray-500">Review and complete your payment</p>
         </div>
         <!-- Steps -->
-        <div class="flex items-center gap-2 text-xs mt-3">
-          <span class="flex items-center gap-1.5 text-green-600 font-medium">
-            <span class="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-xs">✓</span>
-            Select Seats
-          </span>
-          <div class="flex-1 h-px bg-green-300"></div>
-          <span class="flex items-center gap-1.5 text-green-600 font-medium">
-            <span class="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-xs">✓</span>
-            Passenger Details
-          </span>
-          <div class="flex-1 h-px bg-red-300"></div>
-          <span class="flex items-center gap-1.5 font-semibold text-red-600">
-            <span class="w-5 h-5 rounded-full bg-red-600 text-white flex items-center justify-center text-xs">3</span>
-            Payment
-          </span>
+        <div class="flex items-center gap-2 mt-3">
+          <div class="step-done">
+            <span class="step-dot-done">✓</span>
+            <span class="hidden sm:inline">Select Seats</span>
+          </div>
+          <div class="flex-1 h-0.5 bg-green-300 rounded"></div>
+          <div class="step-done">
+            <span class="step-dot-done">✓</span>
+            <span class="hidden sm:inline">Passenger Details</span>
+          </div>
+          <div class="flex-1 h-0.5 bg-red-300 rounded"></div>
+          <div class="step-active">
+            <span class="step-dot-active">3</span>
+            <span class="hidden sm:inline">Payment</span>
+          </div>
         </div>
       </div>
     </div>
