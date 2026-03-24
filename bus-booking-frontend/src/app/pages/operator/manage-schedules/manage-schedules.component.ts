@@ -1,7 +1,8 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { ScheduleService } from '../../../services/schedule.service';
 import { AuthService } from '../../../services/auth.service';
 import { ToastService } from '../../../services/toast.service';
@@ -10,7 +11,7 @@ import { ScheduleResponse } from '../../../models/bus-schedule.models';
 @Component({
   selector: 'app-manage-schedules',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, FormsModule],
   template: `
   <div class="min-h-screen bg-gray-50">
 
@@ -25,10 +26,29 @@ import { ScheduleResponse } from '../../../models/bus-schedule.models';
           </a>
           <div>
             <h1 class="text-lg font-bold text-gray-900">Manage Schedules</h1>
-            <p class="text-sm text-gray-500">Create, update and remove departures</p>
+            <p class="text-sm text-gray-500">{{ filteredSchedules().length }} of {{ schedules().length }} schedules</p>
           </div>
         </div>
         <button (click)="openForm()" class="btn-primary">+ Add Schedule</button>
+      </div>
+
+      <!-- Filters & Sort -->
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 pb-4 flex flex-wrap gap-3 items-center">
+        <div class="relative flex-1 min-w-[180px]">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input [(ngModel)]="searchQuery" placeholder="Search bus or route code…"
+            class="form-input pl-9 py-2 text-sm w-full"/>
+        </div>
+        <input type="date" [(ngModel)]="filterDate" class="form-input py-2 text-sm w-auto" title="Filter by date"/>
+        <select [(ngModel)]="sortBy" class="form-input py-2 text-sm w-auto">
+          <option value="">Sort by…</option>
+          <option value="dep-asc">Departure ↑</option>
+          <option value="dep-desc">Departure ↓</option>
+          <option value="price-asc">Price ↑</option>
+          <option value="price-desc">Price ↓</option>
+        </select>
       </div>
     </div>
 
@@ -109,10 +129,19 @@ import { ScheduleResponse } from '../../../models/bus-schedule.models';
         </div>
       }
 
+      <!-- No results after filter -->
+      @if (!loading() && schedules().length > 0 && filteredSchedules().length === 0) {
+        <div class="flex flex-col items-center justify-center py-16 text-center">
+          <div class="text-4xl mb-3">🔍</div>
+          <p class="font-semibold text-gray-700">No schedules match your filters</p>
+          <p class="text-sm text-gray-400 mt-1">Try adjusting your search or date filter</p>
+        </div>
+      }
+
       <!-- Schedule List -->
-      @if (!loading() && schedules().length > 0) {
+      @if (!loading() && filteredSchedules().length > 0) {
         <div class="space-y-3">
-          @for (s of schedules(); track s.id) {
+          @for (s of filteredSchedules(); track s.id) {
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow">
               <div class="flex items-start justify-between gap-4">
                 <div class="flex items-start gap-4 flex-1 min-w-0">
@@ -166,6 +195,22 @@ export class ManageSchedulesComponent implements OnInit {
   editingRouteId = signal<string>('');
   schedules = signal<ScheduleResponse[]>([]);
   formError = signal('');
+
+  searchQuery = '';
+  filterDate  = '';
+  sortBy      = '';
+
+  filteredSchedules = computed(() => {
+    let list = this.schedules();
+    const q = this.searchQuery.toLowerCase();
+    if (q) list = list.filter(s => s.busCode.toLowerCase().includes(q) || s.routeCode.toLowerCase().includes(q));
+    if (this.filterDate) list = list.filter(s => new Date(s.departureUtc).toISOString().startsWith(this.filterDate));
+    if (this.sortBy === 'dep-asc')    list = [...list].sort((a, b) => new Date(a.departureUtc).getTime() - new Date(b.departureUtc).getTime());
+    if (this.sortBy === 'dep-desc')   list = [...list].sort((a, b) => new Date(b.departureUtc).getTime() - new Date(a.departureUtc).getTime());
+    if (this.sortBy === 'price-asc')  list = [...list].sort((a, b) => a.basePrice - b.basePrice);
+    if (this.sortBy === 'price-desc') list = [...list].sort((a, b) => b.basePrice - a.basePrice);
+    return list;
+  });
 
   form = this.fb.group({
     busCode:        ['', [Validators.required, Validators.maxLength(50)]],

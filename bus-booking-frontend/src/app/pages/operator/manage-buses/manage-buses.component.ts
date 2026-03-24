@@ -1,7 +1,8 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { BusService } from '../../../services/bus-route.service';
 import { AuthService } from '../../../services/auth.service';
 import { ToastService } from '../../../services/toast.service';
@@ -10,7 +11,7 @@ import { BusResponse, BusType, BusStatus, CreateBusByOperatorRequest, UpdateBusR
 @Component({
   selector: 'app-manage-buses',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, FormsModule],
   template: `
   <div class="min-h-screen bg-gray-50">
 
@@ -25,10 +26,42 @@ import { BusResponse, BusType, BusStatus, CreateBusByOperatorRequest, UpdateBusR
           </a>
           <div>
             <h1 class="text-lg font-bold text-gray-900">Manage Buses</h1>
-            <p class="text-sm text-gray-500">Add, edit and manage your fleet</p>
+            <p class="text-sm text-gray-500">{{ filteredBuses().length }} of {{ buses().length }} buses</p>
           </div>
         </div>
         <button (click)="openForm()" class="btn-primary">+ Add Bus</button>
+      </div>
+
+      <!-- Filters & Sort -->
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 pb-4 flex flex-wrap gap-3 items-center">
+        <div class="relative flex-1 min-w-[180px]">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input [(ngModel)]="searchQuery" placeholder="Search code or registration…"
+            class="form-input pl-9 py-2 text-sm w-full"/>
+        </div>
+        <select [(ngModel)]="filterType" class="form-input py-2 text-sm w-auto">
+          <option value="">All Types</option>
+          <option value="1">Seater</option>
+          <option value="2">Semi Sleeper</option>
+          <option value="3">Sleeper</option>
+          <option value="4">AC</option>
+          <option value="5">Non-AC</option>
+        </select>
+        <select [(ngModel)]="filterStatus" class="form-input py-2 text-sm w-auto">
+          <option value="">All Status</option>
+          <option value="1">Available</option>
+          <option value="2">Under Repair</option>
+          <option value="3">Not Available</option>
+        </select>
+        <select [(ngModel)]="sortBy" class="form-input py-2 text-sm w-auto">
+          <option value="">Sort by…</option>
+          <option value="code">Code A–Z</option>
+          <option value="seats-asc">Seats ↑</option>
+          <option value="seats-desc">Seats ↓</option>
+          <option value="status">Status</option>
+        </select>
       </div>
     </div>
 
@@ -49,7 +82,11 @@ import { BusResponse, BusType, BusStatus, CreateBusByOperatorRequest, UpdateBusR
             <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="form-label">Bus Code *</label>
-                <input formControlName="code" type="text" placeholder="BUS-001" class="form-input"/>
+                <input formControlName="code" type="text" placeholder="BUS-001" class="form-input"
+                  [class.opacity-50]="editingId()" [attr.title]="editingId() ? 'Bus code cannot be changed after creation' : null"/>
+                @if (editingId()) {
+                  <p class="text-xs text-gray-400 mt-1">Bus code cannot be changed after creation</p>
+                }
                 @if (isInvalid('code')) { <p class="form-error">Code is required</p> }
               </div>
               <div>
@@ -115,10 +152,19 @@ import { BusResponse, BusType, BusStatus, CreateBusByOperatorRequest, UpdateBusR
         </div>
       }
 
+      <!-- No results after filter -->
+      @if (!loading() && buses().length > 0 && filteredBuses().length === 0) {
+        <div class="flex flex-col items-center justify-center py-16 text-center">
+          <div class="text-4xl mb-3">🔍</div>
+          <p class="font-semibold text-gray-700">No buses match your filters</p>
+          <p class="text-sm text-gray-400 mt-1">Try adjusting your search or filters</p>
+        </div>
+      }
+
       <!-- Bus List -->
-      @if (!loading() && buses().length > 0) {
+      @if (!loading() && filteredBuses().length > 0) {
         <div class="space-y-3">
-          @for (bus of buses(); track bus.id) {
+          @for (bus of filteredBuses(); track bus.id) {
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow">
               <div class="flex items-start justify-between gap-4">
                 <div class="flex items-start gap-4 flex-1 min-w-0">
@@ -154,16 +200,34 @@ import { BusResponse, BusType, BusStatus, CreateBusByOperatorRequest, UpdateBusR
   `,
 })
 export class ManageBusesComponent implements OnInit {
-  private fb         = inject(FormBuilder);
-  private busService = inject(BusService);
+  private fb          = inject(FormBuilder);
+  private busService  = inject(BusService);
   private authService = inject(AuthService);
-  private toast      = inject(ToastService);
+  private toast       = inject(ToastService);
 
   loading   = signal(true);
   saving    = signal(false);
   showForm  = signal(false);
   editingId = signal<string | null>(null);
   buses     = signal<BusResponse[]>([]);
+
+  searchQuery  = '';
+  filterType   = '';
+  filterStatus = '';
+  sortBy       = '';
+
+  filteredBuses = computed(() => {
+    let list = this.buses();
+    const q = this.searchQuery.toLowerCase();
+    if (q) list = list.filter(b => b.code.toLowerCase().includes(q) || b.registrationNumber.toLowerCase().includes(q));
+    if (this.filterType)   list = list.filter(b => String(b.busType) === this.filterType);
+    if (this.filterStatus) list = list.filter(b => String(b.status) === this.filterStatus);
+    if (this.sortBy === 'code')       list = [...list].sort((a, b) => a.code.localeCompare(b.code));
+    if (this.sortBy === 'seats-asc')  list = [...list].sort((a, b) => a.totalSeats - b.totalSeats);
+    if (this.sortBy === 'seats-desc') list = [...list].sort((a, b) => b.totalSeats - a.totalSeats);
+    if (this.sortBy === 'status')     list = [...list].sort((a, b) => a.status - b.status);
+    return list;
+  });
 
   form = this.fb.group({
     code:               ['', [Validators.required, Validators.maxLength(50)]],
@@ -187,6 +251,7 @@ export class ManageBusesComponent implements OnInit {
 
   openForm() {
     this.editingId.set(null);
+    this.form.get('code')?.enable();
     this.form.reset({ busType: BusType.Seater, totalSeats: 40, status: BusStatus.Available });
     this.showForm.set(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -195,11 +260,16 @@ export class ManageBusesComponent implements OnInit {
   editBus(bus: BusResponse) {
     this.editingId.set(bus.id);
     this.form.patchValue({ code: bus.code, registrationNumber: bus.registrationNumber, busType: bus.busType, totalSeats: bus.totalSeats, status: bus.status });
+    this.form.get('code')?.disable();
     this.showForm.set(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  cancelForm() { this.showForm.set(false); this.editingId.set(null); }
+  cancelForm() {
+    this.showForm.set(false);
+    this.editingId.set(null);
+    this.form.get('code')?.enable();
+  }
 
   onSubmit() {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }

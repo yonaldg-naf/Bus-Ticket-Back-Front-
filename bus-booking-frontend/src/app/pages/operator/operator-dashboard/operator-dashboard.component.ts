@@ -5,6 +5,7 @@ import { AuthService } from '../../../services/auth.service';
 import { BusService } from '../../../services/bus-route.service';
 import { ScheduleService } from '../../../services/schedule.service';
 import { RouteService } from '../../../services/bus-route.service';
+import { BookingService } from '../../../services/booking.service';
 
 @Component({
   selector: 'app-operator-dashboard',
@@ -97,10 +98,11 @@ import { RouteService } from '../../../services/bus-route.service';
   `,
 })
 export class OperatorDashboardComponent implements OnInit {
-  auth         = inject(AuthService);
-  private busSvc   = inject(BusService);
-  private schedSvc = inject(ScheduleService);
-  private routeSvc = inject(RouteService);
+  auth             = inject(AuthService);
+  private busSvc      = inject(BusService);
+  private schedSvc    = inject(ScheduleService);
+  private routeSvc    = inject(RouteService);
+  private bookingSvc  = inject(BookingService);
 
   stats = signal([
     { label: 'Total Bookings', icon: '🎫', value: '—', loading: true, bg: 'bg-purple-50' },
@@ -124,9 +126,19 @@ export class OperatorDashboardComponent implements OnInit {
   ];
 
   ngOnInit() {
-    this.busSvc.getAll().subscribe({ next: d => this.update(0, String(d.length)), error: () => this.update(0, 'err') });
-    this.routeSvc.getAll().subscribe({ next: d => this.update(1, String(d.length)), error: () => this.update(1, 'err') });
-    this.schedSvc.getAll().subscribe({ next: d => this.update(2, String(d.length)), error: () => this.update(2, 'err') });
+    // Indices 3,4,5 = My Buses, My Routes, My Schedules
+    this.busSvc.getAll().subscribe({ next: d => this.update(3, String(d.length)), error: () => this.update(3, 'err') });
+    this.routeSvc.getAll().subscribe({ next: d => this.update(4, String(d.length)), error: () => this.update(4, 'err') });
+    this.schedSvc.getAll().subscribe({ next: d => this.update(5, String(d.length)), error: () => this.update(5, 'err') });
+    // Indices 0,1,2 = Total Bookings, Confirmed, Revenue
+    this.bookingSvc.getOperatorStats().subscribe({
+      next: s => {
+        this.update(0, String(s.totalBookings));
+        this.update(1, String(s.confirmedBookings));
+        this.update(2, '₹' + s.revenue.toLocaleString('en-IN'));
+      },
+      error: () => { this.update(0, '—'); this.update(1, '—'); this.update(2, '—'); },
+    });
   }
 
   private update(i: number, value: string) {

@@ -1,7 +1,8 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { StopService } from '../../services/stop.service';
 
 interface CityResponse { city: string; stopCount: number; }
@@ -9,7 +10,7 @@ interface CityResponse { city: string; stopCount: number; }
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule, RouterLink],
+  imports: [ReactiveFormsModule, CommonModule, RouterLink, FormsModule],
   template: `
   <div class="min-h-screen bg-gray-50">
 
@@ -59,7 +60,8 @@ interface CityResponse { city: string; stopCount: number; }
           </div>
 
           <form [formGroup]="form" (ngSubmit)="onSearch()">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Row 1: From / Swap / To -->
+            <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-3 mb-4">
               <div>
                 <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">From</label>
                 <div class="relative">
@@ -67,11 +69,22 @@ interface CityResponse { city: string; stopCount: number; }
                     <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                   </svg>
                   <select formControlName="fromCity" class="w-full pl-9 pr-3 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm transition-colors appearance-none">
-                    <option value="">Select city</option>
+                    <option value="">Select departure city</option>
                     @for (c of cities(); track c.city) { <option [value]="c.city">{{ c.city }}</option> }
                   </select>
                 </div>
                 @if (isInvalid('fromCity')) { <p class="text-red-500 text-xs mt-1">Required</p> }
+              </div>
+
+              <!-- Swap button -->
+              <div class="flex items-end pb-0.5">
+                <button type="button" (click)="swapCities()"
+                  class="w-10 h-10 rounded-xl border-2 border-gray-200 bg-white hover:border-red-400 hover:bg-red-50 flex items-center justify-center transition-all group"
+                  title="Swap cities">
+                  <svg class="w-4 h-4 text-gray-400 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                  </svg>
+                </button>
               </div>
 
               <div>
@@ -81,15 +94,18 @@ interface CityResponse { city: string; stopCount: number; }
                     <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                   </svg>
                   <select formControlName="toCity" class="w-full pl-9 pr-3 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm transition-colors appearance-none">
-                    <option value="">Select city</option>
+                    <option value="">Select destination city</option>
                     @for (c of cities(); track c.city) { <option [value]="c.city">{{ c.city }}</option> }
                   </select>
                 </div>
                 @if (isInvalid('toCity')) { <p class="text-red-500 text-xs mt-1">Required</p> }
               </div>
+            </div>
 
+            <!-- Row 2: Date / Passengers / Search -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Date</label>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Travel Date</label>
                 <div class="relative">
                   <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -98,6 +114,20 @@ interface CityResponse { city: string; stopCount: number; }
                     class="w-full pl-9 pr-3 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm transition-colors"/>
                 </div>
                 @if (isInvalid('date')) { <p class="text-red-500 text-xs mt-1">Required</p> }
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Passengers</label>
+                <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-white">
+                  <button type="button" (click)="decPassengers()"
+                    class="w-11 h-11 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-red-600 transition-colors text-lg font-bold flex-shrink-0">−</button>
+                  <div class="flex-1 text-center">
+                    <span class="font-bold text-gray-900 text-base">{{ passengers }}</span>
+                    <span class="text-xs text-gray-400 ml-1">{{ passengers === 1 ? 'Passenger' : 'Passengers' }}</span>
+                  </div>
+                  <button type="button" (click)="incPassengers()"
+                    class="w-11 h-11 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-red-600 transition-colors text-lg font-bold flex-shrink-0">+</button>
+                </div>
               </div>
 
               <div class="flex flex-col justify-end">
@@ -249,6 +279,7 @@ export class HomeComponent implements OnInit {
   cities = signal<CityResponse[]>([]);
   sameCityError = signal(false);
   today = new Date().toISOString().split('T')[0];
+  passengers = 1;
 
   form = this.fb.group({
     fromCity: ['', Validators.required],
@@ -285,6 +316,16 @@ export class HomeComponent implements OnInit {
   }
 
   isInvalid(f: string) { const c = this.form.get(f); return !!(c?.invalid && c?.touched); }
+
+  swapCities() {
+    const from = this.form.get('fromCity')?.value;
+    const to   = this.form.get('toCity')?.value;
+    this.form.patchValue({ fromCity: to, toCity: from });
+    this.sameCityError.set(false);
+  }
+
+  decPassengers() { if (this.passengers > 1) this.passengers--; }
+  incPassengers() { if (this.passengers < 10) this.passengers++; }
 
   onSearch() {
     this.sameCityError.set(false);

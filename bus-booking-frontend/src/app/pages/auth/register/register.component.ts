@@ -172,10 +172,10 @@ export class RegisterComponent {
           this.toast.success('Welcome, Admin!');
           this.router.navigate(['/admin']);
         } else if (res.role === 'Operator') {
-          this.toast.success('Welcome to SwiftRoute! 🎉');
+          this.toast.success('Welcome to BusGo! 🎉');
           this.router.navigate(['/operator']);
         } else {
-          this.toast.success('Account created! Welcome to SwiftRoute 🎉');
+          this.toast.success('Account created! Welcome to BusGo 🎉');
           this.router.navigate(['/home']);
         }
       },

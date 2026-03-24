@@ -1,7 +1,8 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { FormBuilder, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { RouteService } from '../../../services/bus-route.service';
 import { AuthService } from '../../../services/auth.service';
 import { ToastService } from '../../../services/toast.service';
@@ -10,7 +11,7 @@ import { RouteResponse } from '../../../models/stop-route.models';
 @Component({
   selector: 'app-manage-routes',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, FormsModule],
   template: `
   <div class="min-h-screen bg-gray-50">
 
@@ -25,10 +26,21 @@ import { RouteResponse } from '../../../models/stop-route.models';
           </a>
           <div>
             <h1 class="text-lg font-bold text-gray-900">Manage Routes</h1>
-            <p class="text-sm text-gray-500">Create and update bus routes & stops</p>
+            <p class="text-sm text-gray-500">{{ filteredRoutes().length }} of {{ routes().length }} routes</p>
           </div>
         </div>
         <button (click)="openForm()" class="btn-primary">+ Add Route</button>
+      </div>
+
+      <!-- Search -->
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 pb-4">
+        <div class="relative max-w-sm">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input [(ngModel)]="searchQuery" placeholder="Search route code or city…"
+            class="form-input pl-9 py-2 text-sm w-full"/>
+        </div>
       </div>
     </div>
 
@@ -124,10 +136,19 @@ import { RouteResponse } from '../../../models/stop-route.models';
         </div>
       }
 
+      <!-- No results after filter -->
+      @if (!loading() && routes().length > 0 && filteredRoutes().length === 0) {
+        <div class="flex flex-col items-center justify-center py-16 text-center">
+          <div class="text-4xl mb-3">🔍</div>
+          <p class="font-semibold text-gray-700">No routes match your search</p>
+          <p class="text-sm text-gray-400 mt-1">Try a different route code or city name</p>
+        </div>
+      }
+
       <!-- Route List -->
-      @if (!loading() && routes().length > 0) {
+      @if (!loading() && filteredRoutes().length > 0) {
         <div class="space-y-3">
-          @for (route of routes(); track route.routeCode) {
+          @for (route of filteredRoutes(); track route.routeCode) {
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow">
               <div class="flex items-start justify-between gap-4">
                 <div class="flex-1 min-w-0">
@@ -174,6 +195,17 @@ export class ManageRoutesComponent implements OnInit {
   editingCode = signal<string | null>(null);
   errorMsg    = signal('');
   routes      = signal<RouteResponse[]>([]);
+
+  searchQuery = '';
+
+  filteredRoutes = computed(() => {
+    const q = this.searchQuery.toLowerCase();
+    if (!q) return this.routes();
+    return this.routes().filter(r =>
+      r.routeCode.toLowerCase().includes(q) ||
+      r.stops.some(s => s.city.toLowerCase().includes(q) || s.name.toLowerCase().includes(q))
+    );
+  });
 
   form = this.fb.group({
     routeCode: ['', [Validators.required, Validators.maxLength(50)]],
