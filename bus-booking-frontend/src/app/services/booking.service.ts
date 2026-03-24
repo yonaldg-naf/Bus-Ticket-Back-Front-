@@ -84,4 +84,8 @@ export class BookingService {
   getOperatorStats(): Observable<{ totalBookings: number; confirmedBookings: number; revenue: number }> {
     return this.http.get<{ totalBookings: number; confirmedBookings: number; revenue: number }>(`${this.base}/operator-stats`);
   }
+
+  getBySchedule(scheduleId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.base}/schedule/${scheduleId}`);
+  }
 }

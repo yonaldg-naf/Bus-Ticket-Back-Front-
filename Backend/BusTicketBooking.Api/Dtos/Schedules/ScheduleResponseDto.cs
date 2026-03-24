@@ -17,6 +17,9 @@
         public DateTime DepartureUtc { get; set; }
         public decimal BasePrice { get; set; }
 
+        public bool IsCancelledByOperator { get; set; }
+        public string? CancelReason { get; set; }
+
         public DateTime CreatedAtUtc { get; set; }
         public DateTime? UpdatedAtUtc { get; set; }
     }

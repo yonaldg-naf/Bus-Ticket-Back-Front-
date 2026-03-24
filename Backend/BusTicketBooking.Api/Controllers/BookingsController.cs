@@ -155,6 +155,70 @@ namespace BusTicketBooking.Controllers
             });
         }
 
+        // ===== Operator: bookings by schedule =====
+
+        /// <summary>Returns all bookings for a given schedule (operator/admin only).</summary>
+        [Authorize(Roles = Roles.Operator + "," + Roles.Admin)]
+        [HttpGet("schedule/{scheduleId:guid}")]
+        [ProducesResponseType(typeof(IEnumerable<BookingResponseDto>), 200)]
+        public async Task<IActionResult> GetBySchedule([FromRoute] Guid scheduleId, CancellationToken ct)
+        {
+            var userId = GetUserId();
+
+            // Operators can only see bookings for their own buses
+            if (User.IsInRole(Roles.Operator))
+            {
+                var op = await _db.BusOperators
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(o => o.UserId == userId, ct);
+
+                if (op is null) return Ok(Array.Empty<BookingResponseDto>());
+
+                var schedule = await _db.BusSchedules
+                    .AsNoTracking()
+                    .Include(s => s.Bus)
+                    .FirstOrDefaultAsync(s => s.Id == scheduleId, ct);
+
+                if (schedule is null || schedule.Bus?.OperatorId != op.Id)
+                    return Forbid();
+            }
+
+            var bookings = await _db.Bookings
+                .AsNoTracking()
+                .Include(b => b.Passengers)
+                .Include(b => b.Schedule)
+                    .ThenInclude(s => s!.Bus)
+                .Include(b => b.Schedule)
+                    .ThenInclude(s => s!.Route)
+                .Where(b => b.ScheduleId == scheduleId)
+                .OrderBy(b => b.CreatedAtUtc)
+                .ToListAsync(ct);
+
+            var result = bookings.Select(b => new BookingResponseDto
+            {
+                Id = b.Id,
+                UserId = b.UserId,
+                ScheduleId = b.ScheduleId,
+                Status = b.Status,
+                TotalAmount = b.TotalAmount,
+                CreatedAtUtc = b.CreatedAtUtc,
+                UpdatedAtUtc = b.UpdatedAtUtc,
+                BusCode = b.Schedule?.Bus?.Code ?? "",
+                RegistrationNumber = b.Schedule?.Bus?.RegistrationNumber ?? "",
+                RouteCode = b.Schedule?.Route?.RouteCode ?? "",
+                DepartureUtc = b.Schedule?.DepartureUtc ?? default,
+                BusStatus = b.Schedule?.Bus?.Status ?? BusTicketBooking.Models.Enums.BusStatus.Available,
+                Passengers = b.Passengers.Select(p => new BusTicketBooking.Dtos.Bookings.BookingPassengerDto
+                {
+                    Name = p.Name,
+                    Age = p.Age,
+                    SeatNo = p.SeatNo
+                }).ToList()
+            });
+
+            return Ok(result);
+        }
+
         // ===== NEW: by-keys (FE-friendly) =====
 
         /// <summary>Create a booking by busCode + departureUtc.</summary>

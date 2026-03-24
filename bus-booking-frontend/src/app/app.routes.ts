@@ -50,8 +50,10 @@ export const routes: Routes = [
       { path: 'buses',       loadComponent: () => import('./pages/operator/manage-buses/manage-buses.component').then(m => m.ManageBusesComponent) },
       { path: 'routes',      loadComponent: () => import('./pages/operator/manage-routes/manage-routes.component').then(m => m.ManageRoutesComponent) },
       { path: 'schedules',   loadComponent: () => import('./pages/operator/manage-schedules/manage-schedules.component').then(m => m.ManageSchedulesComponent) },
-      { path: 'analytics',   loadComponent: () => import('./pages/operator/analytics/analytics.component').then(m => m.AnalyticsComponent) },
-      { path: 'promo-codes', loadComponent: () => import('./pages/operator/promo-codes/promo-codes.component').then(m => m.PromoCodesComponent) },
+      { path: 'analytics',       loadComponent: () => import('./pages/operator/analytics/analytics.component').then(m => m.AnalyticsComponent) },
+      { path: 'promo-codes',     loadComponent: () => import('./pages/operator/promo-codes/promo-codes.component').then(m => m.PromoCodesComponent) },
+      { path: 'announcements',   loadComponent: () => import('./pages/operator/announcements/announcements.component').then(m => m.AnnouncementsComponent) },
+      { path: 'manifest',        loadComponent: () => import('./pages/operator/passenger-manifest/passenger-manifest.component').then(m => m.PassengerManifestComponent) },
     ],
   },
   {

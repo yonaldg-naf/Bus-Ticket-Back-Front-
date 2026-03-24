@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -55,7 +55,13 @@
   .badge-purple   { @apply bg-purple-100 text-purple-700; }
 
   /* ── Form inputs ── */
-  .form-input {
+  .input-field {
+    @apply w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900
+           placeholder-slate-400 text-sm
+           focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500
+           transition-colors disabled:bg-slate-50 disabled:text-slate-500;
+  }
+    .form-input {
     @apply w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900
            placeholder-gray-400 text-sm
            focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500
@@ -142,3 +148,11 @@
     background-clip: text;
   }
 }
+
+/* ── Dark mode base overrides ── */
+.dark body {
+  @apply text-slate-100 bg-slate-900;
+}
+.dark ::-webkit-scrollbar-track { @apply bg-slate-800; }
+.dark ::-webkit-scrollbar-thumb { @apply bg-slate-600; }
+.dark ::-webkit-scrollbar-thumb:hover { @apply bg-slate-500; }

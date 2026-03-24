@@ -20,6 +20,7 @@ namespace BusTicketBooking.Contexts
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
         public DbSet<Review> Reviews => Set<Review>();
         public DbSet<PromoCode> PromoCodes => Set<PromoCode>();
+        public DbSet<Announcement> Announcements => Set<Announcement>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -195,6 +196,14 @@ namespace BusTicketBooking.Contexts
                 e.Property(p => p.MaxDiscountAmount).HasPrecision(10, 2);
                 e.HasIndex(p => p.Code).IsUnique();
                 e.HasOne(p => p.Operator).WithMany().HasForeignKey(p => p.OperatorId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Announcement
+            modelBuilder.Entity<Announcement>(e =>
+            {
+                e.Property(a => a.Message).HasMaxLength(500).IsRequired();
+                e.Property(a => a.Type).HasMaxLength(20).IsRequired();
+                e.HasOne(a => a.Schedule).WithMany().HasForeignKey(a => a.ScheduleId).OnDelete(DeleteBehavior.Cascade);
             });
 
             base.OnModelCreating(modelBuilder);

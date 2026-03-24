@@ -137,11 +137,13 @@ export class OperatorDashboardComponent implements OnInit {
   ]);
 
   cards = [
-    { title: 'Manage Buses',     desc: 'Add, edit and manage your fleet',   icon: '🚌', bg: 'bg-red-50',    link: '/operator/buses'      },
-    { title: 'Manage Routes',    desc: 'Create and update bus routes',       icon: '🗺️', bg: 'bg-blue-50',   link: '/operator/routes'     },
-    { title: 'Manage Schedules', desc: 'Schedule departures and set prices', icon: '🗓️', bg: 'bg-green-50',  link: '/operator/schedules'  },
-    { title: 'Revenue Analytics',desc: 'Track earnings and performance',     icon: '📊', bg: 'bg-yellow-50', link: '/operator/analytics'  },
-    { title: 'Promo Codes',      desc: 'Create discount codes for customers',icon: '🏷️', bg: 'bg-purple-50', link: '/operator/promo-codes'},
+    { title: 'Manage Buses',      desc: 'Add, edit and manage your fleet',        icon: '🚌', bg: 'bg-red-50',    link: '/operator/buses'         },
+    { title: 'Manage Routes',     desc: 'Create and update bus routes',            icon: '🗺️', bg: 'bg-blue-50',   link: '/operator/routes'        },
+    { title: 'Manage Schedules',  desc: 'Schedule departures and set prices',      icon: '🗓️', bg: 'bg-green-50',  link: '/operator/schedules'     },
+    { title: 'Revenue Analytics', desc: 'Track earnings and performance',          icon: '📊', bg: 'bg-yellow-50', link: '/operator/analytics'     },
+    { title: 'Promo Codes',       desc: 'Create discount codes for customers',     icon: '🏷️', bg: 'bg-purple-50', link: '/operator/promo-codes'   },
+    { title: 'Announcements',     desc: 'Post trip notices to passengers',         icon: '📢', bg: 'bg-orange-50', link: '/operator/announcements' },
+    { title: 'Passenger Manifest',desc: 'View & print passenger list per trip',    icon: '👥', bg: 'bg-teal-50',   link: '/operator/manifest'      },
   ];
 
   tips = [

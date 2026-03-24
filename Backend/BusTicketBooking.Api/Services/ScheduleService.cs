@@ -495,7 +495,9 @@ namespace BusTicketBooking.Services
                 DepartureUtc = e.DepartureUtc,
                 BasePrice = e.BasePrice,
                 CreatedAtUtc = e.CreatedAtUtc,
-                UpdatedAtUtc = e.UpdatedAtUtc
+                UpdatedAtUtc = e.UpdatedAtUtc,
+                IsCancelledByOperator = e.IsCancelledByOperator,
+                CancelReason = e.CancelReason
             };
 
         public async Task<SeatAvailabilityResponseDto> GetAvailabilityByKeysAsync(string busCode, DateTime departureUtc, CancellationToken ct = default)
