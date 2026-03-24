@@ -10,25 +10,33 @@ import { ToastService } from '../../../services/toast.service';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-slate-50">
 
-    <!-- Header -->
-    <div class="bg-white border-b border-gray-200 shadow-sm">
-      <div class="max-w-5xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between flex-wrap gap-3">
-        <div class="flex items-center gap-3">
-          <a routerLink="/admin" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-500">
+    <!-- Top Bar -->
+    <div class="bg-white border-b border-slate-200">
+      <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <a routerLink="/admin" class="p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-500">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
           </a>
-          <div class="w-9 h-9 rounded-xl bg-orange-500 flex items-center justify-center text-white text-base shadow-sm">🚌</div>
           <div>
-            <h1 class="text-lg font-bold text-gray-900">Operator Approvals</h1>
-            <p class="text-sm text-gray-500">Review and approve operator registration requests</p>
+            <h1 class="text-xl font-semibold text-slate-900">Operator Approvals</h1>
+            <p class="text-sm text-slate-500 mt-0.5">
+              @if (pending().length > 0) {
+                <span class="inline-flex items-center gap-1">
+                  <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                  {{ pending().length }} pending review
+                </span>
+              } @else {
+                All requests reviewed
+              }
+            </p>
           </div>
         </div>
         <button (click)="load()"
-          class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
+          class="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
           <svg class="w-4 h-4" [class.animate-spin]="loading()" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -38,63 +46,78 @@ import { ToastService } from '../../../services/toast.service';
       </div>
     </div>
 
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-4">
+    <div class="max-w-5xl mx-auto px-6 py-6 space-y-4">
 
-      <!-- Loading -->
+      <!-- Loading Skeleton -->
       @if (loading()) {
-        <div class="space-y-3">
+        <div class="space-y-4">
           @for (_ of [1,2,3]; track $index) {
-            <div class="card p-5 animate-pulse">
-              <div class="flex justify-between items-start">
-                <div class="space-y-2"><div class="h-5 skeleton w-40 rounded"></div><div class="h-4 skeleton w-56 rounded"></div></div>
-                <div class="flex gap-2"><div class="h-9 skeleton w-20 rounded-lg"></div><div class="h-9 skeleton w-20 rounded-lg"></div></div>
+            <div class="bg-white rounded-xl border border-slate-200 p-6 animate-pulse">
+              <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-full bg-slate-200"></div>
+                <div class="flex-1 space-y-2">
+                  <div class="h-4 bg-slate-200 rounded w-40"></div>
+                  <div class="h-3 bg-slate-100 rounded w-56"></div>
+                  <div class="h-3 bg-slate-100 rounded w-32"></div>
+                </div>
+                <div class="flex gap-2">
+                  <div class="h-9 w-24 bg-slate-200 rounded-lg"></div>
+                  <div class="h-9 w-20 bg-slate-200 rounded-lg"></div>
+                </div>
               </div>
             </div>
           }
         </div>
       }
 
-      <!-- Empty -->
+      <!-- Empty State -->
       @if (!loading() && pending().length === 0) {
-        <div class="flex flex-col items-center justify-center py-20 text-center">
-          <div class="w-20 h-20 bg-green-100 rounded-2xl flex items-center justify-center text-4xl mb-4">✅</div>
-          <h3 class="text-lg font-bold text-gray-800">All clear!</h3>
-          <p class="text-gray-500 mt-1.5 text-sm">No pending operator requests right now.</p>
+        <div class="bg-white rounded-xl border border-slate-200 flex flex-col items-center justify-center py-20 text-center">
+          <div class="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <h3 class="text-base font-semibold text-slate-800">All clear</h3>
+          <p class="text-sm text-slate-500 mt-1">No pending operator requests at this time.</p>
         </div>
       }
 
-      <!-- Pending list -->
+      <!-- Pending List -->
       @for (op of pending(); track op.id) {
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
 
-          <!-- Main row -->
-          <div class="p-5 flex items-start justify-between gap-4 flex-wrap">
+          <!-- Main Row -->
+          <div class="p-6 flex items-start justify-between gap-4 flex-wrap">
             <div class="flex items-start gap-4 flex-1 min-w-0">
-              <div class="w-12 h-12 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center text-orange-700 font-bold text-lg flex-shrink-0">
+              <div class="w-11 h-11 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-700 font-bold text-base flex-shrink-0">
                 {{ op.fullName[0].toUpperCase() }}
               </div>
               <div class="min-w-0">
-                <div class="flex items-center gap-2 flex-wrap mb-0.5">
-                  <h3 class="font-bold text-gray-900">{{ op.fullName }}</h3>
-                  <span class="badge badge-warning">⏳ Pending Approval</span>
+                <div class="flex items-center gap-2 flex-wrap mb-1">
+                  <h3 class="font-semibold text-slate-900">{{ op.fullName }}</h3>
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    Pending
+                  </span>
                 </div>
-                <p class="text-sm text-gray-500">{{ op.email }}</p>
-                <p class="text-xs text-gray-400 font-mono mt-0.5">@{{ op.username }}</p>
-                <p class="text-xs text-gray-400 mt-1">Applied {{ formatRelative(op.createdAtUtc) }}</p>
+                <p class="text-sm text-slate-500">{{ op.email }}</p>
+                <p class="text-xs text-slate-400 font-mono mt-0.5">{{ op.username }}</p>
+                <p class="text-xs text-slate-400 mt-1.5">Applied {{ formatRelative(op.createdAtUtc) }}</p>
               </div>
             </div>
 
-            <!-- Action buttons -->
+            <!-- Action Buttons -->
             <div class="flex gap-2 flex-shrink-0">
               <button (click)="openApprove(op)"
-                class="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl bg-green-600 text-white hover:bg-green-700 transition-colors">
+                class="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                 </svg>
                 Approve
               </button>
               <button (click)="rejectUser(op)"
-                class="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl border border-red-200 text-red-600 hover:bg-red-50 transition-colors">
+                class="flex items-center gap-2 px-4 py-2 text-sm font-medium border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -103,28 +126,33 @@ import { ToastService } from '../../../services/toast.service';
             </div>
           </div>
 
-          <!-- Approve form (expands inline) -->
+          <!-- Approve Form (inline expand) -->
           @if (approvingId() === op.id) {
-            <div class="border-t border-gray-100 px-5 py-4 bg-green-50">
-              <p class="text-sm font-semibold text-gray-700 mb-3">Set operator details for <span class="text-green-700">{{ op.fullName }}</span></p>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+            <div class="border-t border-slate-100 px-6 py-5 bg-emerald-50/50">
+              <p class="text-sm font-medium text-slate-700 mb-4">
+                Set operator details for <span class="text-emerald-700 font-semibold">{{ op.fullName }}</span>
+              </p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label class="form-label text-xs">Company Name *</label>
+                  <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Company Name *</label>
                   <input [(ngModel)]="approveForm.companyName" type="text" placeholder="e.g. Sharma Travels"
-                    class="form-input text-sm py-2"/>
+                    class="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-colors bg-white"/>
                 </div>
                 <div>
-                  <label class="form-label text-xs">Support Phone <span class="text-gray-400 font-normal">(optional)</span></label>
+                  <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Support Phone <span class="text-slate-400 font-normal normal-case">(optional)</span></label>
                   <input [(ngModel)]="approveForm.supportPhone" type="text" placeholder="+91 98765 43210"
-                    class="form-input text-sm py-2"/>
+                    class="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-colors bg-white"/>
                 </div>
               </div>
-              <div class="flex gap-2">
+              <div class="flex gap-3">
                 <button (click)="confirmApprove(op)" [disabled]="!approveForm.companyName || saving()"
-                  class="btn-primary px-5 py-2 text-sm disabled:opacity-50">
-                  {{ saving() ? 'Approving…' : '✓ Confirm Approval' }}
+                  class="px-5 py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors">
+                  {{ saving() ? 'Approving…' : 'Confirm Approval' }}
                 </button>
-                <button (click)="approvingId.set(null)" class="btn-secondary px-4 py-2 text-sm">Cancel</button>
+                <button (click)="approvingId.set(null)"
+                  class="px-5 py-2.5 border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors">
+                  Cancel
+                </button>
               </div>
             </div>
           }
@@ -165,15 +193,12 @@ export class OperatorApprovalsComponent implements OnInit {
     this.saving.set(true);
     this.svc.approve(op.id, { companyName: this.approveForm.companyName, supportPhone: this.approveForm.supportPhone }).subscribe({
       next: () => {
-        this.toast.success(`${op.fullName} approved as operator! ✅`);
+        this.toast.success(`${op.fullName} approved as operator.`);
         this.approvingId.set(null);
         this.saving.set(false);
         this.load();
       },
-      error: err => {
-        this.saving.set(false);
-        this.toast.error(err.error?.message ?? 'Approval failed.');
-      },
+      error: err => { this.saving.set(false); this.toast.error(err.error?.message ?? 'Approval failed.'); },
     });
   }
 

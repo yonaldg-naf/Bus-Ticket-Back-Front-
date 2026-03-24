@@ -13,90 +13,108 @@ import { BusResponse, BusType, BusStatus, CreateBusByOperatorRequest, UpdateBusR
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink, FormsModule],
   template: `
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-slate-50">
 
-    <!-- Page Header -->
-    <div class="bg-white border-b border-gray-200 shadow-sm">
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <a routerLink="/operator" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-500">
+    <!-- Top Bar -->
+    <div class="bg-white border-b border-slate-200">
+      <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <a routerLink="/operator" class="p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-500">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
           </a>
           <div>
-            <h1 class="text-lg font-bold text-gray-900">Manage Buses</h1>
-            <p class="text-sm text-gray-500">{{ filteredBuses().length }} of {{ buses().length }} buses</p>
+            <h1 class="text-xl font-semibold text-slate-900">Fleet Management</h1>
+            <p class="text-sm text-slate-500 mt-0.5">{{ buses().length }} buses registered</p>
           </div>
         </div>
-        <button (click)="openForm()" class="btn-primary">+ Add Bus</button>
-      </div>
-
-      <!-- Filters & Sort -->
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 pb-4 flex flex-wrap gap-3 items-center">
-        <div class="relative flex-1 min-w-[180px]">
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        <button (click)="openForm()"
+          class="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
           </svg>
-          <input [(ngModel)]="searchQuery" placeholder="Search code or registration…"
-            class="form-input pl-9 py-2 text-sm w-full"/>
-        </div>
-        <select [(ngModel)]="filterType" class="form-input py-2 text-sm w-auto">
-          <option value="">All Types</option>
-          <option value="1">Seater</option>
-          <option value="2">Semi Sleeper</option>
-          <option value="3">Sleeper</option>
-          <option value="4">AC</option>
-          <option value="5">Non-AC</option>
-        </select>
-        <select [(ngModel)]="filterStatus" class="form-input py-2 text-sm w-auto">
-          <option value="">All Status</option>
-          <option value="1">Available</option>
-          <option value="2">Under Repair</option>
-          <option value="3">Not Available</option>
-        </select>
-        <select [(ngModel)]="sortBy" class="form-input py-2 text-sm w-auto">
-          <option value="">Sort by…</option>
-          <option value="code">Code A–Z</option>
-          <option value="seats-asc">Seats ↑</option>
-          <option value="seats-desc">Seats ↓</option>
-          <option value="status">Status</option>
-        </select>
+          Add Bus
+        </button>
       </div>
     </div>
 
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+    <div class="max-w-7xl mx-auto px-6 py-6 space-y-5">
+
+      <!-- Filters Row -->
+      <div class="bg-white rounded-xl border border-slate-200 px-5 py-4">
+        <div class="flex flex-wrap gap-3 items-center">
+          <div class="relative flex-1 min-w-[200px]">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input [(ngModel)]="searchQuery" placeholder="Search by code or registration…"
+              class="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors"/>
+          </div>
+          <select [(ngModel)]="filterType"
+            class="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors">
+            <option value="">All Types</option>
+            <option value="1">Seater</option>
+            <option value="2">Semi Sleeper</option>
+            <option value="3">Sleeper</option>
+            <option value="4">AC</option>
+            <option value="5">Non-AC</option>
+          </select>
+          <select [(ngModel)]="filterStatus"
+            class="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors">
+            <option value="">All Status</option>
+            <option value="1">Available</option>
+            <option value="2">Under Repair</option>
+            <option value="3">Not Available</option>
+          </select>
+          <select [(ngModel)]="sortBy"
+            class="px-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors">
+            <option value="">Sort by…</option>
+            <option value="code">Code A–Z</option>
+            <option value="seats-asc">Seats (Low–High)</option>
+            <option value="seats-desc">Seats (High–Low)</option>
+            <option value="status">Status</option>
+          </select>
+          <span class="text-sm text-slate-500 ml-auto">{{ filteredBuses().length }} result{{ filteredBuses().length !== 1 ? 's' : '' }}</span>
+        </div>
+      </div>
 
       <!-- Add / Edit Form -->
       @if (showForm()) {
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 class="font-semibold text-gray-800">{{ editingId() ? 'Edit Bus' : 'Add New Bus' }}</h3>
-            <button (click)="cancelForm()" class="text-gray-400 hover:text-gray-600 transition-colors">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div>
+              <h3 class="font-semibold text-slate-900">{{ editingId() ? 'Edit Bus Details' : 'Register New Bus' }}</h3>
+              <p class="text-xs text-slate-500 mt-0.5">{{ editingId() ? 'Update the bus information below' : 'Fill in the details to add a bus to your fleet' }}</p>
+            </div>
+            <button (click)="cancelForm()" class="p-2 rounded-lg hover:bg-slate-200 transition-colors text-slate-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
               </svg>
             </button>
           </div>
-          <div class="p-5">
-            <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="p-6">
+            <form [formGroup]="form" (ngSubmit)="onSubmit()" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               <div>
-                <label class="form-label">Bus Code *</label>
-                <input formControlName="code" type="text" placeholder="BUS-001" class="form-input"
-                  [class.opacity-50]="editingId()" [attr.title]="editingId() ? 'Bus code cannot be changed after creation' : null"/>
+                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Bus Code *</label>
+                <input formControlName="code" type="text" placeholder="BUS-001"
+                  class="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors"
+                  [class.opacity-60]="editingId()" [class.bg-slate-50]="editingId()"/>
                 @if (editingId()) {
-                  <p class="text-xs text-gray-400 mt-1">Bus code cannot be changed after creation</p>
+                  <p class="text-xs text-slate-400 mt-1">Code cannot be changed after creation</p>
                 }
-                @if (isInvalid('code')) { <p class="form-error">Code is required</p> }
+                @if (isInvalid('code')) { <p class="text-xs text-red-500 mt-1">Bus code is required</p> }
               </div>
               <div>
-                <label class="form-label">Registration Number *</label>
-                <input formControlName="registrationNumber" type="text" placeholder="MH12AB1234" class="form-input"/>
-                @if (isInvalid('registrationNumber')) { <p class="form-error">Registration is required</p> }
+                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Registration Number *</label>
+                <input formControlName="registrationNumber" type="text" placeholder="MH12AB1234"
+                  class="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors"/>
+                @if (isInvalid('registrationNumber')) { <p class="text-xs text-red-500 mt-1">Registration is required</p> }
               </div>
               <div>
-                <label class="form-label">Bus Type *</label>
-                <select formControlName="busType" class="form-input">
+                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Bus Type *</label>
+                <select formControlName="busType"
+                  class="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors">
                   <option [value]="1">Seater</option>
                   <option [value]="2">Semi Sleeper</option>
                   <option [value]="3">Sleeper</option>
@@ -105,93 +123,142 @@ import { BusResponse, BusType, BusStatus, CreateBusByOperatorRequest, UpdateBusR
                 </select>
               </div>
               <div>
-                <label class="form-label">Total Seats *</label>
-                <input formControlName="totalSeats" type="number" min="1" max="100" class="form-input"/>
-                @if (isInvalid('totalSeats')) { <p class="form-error">Seats must be 1–100</p> }
+                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Total Seats *</label>
+                <input formControlName="totalSeats" type="number" min="1" max="100"
+                  class="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors"/>
+                @if (isInvalid('totalSeats')) { <p class="text-xs text-red-500 mt-1">Seats must be 1–100</p> }
               </div>
               <div>
-                <label class="form-label">Status</label>
-                <select formControlName="status" class="form-input">
-                  <option [value]="1">✅ Available</option>
-                  <option [value]="2">🔧 Under Repair</option>
-                  <option [value]="3">❌ Not Available</option>
+                <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Status</label>
+                <select formControlName="status"
+                  class="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors">
+                  <option [value]="1">Available</option>
+                  <option [value]="2">Under Repair</option>
+                  <option [value]="3">Not Available</option>
                 </select>
               </div>
-              <div class="sm:col-span-2 flex gap-3 pt-2">
-                <button type="submit" [disabled]="saving()" class="btn-primary flex-1 py-3">
+              <div class="flex items-end gap-3">
+                <button type="submit" [disabled]="saving()"
+                  class="flex-1 py-2.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors">
                   {{ saving() ? 'Saving…' : (editingId() ? 'Update Bus' : 'Add Bus') }}
                 </button>
-                <button type="button" (click)="cancelForm()" class="btn-secondary flex-1 py-3">Cancel</button>
+                <button type="button" (click)="cancelForm()"
+                  class="flex-1 py-2.5 border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors">
+                  Cancel
+                </button>
               </div>
             </form>
           </div>
         </div>
       }
 
-      <!-- Loading -->
+      <!-- Loading Skeleton -->
       @if (loading()) {
-        <div class="space-y-3">
-          @for (_ of [1,2,3]; track $index) {
-            <div class="card p-5 animate-pulse">
-              <div class="flex justify-between">
-                <div class="space-y-2"><div class="h-5 skeleton w-32 rounded"></div><div class="h-4 skeleton w-56 rounded"></div></div>
-                <div class="flex gap-2"><div class="h-9 skeleton w-16 rounded-lg"></div><div class="h-9 skeleton w-16 rounded-lg"></div></div>
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="px-6 py-3 border-b border-slate-100 bg-slate-50">
+            <div class="h-4 bg-slate-200 rounded w-48 animate-pulse"></div>
+          </div>
+          @for (_ of [1,2,3,4,5]; track $index) {
+            <div class="px-6 py-4 border-b border-slate-100 animate-pulse flex items-center gap-4">
+              <div class="w-10 h-10 bg-slate-200 rounded-lg"></div>
+              <div class="flex-1 space-y-2">
+                <div class="h-4 bg-slate-200 rounded w-32"></div>
+                <div class="h-3 bg-slate-100 rounded w-48"></div>
+              </div>
+              <div class="flex gap-2">
+                <div class="h-8 w-16 bg-slate-200 rounded-lg"></div>
+                <div class="h-8 w-16 bg-slate-200 rounded-lg"></div>
               </div>
             </div>
           }
         </div>
       }
 
-      <!-- Empty -->
+      <!-- Empty State -->
       @if (!loading() && buses().length === 0 && !showForm()) {
-        <div class="flex flex-col items-center justify-center py-20 text-center">
-          <div class="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center text-4xl mb-4">🚌</div>
-          <h3 class="text-lg font-bold text-gray-800">No buses yet</h3>
-          <p class="text-gray-500 mt-1.5 text-sm">Add your first bus to start accepting bookings.</p>
-          <button (click)="openForm()" class="btn-primary mt-5">+ Add First Bus</button>
+        <div class="bg-white rounded-xl border border-slate-200 flex flex-col items-center justify-center py-20 text-center">
+          <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+            </svg>
+          </div>
+          <h3 class="text-base font-semibold text-slate-800">No buses registered</h3>
+          <p class="text-sm text-slate-500 mt-1 max-w-xs">Add your first bus to start building your fleet and accepting bookings.</p>
+          <button (click)="openForm()" class="mt-5 px-5 py-2.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">
+            Register First Bus
+          </button>
         </div>
       }
 
-      <!-- No results after filter -->
+      <!-- No Filter Results -->
       @if (!loading() && buses().length > 0 && filteredBuses().length === 0) {
-        <div class="flex flex-col items-center justify-center py-16 text-center">
-          <div class="text-4xl mb-3">🔍</div>
-          <p class="font-semibold text-gray-700">No buses match your filters</p>
-          <p class="text-sm text-gray-400 mt-1">Try adjusting your search or filters</p>
+        <div class="bg-white rounded-xl border border-slate-200 flex flex-col items-center justify-center py-16 text-center">
+          <div class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mb-3">
+            <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
+          <p class="font-medium text-slate-700">No buses match your filters</p>
+          <p class="text-sm text-slate-400 mt-1">Try adjusting your search criteria</p>
         </div>
       }
 
-      <!-- Bus List -->
+      <!-- Bus Table -->
       @if (!loading() && filteredBuses().length > 0) {
-        <div class="space-y-3">
-          @for (bus of filteredBuses(); track bus.id) {
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow">
-              <div class="flex items-start justify-between gap-4">
-                <div class="flex items-start gap-4 flex-1 min-w-0">
-                  <div class="w-11 h-11 rounded-xl bg-red-50 border border-red-100 flex items-center justify-center text-2xl flex-shrink-0">🚌</div>
-                  <div class="min-w-0">
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <span class="font-bold text-gray-900">{{ bus.code }}</span>
-                      <span class="font-mono text-xs text-gray-500">{{ bus.registrationNumber }}</span>
-                      <span class="badge" [class]="statusBadge(bus.status)">{{ busStatusLabel(bus.status) }}</span>
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="px-6 py-3 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Fleet Overview</span>
+            <span class="text-xs text-slate-400">{{ filteredBuses().length }} buses</span>
+          </div>
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-slate-100 text-left">
+                <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Bus</th>
+                <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden sm:table-cell">Registration</th>
+                <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Type</th>
+                <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden md:table-cell">Seats</th>
+                <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
+                <th class="px-6 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              @for (bus of filteredBuses(); track bus.id) {
+                <tr class="hover:bg-slate-50/60 transition-colors">
+                  <td class="px-6 py-4">
+                    <div class="flex items-center gap-3">
+                      <div class="w-9 h-9 rounded-lg bg-red-50 border border-red-100 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                        </svg>
+                      </div>
+                      <span class="font-semibold text-slate-900">{{ bus.code }}</span>
                     </div>
-                    <div class="flex items-center gap-3 mt-1.5 text-sm text-gray-500 flex-wrap">
-                      <span>{{ busTypeLabel(bus.busType) }}</span>
-                      <span class="text-gray-300">·</span>
-                      <span>{{ bus.totalSeats }} seats</span>
+                  </td>
+                  <td class="px-6 py-4 font-mono text-slate-500 text-xs hidden sm:table-cell">{{ bus.registrationNumber }}</td>
+                  <td class="px-6 py-4 text-slate-600">{{ busTypeLabel(bus.busType) }}</td>
+                  <td class="px-6 py-4 text-slate-600 hidden md:table-cell">{{ bus.totalSeats }}</td>
+                  <td class="px-6 py-4">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" [class]="statusBadge(bus.status)">
+                      <span class="w-1.5 h-1.5 rounded-full" [class]="statusDot(bus.status)"></span>
+                      {{ busStatusLabel(bus.status) }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="flex items-center justify-end gap-2">
+                      <button (click)="editBus(bus)"
+                        class="px-3 py-1.5 text-xs font-medium border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
+                        Edit
+                      </button>
+                      <button (click)="deleteBus(bus.id)"
+                        class="px-3 py-1.5 text-xs font-medium border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors">
+                        Delete
+                      </button>
                     </div>
-                  </div>
-                </div>
-                <div class="flex gap-2 flex-shrink-0">
-                  <button (click)="editBus(bus)" class="btn-secondary px-4 py-2 text-sm">Edit</button>
-                  <button (click)="deleteBus(bus.id)"
-                    class="px-4 py-2 text-sm font-medium rounded-xl border border-red-200 text-red-600 hover:bg-red-50 transition-colors">
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
         </div>
       }
 
@@ -307,6 +374,9 @@ export class ManageBusesComponent implements OnInit {
   busTypeLabel(t: number): string { return ({1:'Seater',2:'Semi Sleeper',3:'Sleeper',4:'AC',5:'Non-AC'} as any)[t] ?? 'Unknown'; }
   busStatusLabel(s: number): string { return ({1:'Available',2:'Under Repair',3:'Not Available'} as any)[s] ?? 'Unknown'; }
   statusBadge(s: number): string {
-    return ({1:'badge badge-success', 2:'badge badge-warning', 3:'badge badge-error'} as any)[s] ?? 'badge badge-gray';
+    return ({1:'bg-emerald-50 text-emerald-700', 2:'bg-amber-50 text-amber-700', 3:'bg-red-50 text-red-700'} as any)[s] ?? 'bg-slate-100 text-slate-600';
+  }
+  statusDot(s: number): string {
+    return ({1:'bg-emerald-500', 2:'bg-amber-500', 3:'bg-red-500'} as any)[s] ?? 'bg-slate-400';
   }
 }

@@ -36,6 +36,9 @@ export interface SearchSchedulesByKeysRequest {
   pageSize?: number;
   sortBy?: string;    // 'departure' | 'price' | 'busCode' | 'routeCode'
   sortDir?: string;   // 'asc' | 'desc'
+  busType?: number;   // 1=Seater 2=SemiSleeper 3=Sleeper 4=AC 5=NonAC
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 /** NOTE: `busCode` is added to satisfy existing component typing. */

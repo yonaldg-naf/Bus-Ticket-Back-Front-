@@ -32,10 +32,19 @@ namespace BusTicketBooking.Dtos.Schedules
         [MaxLength(4)]
         public string? SortDir { get; set; } = "asc";
 
+        /// <summary>Optional: filter by bus type (1=Seater,2=SemiSleeper,3=Sleeper,4=AC,5=NonAC)</summary>
+        public int? BusType { get; set; }
+
+        /// <summary>Optional: minimum price filter</summary>
+        public decimal? MinPrice { get; set; }
+
+        /// <summary>Optional: maximum price filter</summary>
+        public decimal? MaxPrice { get; set; }
+
         [Range(1, 100)]
         public int Page { get; set; } = 1;
 
         [Range(1, 100)]
-        public int PageSize { get; set; } = 10;
+        public int PageSize { get; set; } = 50;
     }
 }

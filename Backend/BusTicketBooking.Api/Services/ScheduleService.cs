@@ -357,6 +357,14 @@ namespace BusTicketBooking.Services
             })
             .Select(s => Map(s, s.Bus!, s.Route!));
 
+            // Apply optional filters
+            if (dto.BusType.HasValue)
+                filtered = filtered.Where(x => x.BusType == dto.BusType.Value);
+            if (dto.MinPrice.HasValue)
+                filtered = filtered.Where(x => x.BasePrice >= dto.MinPrice.Value);
+            if (dto.MaxPrice.HasValue)
+                filtered = filtered.Where(x => x.BasePrice <= dto.MaxPrice.Value);
+
             var sortBy = (dto.SortBy ?? "departure").Trim().ToLowerInvariant();
             bool desc = dto.SortDir?.ToLower() == "desc";
 
