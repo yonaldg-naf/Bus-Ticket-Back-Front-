@@ -43,12 +43,18 @@ interface PassengerRow { name: string; age?: number; seatNo: string; bookingId: 
           }
         </select>
       </div>
+      @if (loading()) {
+        <div class="flex items-center justify-center py-16 gap-3 text-slate-400">
+          <svg class="animate-spin w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+          Loading manifest...
+        </div>
+      }
       @if (selectedScheduleId && !loading()) {
         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
           <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between flex-wrap gap-3">
             <div>
               <h2 class="font-bold text-slate-900 dark:text-white">{{ selectedSchedule()?.busCode }} - {{ selectedSchedule()?.routeCode }}</h2>
-              <p class="text-xs text-slate-400 mt-0.5">{{ formatDate(selectedSchedule()?.departureUtc ?? "") }} · {{ passengers().length }} passengers</p>
+              <p class="text-xs text-slate-400 mt-0.5">{{ formatDate(selectedSchedule()?.departureUtc ?? "") }} &middot; {{ passengers().length }} passengers</p>
             </div>
             <div class="flex items-center gap-4 text-sm">
               <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-green-400 inline-block"></span><span class="text-slate-600 dark:text-slate-300">{{ confirmedCount() }} confirmed</span></span>
@@ -56,7 +62,7 @@ interface PassengerRow { name: string; age?: number; seatNo: string; bookingId: 
             </div>
           </div>
           @if (passengers().length === 0) {
-            <div class="text-center py-16 text-slate-400"><p class="text-4xl mb-3">👥</p><p class="font-medium text-slate-500">No passengers booked yet</p></div>
+            <div class="text-center py-16 text-slate-400"><p class="text-4xl mb-3">&#128101;</p><p class="font-medium text-slate-500">No passengers booked yet</p></div>
           } @else {
             <div class="overflow-x-auto">
               <table class="w-full text-sm">
@@ -73,7 +79,7 @@ interface PassengerRow { name: string; age?: number; seatNo: string; bookingId: 
                       <td class="px-6 py-3.5 text-slate-400 text-xs">{{ i + 1 }}</td>
                       <td class="px-4 py-3.5">
                         <div class="flex items-center gap-2.5">
-                          <div class="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-bold text-xs flex-shrink-0">{{ p.name[0].toUpperCase() }}</div>
+                          <div class="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-bold text-xs flex-shrink-0">{{ (p.name || "?")[0].toUpperCase() }}</div>
                           <span class="font-medium text-slate-800 dark:text-white">{{ p.name }}</span>
                         </div>
                       </td>
@@ -88,12 +94,6 @@ interface PassengerRow { name: string; age?: number; seatNo: string; bookingId: 
               </table>
             </div>
           }
-        </div>
-      }
-      @if (loading()) {
-        <div class="flex items-center justify-center py-16 gap-3 text-slate-400">
-          <svg class="animate-spin w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
-          Loading manifest...
         </div>
       }
     </div>
@@ -114,30 +114,57 @@ export class PassengerManifestComponent implements OnInit {
   confirmedCount = computed(() => this.passengers().filter(p => p.status === "Confirmed").length);
   pendingCount = computed(() => this.passengers().filter(p => p.status === "Pending").length);
 
-  ngOnInit() { this.scheduleSvc.getAll().subscribe({ next: d => this.schedules.set(d), error: () => {} }); }
+  ngOnInit() {
+    this.scheduleSvc.getAll().subscribe({
+      next: d => this.schedules.set(d),
+      error: () => this.toast.error("Failed to load schedules.")
+    });
+  }
 
   loadManifest() {
     if (!this.selectedScheduleId) { this.passengers.set([]); return; }
     this.loading.set(true);
+    this.passengers.set([]);
     this.bookingSvc.getBySchedule(this.selectedScheduleId).subscribe({
-      next: bookings => {
+      next: (bookings: any[]) => {
         const rows: PassengerRow[] = [];
-        for (const b of bookings) {
-          const status = b.status === 2 ? "Confirmed" : b.status === 1 ? "Pending" : "Cancelled";
-          if (b.status === 3 || b.status === 5) continue;
-          for (const p of b.passengers) rows.push({ name: p.name, age: p.age, seatNo: p.seatNo, bookingId: b.id, status });
+        for (const b of (bookings || [])) {
+          // Skip cancelled (3) and refunded (4) bookings
+          if (b.status === 3 || b.status === 4) continue;
+          const status = b.status === 2 ? "Confirmed" : "Pending";
+          const passengerList: any[] = b.passengers || b.Passengers || [];
+          for (const p of passengerList) {
+            rows.push({
+              name: p.name || p.Name || "",
+              age: p.age ?? p.Age,
+              seatNo: p.seatNo || p.SeatNo || "",
+              bookingId: b.id || b.Id || "",
+              status
+            });
+          }
         }
-        this.passengers.set(rows.sort((a, b) => parseInt(a.seatNo) - parseInt(b.seatNo)));
+        // Sort by seat number (handle both numeric "12" and alphanumeric "12A")
+        rows.sort((a, b) => {
+          const na = parseInt(a.seatNo) || 0;
+          const nb = parseInt(b.seatNo) || 0;
+          return na !== nb ? na - nb : a.seatNo.localeCompare(b.seatNo);
+        });
+        this.passengers.set(rows);
         this.loading.set(false);
       },
-      error: () => { this.loading.set(false); this.toast.error("Failed to load manifest."); },
+      error: (err) => {
+        this.loading.set(false);
+        this.toast.error("Failed to load manifest. " + (err?.error?.message || ""));
+      },
     });
   }
 
   print() {
     const s = this.selectedSchedule();
     if (!s) return;
-    const rows = this.passengers().map((p, i) => `<tr><td>${i+1}</td><td>${p.name}</td><td>${p.age ?? "-"}</td><td>${p.seatNo}</td><td>${p.status}</td></tr>`).join("");
+    const rows = this.passengers().map((p, i) =>
+      `<tr><td>${i+1}</td><td>${p.name}</td><td>${p.age ?? "-"}</td><td>${p.seatNo}</td><td>${p.status}</td></tr>`
+    ).join("");
     const win = window.open("", "_blank");
     if (!win) return;
     win.document.write(`<!DOCTYPE html><html><head><title>Manifest - ${s.busCode}</title>
@@ -145,9 +172,11 @@ export class PassengerManifestComponent implements OnInit {
     <body><h1>BusGo - Passenger Manifest</h1><p>${s.busCode} | ${s.routeCode} | ${new Date(s.departureUtc).toLocaleString("en-IN")}</p><p>Total: ${this.passengers().length} passengers</p>
     <table><thead><tr><th>#</th><th>Name</th><th>Age</th><th>Seat</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="footer">Printed from BusGo - ${new Date().toLocaleString("en-IN")}</div>
-    <script>window.onload=()=>{window.print();}<\/script></body></html>`);
+    <script>window.onload=function(){window.print();}<\/script></body></html>`);
     win.document.close();
   }
 
-  formatDate(utc: string) { return utc ? new Date(utc).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : ""; }
+  formatDate(utc: string) {
+    return utc ? new Date(utc).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+  }
 }
