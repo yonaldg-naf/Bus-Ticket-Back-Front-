@@ -84,37 +84,50 @@ import { Location } from '@angular/common';
             }
 
             <!-- Legend -->
-            <div class="px-5 py-3 bg-gray-50 dark:bg-slate-700/50 border-b border-gray-100 dark:border-slate-700 flex items-center gap-6 text-xs text-gray-600 dark:text-slate-400">
-              <span class="flex items-center gap-2"><span class="w-6 h-6 rounded-lg border-2 border-gray-300 bg-white inline-block"></span>Available</span>
+            <div class="px-5 py-3 bg-gray-50 dark:bg-slate-700/50 border-b border-gray-100 dark:border-slate-700 flex items-center gap-4 flex-wrap text-xs text-gray-600 dark:text-slate-400">
+              <span class="flex items-center gap-2"><span class="w-6 h-6 rounded-lg border-2 border-gray-300 bg-white inline-block"></span>Aisle</span>
+              <span class="flex items-center gap-2"><span class="w-6 h-6 rounded-lg border-2 border-blue-300 bg-blue-50 inline-block"></span>Window</span>
               <span class="flex items-center gap-2"><span class="w-6 h-6 rounded-lg bg-red-600 inline-block shadow-sm shadow-red-200"></span>Selected</span>
               <span class="flex items-center gap-2"><span class="w-6 h-6 rounded-lg bg-gray-200 dark:bg-slate-600 inline-block"></span>Booked</span>
             </div>
 
             <!-- Visual Bus Layout -->
             <div class="p-5">
-              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Bus Layout (Window - Aisle - Aisle - Window) · Max 6 seats</p>
-              <!-- Column headers -->
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Bus Layout · Max 6 seats per booking</p>
+              <!-- Column headers with window/aisle labels -->
               <div class="grid grid-cols-[1fr_1fr_20px_1fr_1fr] gap-1.5 mb-2 px-1">
-                <div class="text-center text-xs text-gray-400 font-medium">A</div>
-                <div class="text-center text-xs text-gray-400 font-medium">B</div>
+                <div class="text-center">
+                  <div class="text-xs text-blue-500 font-bold">A</div>
+                  <div class="text-[9px] text-blue-400">Window</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-gray-400 font-medium">B</div>
+                  <div class="text-[9px] text-gray-300">Aisle</div>
+                </div>
                 <div></div>
-                <div class="text-center text-xs text-gray-400 font-medium">C</div>
-                <div class="text-center text-xs text-gray-400 font-medium">D</div>
+                <div class="text-center">
+                  <div class="text-xs text-gray-400 font-medium">C</div>
+                  <div class="text-[9px] text-gray-300">Aisle</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-xs text-blue-500 font-bold">D</div>
+                  <div class="text-[9px] text-blue-400">Window</div>
+                </div>
               </div>
               <!-- Seat rows -->
               @for (row of seatRows(); track row.rowNum) {
                 <div class="grid grid-cols-[1fr_1fr_20px_1fr_1fr] gap-1.5 mb-1.5 items-center">
-                  <button (click)="toggleSeat(row.a)" [disabled]="isBooked(row.a)" [class]="seatBtnClass(row.a)" title="Seat {{ row.a }}">
+                  <button (click)="toggleSeat(row.a)" [disabled]="isBooked(row.a)" [class]="seatBtnClass(row.a, 'window')" title="Seat {{ row.a }} (Window)">
                     <span class="text-[10px] leading-none">{{ row.a }}</span>
                   </button>
-                  <button (click)="toggleSeat(row.b)" [disabled]="isBooked(row.b)" [class]="seatBtnClass(row.b)" title="Seat {{ row.b }}">
+                  <button (click)="toggleSeat(row.b)" [disabled]="isBooked(row.b)" [class]="seatBtnClass(row.b, 'aisle')" title="Seat {{ row.b }} (Aisle)">
                     <span class="text-[10px] leading-none">{{ row.b }}</span>
                   </button>
                   <div class="flex items-center justify-center"><span class="text-[9px] text-gray-300 font-bold">{{ row.rowNum }}</span></div>
-                  <button (click)="toggleSeat(row.c)" [disabled]="isBooked(row.c)" [class]="seatBtnClass(row.c)" title="Seat {{ row.c }}">
+                  <button (click)="toggleSeat(row.c)" [disabled]="isBooked(row.c)" [class]="seatBtnClass(row.c, 'aisle')" title="Seat {{ row.c }} (Aisle)">
                     <span class="text-[10px] leading-none">{{ row.c }}</span>
                   </button>
-                  <button (click)="toggleSeat(row.d)" [disabled]="isBooked(row.d)" [class]="seatBtnClass(row.d)" title="Seat {{ row.d }}">
+                  <button (click)="toggleSeat(row.d)" [disabled]="isBooked(row.d)" [class]="seatBtnClass(row.d, 'window')" title="Seat {{ row.d }} (Window)">
                     <span class="text-[10px] leading-none">{{ row.d }}</span>
                   </button>
                 </div>
@@ -141,6 +154,7 @@ import { Location } from '@angular/common';
                     @for (seat of selectedSeats(); track seat) {
                       <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-bold">
                         💺 {{ seat }}
+                        <span class="text-[9px] font-normal text-red-400">{{ seatTypeLabel(seat) }}</span>
                         <button (click)="toggleSeat(seat)" class="text-red-400 hover:text-red-600 transition-colors ml-0.5 text-base leading-none">x</button>
                       </span>
                     }
@@ -258,10 +272,11 @@ export class SeatSelectionComponent implements OnInit, OnDestroy {
   isBooked(seat: string) { return !seat || (this.availability()?.bookedSeats.includes(seat) ?? false); }
   isSelected(seat: string) { return !!seat && this.selectedSeats().includes(seat); }
 
-  seatBtnClass(seat: string): string {
+  seatBtnClass(seat: string, type: 'window' | 'aisle' = 'aisle'): string {
     if (!seat) return 'h-10 rounded-lg opacity-0 cursor-default';
     if (this.isBooked(seat)) return 'h-10 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-slate-600 text-gray-400 dark:text-slate-500 border border-gray-200 dark:border-slate-500 cursor-not-allowed flex items-center justify-center';
     if (this.isSelected(seat)) return 'h-10 rounded-lg text-xs font-bold bg-red-600 text-white border border-red-600 shadow-md shadow-red-200 cursor-pointer transition-all active:scale-95 flex items-center justify-center';
+    if (type === 'window') return 'h-10 rounded-lg text-xs font-semibold border-2 border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 hover:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 cursor-pointer transition-all active:scale-95 flex items-center justify-center';
     return 'h-10 rounded-lg text-xs font-semibold border border-gray-300 dark:border-slate-500 bg-white dark:bg-slate-700 text-gray-700 dark:text-slate-200 hover:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 cursor-pointer transition-all active:scale-95 flex items-center justify-center';
   }
 
@@ -286,4 +301,18 @@ export class SeatSelectionComponent implements OnInit, OnDestroy {
   }
 
   goBack() { this.location.back(); }
+
+  // A and D columns (positions 0 and 3 in each row of 4) are window seats
+  seatTypeLabel(seat: string): string {
+    const av = this.availability();
+    if (!av) return '';
+    const all = [...av.availableSeats, ...av.bookedSeats].sort((a, b) => {
+      const na = parseInt(a), nb = parseInt(b);
+      return (!isNaN(na) && !isNaN(nb)) ? na - nb : a.localeCompare(b);
+    });
+    const idx = all.indexOf(seat);
+    if (idx < 0) return '';
+    const col = idx % 4; // 0=A, 1=B, 2=C, 3=D
+    return col === 0 || col === 3 ? 'Window' : 'Aisle';
+  }
 }

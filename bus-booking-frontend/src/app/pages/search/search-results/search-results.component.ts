@@ -128,6 +128,23 @@ import { ToastService } from '../../../services/toast.service';
                   </div>
                 </div>
 
+                <!-- Amenities -->
+                <div>
+                  <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">Amenities</p>
+                  <div class="space-y-2">
+                    @for (a of amenityOptions; track a.key) {
+                      <label class="flex items-center gap-2.5 cursor-pointer group">
+                        <input type="checkbox" [checked]="filterAmenities.includes(a.key)"
+                          (change)="toggleAmenity(a.key)"
+                          class="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer"/>
+                        <span class="text-sm text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white flex items-center gap-1.5">
+                          <span>{{ a.icon }}</span>{{ a.label }}
+                        </span>
+                      </label>
+                    }
+                  </div>
+                </div>
+
               </div>
             </div>
           </aside>
@@ -264,14 +281,11 @@ import { ToastService } from '../../../services/toast.service';
                     </div>
                   </div>
 
-                  <!-- Tags -->
-                  <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center gap-4 flex-wrap text-xs text-slate-500 dark:text-slate-400">
-                    @for (tag of featureTags; track tag) {
-                      <span class="flex items-center gap-1.5">
-                        <svg class="w-3.5 h-3.5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                        </svg>
-                        {{ tag }}
+                  <!-- Amenity tags -->
+                  <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center gap-2 flex-wrap">
+                    @for (tag of amenityTags(s); track tag.label) {
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                        <span>{{ tag.icon }}</span>{{ tag.label }}
                       </span>
                     }
                     <span class="ml-auto text-xs text-slate-300 dark:text-slate-600 font-mono">{{ s.id.slice(0,8) }}…</span>
@@ -309,6 +323,7 @@ export class SearchResultsComponent implements OnInit {
   // Client-side filters (applied after backend fetch)
   filterBusTypes: number[] = [];
   filterTimeSlots = signal<string[]>([]);
+  filterAmenities: string[] = [];
   priceMin = 0;
   priceMax = 9999;
   absMinPrice = 0;
@@ -331,20 +346,52 @@ export class SearchResultsComponent implements OnInit {
     { key: 'night',     label: 'Night',     icon: '🌙', time: '10pm–6am' },
   ];
 
+  amenityOptions = [
+    { key: 'ac',       label: 'Air Conditioning', icon: '❄️' },
+    { key: 'sleeper',  label: 'Sleeper Berths',   icon: '🛏️' },
+    { key: 'charging', label: 'Charging Point',   icon: '🔌' },
+    { key: 'blanket',  label: 'Blanket & Pillow', icon: '🛌' },
+    { key: 'water',    label: 'Water Bottle',     icon: '💧' },
+  ];
+
+  // Derive amenities from busType
+  private busTypeAmenities(busType: number): string[] {
+    const map: Record<number, string[]> = {
+      1: ['charging', 'water'],                          // Seater
+      2: ['charging', 'water', 'blanket'],               // SemiSleeper
+      3: ['sleeper', 'charging', 'water', 'blanket'],    // Sleeper
+      4: ['ac', 'charging', 'water', 'blanket'],         // AC
+      5: ['charging', 'water'],                          // NonAC
+    };
+    return map[busType] ?? [];
+  }
+
+  amenityTags(s: ScheduleResponse): { icon: string; label: string }[] {
+    const amenities = this.busTypeAmenities(s.busType);
+    return this.amenityOptions.filter(a => amenities.includes(a.key));
+  }
+
   activeFilterCount = computed(() => {
     let c = 0;
     if (this.filterBusTypes.length) c++;
     if (this.filterTimeSlots().length) c++;
     if (this.priceMin > this.absMinPrice || this.priceMax < this.absMaxPrice) c++;
+    if (this.filterAmenities.length) c++;
     return c;
   });
 
-  // Client-side filter on top of backend results (for time-slot & price range)
+  // Client-side filter on top of backend results (for time-slot, price range, amenities)
   displayItems = computed(() => {
     let list = this.allItems();
     if (this.filterTimeSlots().length)
       list = list.filter(s => this.filterTimeSlots().includes(this.getTimeSlot(s.departureUtc)));
     list = list.filter(s => s.basePrice >= this.priceMin && s.basePrice <= this.priceMax);
+    if (this.filterAmenities.length) {
+      list = list.filter(s => {
+        const has = this.busTypeAmenities(s.busType);
+        return this.filterAmenities.every(a => has.includes(a));
+      });
+    }
     return list;
   });
 
@@ -419,9 +466,17 @@ export class SearchResultsComponent implements OnInit {
     // Time slot is client-side only (no backend param), no reload needed
   }
 
+  toggleAmenity(key: string) {
+    this.filterAmenities = this.filterAmenities.includes(key)
+      ? this.filterAmenities.filter(k => k !== key)
+      : [...this.filterAmenities, key];
+    // client-side only, no reload
+  }
+
   clearFilters() {
     this.filterBusTypes = [];
     this.filterTimeSlots.set([]);
+    this.filterAmenities = [];
     this.priceMin = this.absMinPrice;
     this.priceMax = this.absMaxPrice;
     this.reload();
