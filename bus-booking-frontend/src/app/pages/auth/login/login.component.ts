@@ -29,7 +29,7 @@ import { ToastService } from '../../../services/toast.service';
               <path d="M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm9 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM4 11V9l1-4h14l1 4v2H4z"/>
             </svg>
           </div>
-          <span class="text-white text-2xl font-extrabold">BusGo</span>
+          <span class="text-white text-2xl font-extrabold">SwiftRoute</span>
         </div>
       </div>
 
@@ -64,7 +64,7 @@ import { ToastService } from '../../../services/toast.service';
         </div>
       </div>
 
-      <div class="relative z-10 text-slate-600 text-sm">© 2026 BusGo Technologies Pvt. Ltd.</div>
+      <div class="relative z-10 text-slate-600 text-sm">© 2026 SwiftRoute Technologies Pvt. Ltd.</div>
     </div>
 
     <!-- ── Right panel ── -->
@@ -78,7 +78,7 @@ import { ToastService } from '../../../services/toast.service';
               <path d="M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10z"/>
             </svg>
           </div>
-          <span class="font-extrabold text-slate-900 dark:text-white text-xl">BusGo</span>
+          <span class="font-extrabold text-slate-900 dark:text-white text-xl">SwiftRoute</span>
         </div>
 
         <div class="mb-8">
@@ -145,11 +145,11 @@ import { ToastService } from '../../../services/toast.service';
                 </svg>
                 Signing in...
               </span>
-            } @else { Log In to BusGo }
+            } @else { Log In to SwiftRoute }
           </button>
 
           <p class="text-center text-sm text-slate-500 dark:text-slate-400">
-            New to BusGo?
+            New to SwiftRoute?
             <a routerLink="/auth/register" class="text-red-600 font-bold hover:underline ml-1">Create an account</a>
           </p>
         </form>
