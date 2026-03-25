@@ -26,7 +26,7 @@ import { OperatorApprovalService } from '../../../services/operator-approval.ser
           </div>
           <div>
             <h1 class="text-base font-bold text-slate-900 dark:text-white">Admin Control Panel</h1>
-            <p class="text-xs text-slate-500 dark:text-slate-400">BusGo Platform Management</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">SwiftRoute Platform Management</p>
           </div>
         </div>
         <div class="flex items-center gap-3">

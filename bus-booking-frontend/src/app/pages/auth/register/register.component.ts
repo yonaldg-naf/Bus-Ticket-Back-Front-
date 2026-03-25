@@ -21,10 +21,10 @@ import { ToastService } from '../../../services/toast.service';
               <path d="M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm9 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM4 11V9l1-4h14l1 4v2H4z"/>
             </svg>
           </div>
-          <span class="text-2xl font-extrabold text-slate-900 dark:text-white">BusGo</span>
+          <span class="text-2xl font-extrabold text-slate-900 dark:text-white">SwiftRoute</span>
         </a>
         <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white mt-5">Get started free</h1>
-        <p class="text-slate-500 dark:text-slate-400 text-sm mt-1.5">Join 2 million+ travelers on BusGo</p>
+        <p class="text-slate-500 dark:text-slate-400 text-sm mt-1.5">Join 2 million+ travelers on SwiftRoute</p>
       </div>
 
       <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-7 sm:p-8">
@@ -174,10 +174,10 @@ export class RegisterComponent {
           this.toast.success('Welcome, Admin!');
           this.router.navigate(['/admin']);
         } else if (res.role === 'Operator') {
-          this.toast.success('Welcome to BusGo! 🎉');
+          this.toast.success('Welcome to SwiftRoute! 🎉');
           this.router.navigate(['/operator']);
         } else {
-          this.toast.success('Account created! Welcome to BusGo 🎉');
+          this.toast.success('Account created! Welcome to SwiftRoute 🎉');
           this.router.navigate(['/home']);
         }
       },

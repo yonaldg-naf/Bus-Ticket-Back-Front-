@@ -1,4 +1,4 @@
-﻿import { Component, inject, signal, OnInit } from '@angular/core';
+﻿import { Component, inject, signal, OnInit, HostListener, computed } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -37,7 +37,7 @@ interface CityResponse { city: string; stopCount: number; }
             <span class="text-red-400">Journey with Ease.</span>
           </h1>
           <p class="text-slate-300 mt-4 text-base sm:text-lg max-w-2xl mx-auto">
-            Discover thousands of routes, compare fares, and reserve your seats in seconds. Travel smarter with BusGo.
+            Discover thousands of routes, compare fares, and reserve your seats in seconds. Travel smarter with SwiftRoute.
           </p>
           <div class="flex flex-wrap justify-center gap-8 mt-8">
             @for (s of stats; track s.label) {
@@ -64,18 +64,39 @@ interface CityResponse { city: string; stopCount: number; }
           <form [formGroup]="form" (ngSubmit)="onSearch()">
             <!-- Row 1: From / Swap / To -->
             <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-3 mb-4">
+
+              <!-- FROM typeahead -->
               <div>
                 <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">From</label>
                 <div class="relative">
-                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400 pointer-events-none" fill="currentColor" viewBox="0 0 20 20">
+                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400 pointer-events-none z-10" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                   </svg>
-                  <select formControlName="fromCity" class="w-full pl-9 pr-3 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm transition-colors appearance-none">
-                    <option value="">Select departure city</option>
-                    @for (c of cities(); track c.city) { <option [value]="c.city">{{ c.city }}</option> }
-                  </select>
+                  <input
+                    [value]="fromInput()"
+                    (input)="onFromInput($event)"
+                    (focus)="fromOpen.set(true)"
+                    (blur)="onFromBlur()"
+                    placeholder="Type city name..."
+                    autocomplete="off"
+                    class="w-full pl-9 pr-3 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm transition-colors"
+                    [class.border-red-400]="isInvalid('fromCity')"/>
+                  @if (fromOpen() && fromSuggestions().length > 0) {
+                    <div class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-xl z-50 overflow-hidden max-h-52 overflow-y-auto">
+                      @for (c of fromSuggestions(); track c.city) {
+                        <button type="button" (mousedown)="selectFrom(c.city)"
+                          class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left">
+                          <svg class="w-3.5 h-3.5 text-red-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                          </svg>
+                          <span class="text-sm text-slate-800 dark:text-white font-medium">{{ c.city }}</span>
+                          <span class="text-xs text-slate-400 ml-auto">{{ c.stopCount }} stop{{ c.stopCount !== 1 ? 's' : '' }}</span>
+                        </button>
+                      }
+                    </div>
+                  }
                 </div>
-                @if (isInvalid('fromCity')) { <p class="text-red-500 text-xs mt-1">Required</p> }
+                @if (isInvalid('fromCity')) { <p class="text-red-500 text-xs mt-1">Select a departure city</p> }
               </div>
 
               <!-- Swap button -->
@@ -89,18 +110,38 @@ interface CityResponse { city: string; stopCount: number; }
                 </button>
               </div>
 
+              <!-- TO typeahead -->
               <div>
                 <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">To</label>
                 <div class="relative">
-                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400 pointer-events-none" fill="currentColor" viewBox="0 0 20 20">
+                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400 pointer-events-none z-10" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                   </svg>
-                  <select formControlName="toCity" class="w-full pl-9 pr-3 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm transition-colors appearance-none">
-                    <option value="">Select destination city</option>
-                    @for (c of cities(); track c.city) { <option [value]="c.city">{{ c.city }}</option> }
-                  </select>
+                  <input
+                    [value]="toInput()"
+                    (input)="onToInput($event)"
+                    (focus)="toOpen.set(true)"
+                    (blur)="onToBlur()"
+                    placeholder="Type city name..."
+                    autocomplete="off"
+                    class="w-full pl-9 pr-3 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm transition-colors"
+                    [class.border-red-400]="isInvalid('toCity')"/>
+                  @if (toOpen() && toSuggestions().length > 0) {
+                    <div class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-xl z-50 overflow-hidden max-h-52 overflow-y-auto">
+                      @for (c of toSuggestions(); track c.city) {
+                        <button type="button" (mousedown)="selectTo(c.city)"
+                          class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left">
+                          <svg class="w-3.5 h-3.5 text-red-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                          </svg>
+                          <span class="text-sm text-slate-800 dark:text-white font-medium">{{ c.city }}</span>
+                          <span class="text-xs text-slate-400 ml-auto">{{ c.stopCount }} stop{{ c.stopCount !== 1 ? 's' : '' }}</span>
+                        </button>
+                      }
+                    </div>
+                  }
                 </div>
-                @if (isInvalid('toCity')) { <p class="text-red-500 text-xs mt-1">Required</p> }
+                @if (isInvalid('toCity')) { <p class="text-red-500 text-xs mt-1">Select a destination city</p> }
               </div>
             </div>
 
@@ -214,7 +255,7 @@ interface CityResponse { city: string; stopCount: number; }
     <section class="bg-white dark:bg-slate-800 py-16">
       <div class="max-w-3xl mx-auto px-4 sm:px-6 text-center">
         <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white">Ready to Hit the Road?</h2>
-        <p class="text-slate-500 dark:text-slate-400 mt-3 text-lg">Join over 2 million travelers who book smarter with BusGo.</p>
+        <p class="text-slate-500 dark:text-slate-400 mt-3 text-lg">Join over 2 million travelers who book smarter with SwiftRoute.</p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center mt-8">
           <a routerLink="/auth/register" class="px-8 py-3.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-all shadow-lg shadow-red-200 text-base">
             Create Free Account
@@ -237,7 +278,7 @@ interface CityResponse { city: string; stopCount: number; }
                   <path d="M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 001 1h1a1 1 0 001-1v-1h8v1a1 1 0 001 1h1a1 1 0 001-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10z"/>
                 </svg>
               </div>
-              <span class="text-white font-extrabold text-lg">BusGo</span>
+              <span class="text-white font-extrabold text-lg">SwiftRoute</span>
             </div>
             <p class="text-sm leading-relaxed">India's most trusted bus booking platform.</p>
           </div>
@@ -265,7 +306,7 @@ interface CityResponse { city: string; stopCount: number; }
           </div>
         </div>
         <div class="border-t border-gray-800 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p class="text-sm">© 2026 BusGo Technologies Pvt. Ltd. All rights reserved.</p>
+          <p class="text-sm">© 2026 SwiftRoute Technologies Pvt. Ltd. All rights reserved.</p>
           <p class="text-sm text-gray-600">Made with care for Indian travelers</p>
         </div>
       </div>
@@ -282,6 +323,24 @@ export class HomeComponent implements OnInit {
   sameCityError = signal(false);
   today = new Date().toISOString().split('T')[0];
   passengers = 1;
+
+  // Typeahead state
+  fromInput = signal('');
+  toInput   = signal('');
+  fromOpen  = signal(false);
+  toOpen    = signal(false);
+
+  // Filtered suggestions — starts with match ranked first, then contains
+  fromSuggestions = computed(() => this.suggest(this.fromInput()));
+  toSuggestions   = computed(() => this.suggest(this.toInput()));
+
+  private suggest(query: string): CityResponse[] {
+    const q = query.trim().toLowerCase();
+    if (!q) return this.cities().slice(0, 8);
+    const starts = this.cities().filter(c => c.city.toLowerCase().startsWith(q));
+    const contains = this.cities().filter(c => !c.city.toLowerCase().startsWith(q) && c.city.toLowerCase().includes(q));
+    return [...starts, ...contains].slice(0, 8);
+  }
 
   form = this.fb.group({
     fromCity: ['', Validators.required],
@@ -317,12 +376,72 @@ export class HomeComponent implements OnInit {
     });
   }
 
+  // Typeahead handlers
+  onFromInput(e: Event) {
+    const val = (e.target as HTMLInputElement).value;
+    this.fromInput.set(val);
+    this.fromOpen.set(true);
+    // Clear form value if user is typing (not yet selected)
+    this.form.get('fromCity')?.setValue('');
+  }
+
+  onToInput(e: Event) {
+    const val = (e.target as HTMLInputElement).value;
+    this.toInput.set(val);
+    this.toOpen.set(true);
+    this.form.get('toCity')?.setValue('');
+  }
+
+  selectFrom(city: string) {
+    this.fromInput.set(city);
+    this.form.get('fromCity')?.setValue(city);
+    this.fromOpen.set(false);
+    this.sameCityError.set(false);
+  }
+
+  selectTo(city: string) {
+    this.toInput.set(city);
+    this.form.get('toCity')?.setValue(city);
+    this.toOpen.set(false);
+    this.sameCityError.set(false);
+  }
+
+  onFromBlur() {
+    // Delay so mousedown on suggestion fires first
+    setTimeout(() => {
+      this.fromOpen.set(false);
+      // If typed text doesn't match a valid city, clear it
+      const match = this.cities().find(c => c.city.toLowerCase() === this.fromInput().toLowerCase());
+      if (match) {
+        this.fromInput.set(match.city);
+        this.form.get('fromCity')?.setValue(match.city);
+      } else if (!this.form.get('fromCity')?.value) {
+        this.fromInput.set('');
+      }
+    }, 150);
+  }
+
+  onToBlur() {
+    setTimeout(() => {
+      this.toOpen.set(false);
+      const match = this.cities().find(c => c.city.toLowerCase() === this.toInput().toLowerCase());
+      if (match) {
+        this.toInput.set(match.city);
+        this.form.get('toCity')?.setValue(match.city);
+      } else if (!this.form.get('toCity')?.value) {
+        this.toInput.set('');
+      }
+    }, 150);
+  }
+
   isInvalid(f: string) { const c = this.form.get(f); return !!(c?.invalid && c?.touched); }
 
   swapCities() {
-    const from = this.form.get('fromCity')?.value;
-    const to   = this.form.get('toCity')?.value;
+    const from = this.form.get('fromCity')?.value ?? '';
+    const to   = this.form.get('toCity')?.value ?? '';
     this.form.patchValue({ fromCity: to, toCity: from });
+    this.fromInput.set(to);
+    this.toInput.set(from);
     this.sameCityError.set(false);
   }
 

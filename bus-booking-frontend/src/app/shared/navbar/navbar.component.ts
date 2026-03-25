@@ -20,7 +20,7 @@ import { ThemeService } from '../../services/theme.service';
             </svg>
           </div>
           <div class="leading-none">
-            <span class="text-lg font-extrabold text-gray-900 dark:text-white tracking-tight">BusGo</span>
+            <span class="text-lg font-extrabold text-gray-900 dark:text-white tracking-tight">SwiftRoute</span>
             <span class="block text-[9px] text-red-500 font-bold uppercase tracking-[0.15em] mt-0.5">Bus Booking</span>
           </div>
         </a>

@@ -169,9 +169,9 @@ export class PassengerManifestComponent implements OnInit {
     if (!win) return;
     win.document.write(`<!DOCTYPE html><html><head><title>Manifest - ${s.busCode}</title>
     <style>body{font-family:Arial,sans-serif;padding:24px;color:#1e293b}h1{font-size:20px;font-weight:900;color:#dc2626}p{font-size:13px;color:#64748b;margin:4px 0}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:13px}th{background:#f8fafc;padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;color:#64748b;border-bottom:2px solid #e2e8f0}td{padding:8px 12px;border-bottom:1px solid #f1f5f9}tr:hover td{background:#f8fafc}.footer{margin-top:24px;font-size:11px;color:#94a3b8;text-align:center}@media print{body{padding:0}}</style></head>
-    <body><h1>BusGo - Passenger Manifest</h1><p>${s.busCode} | ${s.routeCode} | ${new Date(s.departureUtc).toLocaleString("en-IN")}</p><p>Total: ${this.passengers().length} passengers</p>
+    <body><h1>SwiftRoute - Passenger Manifest</h1><p>${s.busCode} | ${s.routeCode} | ${new Date(s.departureUtc).toLocaleString("en-IN")}</p><p>Total: ${this.passengers().length} passengers</p>
     <table><thead><tr><th>#</th><th>Name</th><th>Age</th><th>Seat</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="footer">Printed from BusGo - ${new Date().toLocaleString("en-IN")}</div>
+    <div class="footer">Printed from SwiftRoute - ${new Date().toLocaleString("en-IN")}</div>
     <script>window.onload=function(){window.print();}<\/script></body></html>`);
     win.document.close();
   }

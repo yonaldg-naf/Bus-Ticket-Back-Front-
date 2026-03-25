@@ -5,7 +5,7 @@ export class ThemeService {
   dark = signal<boolean>(false);
 
   constructor() {
-    const saved = localStorage.getItem('busgo-theme');
+    const saved = localStorage.getItem('swiftroute-theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const isDark = saved ? saved === 'dark' : prefersDark;
     this.dark.set(isDark);
@@ -14,7 +14,7 @@ export class ThemeService {
     effect(() => {
       const d = this.dark();
       this.apply(d);
-      localStorage.setItem('busgo-theme', d ? 'dark' : 'light');
+      localStorage.setItem('swiftroute-theme', d ? 'dark' : 'light');
     });
   }
 

@@ -74,7 +74,7 @@ import { AuthService } from '../../../services/auth.service';
 
       <p class="text-xs text-gray-400 mt-6">
         Questions? Contact support at
-        <a href="mailto:support@busgo.in" class="text-red-600 hover:underline">support@busgo.in</a>
+        <a href="mailto:support@swiftroute.in" class="text-red-600 hover:underline">support@swiftroute.in</a>
       </p>
     </div>
   </div>
