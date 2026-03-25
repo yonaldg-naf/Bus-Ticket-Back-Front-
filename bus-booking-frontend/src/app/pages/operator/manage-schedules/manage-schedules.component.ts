@@ -7,6 +7,7 @@ import { ScheduleService, ScheduleResponse } from '../../../services/schedule.se
 import { BusService, BusResponse } from '../../../services/bus-route.service';
 import { RouteService, RouteResponse } from '../../../services/bus-route.service';
 import { ToastService } from '../../../services/toast.service';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-manage-schedules',
@@ -203,6 +204,7 @@ export class ManageSchedulesComponent implements OnInit {
   private routeSvc = inject(RouteService);
   private toast = inject(ToastService);
   private fb = inject(FormBuilder);
+  private auth = inject(AuthService);
 
   loading = signal(true);
   saving = signal(false);
@@ -306,6 +308,7 @@ export class ManageSchedulesComponent implements OnInit {
       });
     } else {
       this.scheduleSvc.createByKeys({
+        operatorUsername: this.auth.currentUser()?.username,
         busCode: v.busCode!,
         routeCode: v.routeCode!,
         departureLocal: v.departureLocal!,

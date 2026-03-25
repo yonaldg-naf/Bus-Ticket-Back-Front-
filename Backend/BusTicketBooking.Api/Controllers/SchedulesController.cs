@@ -231,16 +231,6 @@ namespace BusTicketBooking.Controllers
         public async Task<IActionResult> GetAvailabilityByKeys([FromRoute] string busCode, [FromRoute] DateTime departureUtc, CancellationToken ct)
             => Ok(await _schedules.GetAvailabilityByKeysAsync(busCode, departureUtc, ct));
 
-        /// <summary>Get a schedule by busCode + departureUtc (ISO UTC).</summary>
-        [HttpGet("{busCode}/{departureUtc}")]
-        [AllowAnonymous]
-        [ProducesResponseType(typeof(ScheduleResponseDto), 200)]
-        public async Task<IActionResult> GetByKeys([FromRoute] string busCode, [FromRoute] DateTime departureUtc, CancellationToken ct)
-        {
-            var result = await _schedules.GetByBusCodeAndDepartureAsync(busCode, departureUtc, ct);
-            return result is null ? NotFound() : Ok(result);
-        }
-
         /// <summary>Delete a schedule by busCode + departureUtc.</summary>
         [HttpDelete("{busCode}/{departureUtc}")]
         [Authorize(Roles = Roles.Operator + "," + Roles.Admin)]

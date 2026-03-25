@@ -38,29 +38,11 @@ export interface RouteResponse {
   updatedAtUtc?: string;
 }
 
-export interface RouteStopItem {
-  stopId: string;
-  order: number;
-  arrivalOffsetMin?: number;
-  departureOffsetMin?: number;
-}
-
-export interface CreateRouteRequest {
-  operatorId: string;
-  routeCode: string;
-  stops: RouteStopItem[];
-}
-
 export interface CreateRouteByKeysRequest {
   operatorUsername?: string;
   companyName?: string;
   routeCode: string;
-  stops: StopRef[]; // min 2
-}
-
-export interface UpdateRouteRequest {
-  routeCode: string;
-  stops: RouteStopItem[];
+  stops: StopRef[];
 }
 
 export interface UpdateRouteByKeysRequest {

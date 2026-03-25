@@ -329,8 +329,6 @@ export class SearchResultsComponent implements OnInit {
   absMinPrice = 0;
   absMaxPrice = 9999;
 
-  featureTags = ['Instant Confirmation', 'Seat Selection', 'E-Ticket', 'Free Cancellation'];
-
   busTypeOptions = [
     { value: 1, label: 'Seater'      },
     { value: 2, label: 'Semi Sleeper'},

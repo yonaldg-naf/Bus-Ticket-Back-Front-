@@ -46,11 +46,6 @@ export class BusService {
     return this.http.get<BusResponse[]>(`${this.base}`);
   }
 
-  getById(id: string): Observable<BusResponse> {
-    return this.http.get<BusResponse>(`${this.base}/${id}`);
-  }
-
-  // Backend supports POST /api/Buses/by-operator
   createByOperator(dto: CreateBusByOperatorRequest): Observable<BusResponse> {
     return this.http.post<BusResponse>(`${this.base}/by-operator`, dto);
   }
@@ -96,14 +91,6 @@ export class RouteService {
 
   getAll(): Observable<RouteResponse[]> {
     return this.http.get<RouteResponse[]>(`${this.base}`);
-  }
-
-  getById(id: string): Observable<RouteResponse> {
-    return this.http.get<RouteResponse>(`${this.base}/${id}`);
-  }
-
-  getByCode(operatorIdentity: string, routeCode: string): Observable<RouteResponse> {
-    return this.http.get<RouteResponse>(`${this.base}/${operatorIdentity}/${routeCode}`);
   }
 
   createByKeys(dto: CreateRouteByKeysRequest): Observable<RouteResponse> {

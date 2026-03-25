@@ -23,7 +23,6 @@ namespace BusTicketBooking.Interfaces
         Task<ScheduleResponseDto> CreateByKeysAsync(CreateScheduleByKeysRequestDto dto, CancellationToken ct = default);
         Task<PagedResult<ScheduleResponseDto>> SearchByKeysAsync(SearchSchedulesByKeysRequestDto dto, CancellationToken ct = default);
         Task<SeatAvailabilityResponseDto> GetAvailabilityByKeysAsync(string busCode, DateTime departureUtc, CancellationToken ct = default);
-        Task<ScheduleResponseDto?> GetByBusCodeAndDepartureAsync(string busCode, DateTime departureUtc, CancellationToken ct = default);
         Task<bool> DeleteByKeysAsync(string busCode, DateTime departureUtc, CancellationToken ct = default);
         Task<ScheduleResponseDto?> CancelAsync(Guid id, string reason, CancellationToken ct = default);
     }

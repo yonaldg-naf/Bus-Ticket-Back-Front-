@@ -60,8 +60,4 @@ export class PromoCodeService {
   validate(code: string, bookingAmount: number): Observable<ValidatePromoResponse> {
     return this.http.post<ValidatePromoResponse>(`${this.base}/validate`, { code, bookingAmount });
   }
-
-  getAll(): Observable<PromoCodeResponse[]> {
-    return this.http.get<PromoCodeResponse[]>(this.base);
-  }
 }
