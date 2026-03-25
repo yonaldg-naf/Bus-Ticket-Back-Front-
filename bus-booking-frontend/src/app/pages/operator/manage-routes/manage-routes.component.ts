@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, computed } from '@angular/core';
+﻿import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { FormBuilder, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -13,24 +13,24 @@ import { RouteResponse } from '../../../models/stop-route.models';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink, FormsModule],
   template: `
-  <div class="min-h-screen bg-slate-50">
+  <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
 
     <!-- Top Bar -->
-    <div class="bg-white border-b border-slate-200">
+    <div class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
       <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-4">
-          <a routerLink="/operator" class="p-2 rounded-lg hover:bg-slate-100 transition-colors text-slate-500">
+          <a routerLink="/operator" class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-slate-500 dark:text-slate-300 hover:text-red-600">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
             </svg>
           </a>
           <div>
-            <h1 class="text-xl font-semibold text-slate-900">Route Management</h1>
-            <p class="text-sm text-slate-500 mt-0.5">{{ routes().length }} routes configured</p>
+            <h1 class="text-base font-bold text-slate-900 dark:text-white">Route Management</h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ routes().length }} routes configured</p>
           </div>
         </div>
         <button (click)="openForm()"
-          class="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">
+          class="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-red-200">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
           </svg>
@@ -42,14 +42,14 @@ import { RouteResponse } from '../../../models/stop-route.models';
     <div class="max-w-7xl mx-auto px-6 py-6 space-y-5">
 
       <!-- Search -->
-      <div class="bg-white rounded-xl border border-slate-200 px-5 py-4">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm px-5 py-4">
         <div class="flex flex-wrap gap-3 items-center">
           <div class="relative flex-1 min-w-[200px]">
             <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
             <input [(ngModel)]="searchQuery" placeholder="Search by route code or city…"
-              class="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors"/>
+              class="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors"/>
           </div>
           <span class="text-sm text-slate-500">{{ filteredRoutes().length }} result{{ filteredRoutes().length !== 1 ? 's' : '' }}</span>
         </div>
@@ -57,13 +57,13 @@ import { RouteResponse } from '../../../models/stop-route.models';
 
       <!-- Form -->
       @if (showForm()) {
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
             <div>
-              <h3 class="font-semibold text-slate-900">{{ editingCode() ? 'Edit Route' : 'Create New Route' }}</h3>
-              <p class="text-xs text-slate-500 mt-0.5">Define the route code and all stops in order</p>
+              <h3 class="font-bold text-slate-900 dark:text-white">{{ editingCode() ? 'Edit Route' : 'Create New Route' }}</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Define the route code and all stops in order</p>
             </div>
-            <button (click)="cancelForm()" class="p-2 rounded-lg hover:bg-slate-200 transition-colors text-slate-400">
+            <button (click)="cancelForm()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
               </svg>
@@ -74,7 +74,7 @@ import { RouteResponse } from '../../../models/stop-route.models';
               <div class="max-w-xs">
                 <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5">Route Code *</label>
                 <input formControlName="routeCode" type="text" placeholder="e.g. MUM-PUN-01"
-                  class="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors"/>
+                  class="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors"/>
                 @if (isInvalid('routeCode')) { <p class="text-xs text-red-500 mt-1">Route code is required</p> }
               </div>
 
@@ -100,9 +100,9 @@ import { RouteResponse } from '../../../models/stop-route.models';
                         }
                       </div>
                       <input formControlName="city" placeholder="City"
-                        class="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors"/>
+                        class="flex-1 px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors"/>
                       <input formControlName="name" placeholder="Stop name"
-                        class="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors"/>
+                        class="flex-1 px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors"/>
                       @if (stopsArray.length > 2) {
                         <button type="button" (click)="removeStop($index)"
                           class="p-2 text-slate-400 hover:text-red-500 transition-colors flex-shrink-0">
@@ -124,11 +124,11 @@ import { RouteResponse } from '../../../models/stop-route.models';
 
               <div class="flex gap-3 pt-1">
                 <button type="submit" [disabled]="saving()"
-                  class="px-6 py-2.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors">
+                  class="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl disabled:opacity-50 transition-colors">
                   {{ saving() ? 'Saving…' : (editingCode() ? 'Update Route' : 'Create Route') }}
                 </button>
                 <button type="button" (click)="cancelForm()"
-                  class="px-6 py-2.5 border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors">
+                  class="px-6 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                   Cancel
                 </button>
               </div>
@@ -139,7 +139,7 @@ import { RouteResponse } from '../../../models/stop-route.models';
 
       <!-- Loading Skeleton -->
       @if (loading()) {
-        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
           @for (_ of [1,2,3]; track $index) {
             <div class="px-6 py-5 border-b border-slate-100 animate-pulse">
               <div class="h-4 bg-slate-200 rounded w-32 mb-3"></div>
@@ -155,15 +155,15 @@ import { RouteResponse } from '../../../models/stop-route.models';
 
       <!-- Empty State -->
       @if (!loading() && routes().length === 0 && !showForm()) {
-        <div class="bg-white rounded-xl border border-slate-200 flex flex-col items-center justify-center py-20 text-center">
-          <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center py-20 text-center">
+          <div class="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center mb-4">
             <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
             </svg>
           </div>
-          <h3 class="text-base font-semibold text-slate-800">No routes configured</h3>
-          <p class="text-sm text-slate-500 mt-1 max-w-xs">Create your first route to start scheduling buses between cities.</p>
-          <button (click)="openForm()" class="mt-5 px-5 py-2.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">
+          <h3 class="text-base font-semibold text-slate-800 dark:text-white">No routes configured</h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-xs">Create your first route to start scheduling buses between cities.</p>
+          <button (click)="openForm()" class="mt-5 px-5 py-2.5 bg-red-600 text-white text-sm font-semibold rounded-xl hover:bg-red-700 transition-colors">
             Create First Route
           </button>
         </div>
@@ -171,26 +171,26 @@ import { RouteResponse } from '../../../models/stop-route.models';
 
       <!-- No Filter Results -->
       @if (!loading() && routes().length > 0 && filteredRoutes().length === 0) {
-        <div class="bg-white rounded-xl border border-slate-200 flex flex-col items-center justify-center py-16 text-center">
-          <p class="font-medium text-slate-700">No routes match your search</p>
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center py-16 text-center">
+          <p class="font-medium text-slate-700 dark:text-slate-300">No routes match your search</p>
           <p class="text-sm text-slate-400 mt-1">Try a different route code or city name</p>
         </div>
       }
 
       <!-- Route Table -->
       @if (!loading() && filteredRoutes().length > 0) {
-        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div class="px-6 py-3 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">All Routes</span>
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div class="px-6 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">All Routes</span>
             <span class="text-xs text-slate-400">{{ filteredRoutes().length }} routes</span>
           </div>
-          <div class="divide-y divide-slate-100">
+          <div class="divide-y divide-slate-50 dark:divide-slate-700">
             @for (route of filteredRoutes(); track route.routeCode) {
-              <div class="px-6 py-5 hover:bg-slate-50/60 transition-colors">
+              <div class="px-6 py-5 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
                 <div class="flex items-start justify-between gap-4">
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-3 mb-3">
-                      <span class="font-semibold text-slate-900">{{ route.routeCode }}</span>
+                      <span class="font-bold text-slate-900 dark:text-white">{{ route.routeCode }}</span>
                       <span class="text-xs text-slate-400">{{ route.stops.length }} stops</span>
                     </div>
                     <!-- Stop Timeline -->
@@ -201,7 +201,7 @@ import { RouteResponse } from '../../../models/stop-route.models';
                             <div class="w-2 h-2 rounded-full" [class]="$first ? 'bg-red-600' : ($last ? 'bg-slate-800' : 'bg-slate-400')"></div>
                           </div>
                           <div class="mx-2 text-xs">
-                            <span class="font-medium text-slate-700">{{ stop.city }}</span>
+                            <span class="font-medium text-slate-700 dark:text-slate-200">{{ stop.city }}</span>
                             <span class="text-slate-400 ml-1">{{ stop.name }}</span>
                           </div>
                           @if (!$last) {
@@ -215,12 +215,10 @@ import { RouteResponse } from '../../../models/stop-route.models';
                   </div>
                   <div class="flex items-center gap-2 flex-shrink-0">
                     <button (click)="editRoute(route)"
-                      class="px-3 py-1.5 text-xs font-medium border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
-                      Edit
+                      class="px-3 py-1.5 text-xs font-semibold border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Edit
                     </button>
                     <button (click)="deleteRoute(route)"
-                      class="px-3 py-1.5 text-xs font-medium border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors">
-                      Delete
+                      class="px-3 py-1.5 text-xs font-semibold border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">Delete
                     </button>
                   </div>
                 </div>

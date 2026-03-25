@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+﻿import { Component, inject, signal, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../services/auth.service';
@@ -12,10 +12,8 @@ import { BookingService } from '../../../services/booking.service';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-  <div class="min-h-screen bg-slate-50">
-
-    <!-- Header -->
-    <div class="bg-white border-b border-slate-200 shadow-sm">
+  <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
+    <div class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center shadow-md shadow-red-200">
@@ -24,148 +22,130 @@ import { BookingService } from '../../../services/booking.service';
             </svg>
           </div>
           <div>
-            <h1 class="text-base font-bold text-slate-900">Operator Dashboard</h1>
-            <p class="text-xs text-slate-500">
-              Welcome back, <span class="font-semibold text-red-600">{{ auth.currentUser()?.fullName }}</span>
-            </p>
+            <h1 class="text-base font-bold text-slate-900 dark:text-white">Operator Dashboard</h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Welcome back, <span class="font-semibold text-red-600">{{ auth.currentUser()?.fullName }}</span></p>
           </div>
         </div>
         <div class="flex items-center gap-3">
           @if (auth.currentUser()?.companyName) {
-            <div class="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg">
-              <span class="text-sm">🏢</span>
-              <span class="text-xs font-semibold text-blue-700">{{ auth.currentUser()?.companyName }}</span>
+            <div class="flex items-center gap-2 px-3 py-1.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+              <span class="text-sm">&#127970;</span>
+              <span class="text-xs font-semibold text-red-700 dark:text-red-400">{{ auth.currentUser()?.companyName }}</span>
             </div>
           }
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white text-sm font-bold shadow-sm">
-              {{ auth.currentUser()?.fullName?.[0]?.toUpperCase() }}
-            </div>
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white text-sm font-bold shadow-sm">
+            {{ auth.currentUser()?.fullName?.[0]?.toUpperCase() }}
           </div>
         </div>
       </div>
     </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-
-      <!-- KPI Cards — 2 rows: booking stats + fleet stats -->
+      <!-- KPI Cards -->
       <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
         @for (s of stats(); track s.label) {
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 hover:shadow-md transition-shadow">
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 hover:shadow-md transition-shadow">
             <div class="flex items-center justify-between mb-4">
               <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl" [class]="s.bg">{{ s.icon }}</div>
               <span class="text-xs font-medium px-2 py-0.5 rounded-full" [class]="s.badgeCls">{{ s.badge }}</span>
             </div>
             @if (s.loading) {
-              <div class="h-8 bg-slate-100 rounded-lg animate-pulse w-16 mb-1"></div>
+              <div class="h-8 bg-slate-100 dark:bg-slate-700 rounded-lg animate-pulse w-16 mb-1"></div>
             } @else {
-              <p class="text-3xl font-extrabold text-slate-900 tabular-nums">{{ s.value }}</p>
+              <p class="text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums">{{ s.value }}</p>
             }
-            <p class="text-xs text-slate-500 mt-1 font-medium">{{ s.label }}</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">{{ s.label }}</p>
           </div>
         }
       </div>
 
       <!-- Quick Actions + Tips -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        <!-- Quick Actions -->
-        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="px-6 py-4 border-b border-slate-100">
-            <h2 class="font-bold text-slate-900">Fleet Management</h2>
+        <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
+            <h2 class="font-bold text-slate-900 dark:text-white">Fleet Management</h2>
             <p class="text-xs text-slate-400 mt-0.5">Manage your buses, routes and schedules</p>
           </div>
           <div class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             @for (card of cards; track card.title) {
               <a [routerLink]="card.link"
-                class="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-slate-100
-                       hover:border-red-200 hover:bg-red-50/40 transition-all group text-center cursor-pointer">
-                <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-sm transition-transform group-hover:scale-110" [class]="card.bg">
-                  {{ card.icon }}
-                </div>
+                class="flex flex-col items-center gap-3 p-6 rounded-2xl border-2 border-slate-100 dark:border-slate-700 hover:border-red-200 hover:bg-red-50/40 dark:hover:bg-red-900/10 transition-all group text-center cursor-pointer">
+                <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shadow-sm transition-transform group-hover:scale-110" [class]="card.bg">{{ card.icon }}</div>
                 <div>
-                  <h3 class="font-bold text-slate-900 group-hover:text-red-700 transition-colors text-sm">{{ card.title }}</h3>
+                  <h3 class="font-bold text-slate-900 dark:text-white group-hover:text-red-700 dark:group-hover:text-red-400 transition-colors text-sm">{{ card.title }}</h3>
                   <p class="text-xs text-slate-400 mt-0.5 leading-relaxed">{{ card.desc }}</p>
                 </div>
                 <span class="text-xs font-semibold text-red-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                  Open
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                  </svg>
+                  Open <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 </span>
               </a>
             }
           </div>
         </div>
 
-        <!-- Tips Panel -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
-            <span class="text-lg">💡</span>
-            <h2 class="font-bold text-slate-900">Quick Tips</h2>
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
+            <span class="text-lg">&#128161;</span>
+            <h2 class="font-bold text-slate-900 dark:text-white">Quick Tips</h2>
           </div>
           <div class="p-4 space-y-3">
             @for (tip of tips; track tip.text) {
-              <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <div class="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-100 dark:border-slate-700">
                 <div class="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0" [class]="tip.bg">{{ tip.icon }}</div>
-                <p class="text-xs text-slate-600 leading-relaxed">{{ tip.text }}</p>
+                <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{{ tip.text }}</p>
               </div>
             }
           </div>
         </div>
-
       </div>
-
     </div>
   </div>
   `,
 })
 export class OperatorDashboardComponent implements OnInit {
-  auth            = inject(AuthService);
-  private busSvc      = inject(BusService);
-  private schedSvc    = inject(ScheduleService);
-  private routeSvc    = inject(RouteService);
-  private bookingSvc  = inject(BookingService);
+  auth           = inject(AuthService);
+  private busSvc     = inject(BusService);
+  private schedSvc   = inject(ScheduleService);
+  private routeSvc   = inject(RouteService);
+  private bookingSvc = inject(BookingService);
 
   stats = signal([
-    { label: 'Total Bookings', icon: '🎫', value: '—', loading: true, bg: 'bg-purple-50', badge: 'Bookings', badgeCls: 'bg-purple-100 text-purple-600' },
-    { label: 'Confirmed',      icon: '✅', value: '—', loading: true, bg: 'bg-green-50',  badge: 'Paid',     badgeCls: 'bg-green-100 text-green-600'   },
-    { label: 'Revenue',        icon: '💰', value: '—', loading: true, bg: 'bg-yellow-50', badge: 'Earned',   badgeCls: 'bg-yellow-100 text-yellow-600'  },
-    { label: 'My Buses',       icon: '🚌', value: '—', loading: true, bg: 'bg-red-50',    badge: 'Fleet',    badgeCls: 'bg-red-100 text-red-600'        },
-    { label: 'My Routes',      icon: '🗺️', value: '—', loading: true, bg: 'bg-blue-50',   badge: 'Routes',   badgeCls: 'bg-blue-100 text-blue-600'      },
-    { label: 'My Schedules',   icon: '🗓️', value: '—', loading: true, bg: 'bg-orange-50', badge: 'Trips',    badgeCls: 'bg-orange-100 text-orange-600'  },
+    { label: 'Total Bookings', icon: '&#127915;', value: '&#8212;', loading: true, bg: 'bg-purple-50 dark:bg-purple-900/20', badge: 'Bookings', badgeCls: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' },
+    { label: 'Confirmed',      icon: '&#9989;',   value: '&#8212;', loading: true, bg: 'bg-green-50 dark:bg-green-900/20',  badge: 'Paid',     badgeCls: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'   },
+    { label: 'Revenue',        icon: '&#128176;', value: '&#8212;', loading: true, bg: 'bg-yellow-50 dark:bg-yellow-900/20',badge: 'Earned',   badgeCls: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400'},
+    { label: 'My Buses',       icon: '&#128652;', value: '&#8212;', loading: true, bg: 'bg-red-50 dark:bg-red-900/20',      badge: 'Fleet',    badgeCls: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'           },
+    { label: 'My Routes',      icon: '&#128506;', value: '&#8212;', loading: true, bg: 'bg-slate-100 dark:bg-slate-700',    badge: 'Routes',   badgeCls: 'bg-slate-200 text-slate-600 dark:bg-slate-600 dark:text-slate-300'      },
+    { label: 'My Schedules',   icon: '&#128197;', value: '&#8212;', loading: true, bg: 'bg-red-50 dark:bg-red-900/20',      badge: 'Trips',    badgeCls: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'          },
   ]);
 
   cards = [
-    { title: 'Manage Buses',      desc: 'Add, edit and manage your fleet',        icon: '🚌', bg: 'bg-red-50',    link: '/operator/buses'         },
-    { title: 'Manage Routes',     desc: 'Create and update bus routes',            icon: '🗺️', bg: 'bg-blue-50',   link: '/operator/routes'        },
-    { title: 'Manage Schedules',  desc: 'Schedule departures and set prices',      icon: '🗓️', bg: 'bg-green-50',  link: '/operator/schedules'     },
-    { title: 'Revenue Analytics', desc: 'Track earnings and performance',          icon: '📊', bg: 'bg-yellow-50', link: '/operator/analytics'     },
-    { title: 'Promo Codes',       desc: 'Create discount codes for customers',     icon: '🏷️', bg: 'bg-purple-50', link: '/operator/promo-codes'   },
-    { title: 'Announcements',     desc: 'Post trip notices to passengers',         icon: '📢', bg: 'bg-orange-50', link: '/operator/announcements' },
-    { title: 'Passenger Manifest',desc: 'View & print passenger list per trip',    icon: '👥', bg: 'bg-teal-50',   link: '/operator/manifest'      },
+    { title: 'Manage Buses',       desc: 'Add, edit and manage your fleet',       icon: '&#128652;', bg: 'bg-red-50',    link: '/operator/buses'         },
+    { title: 'Manage Routes',      desc: 'Create and update bus routes',           icon: '&#128506;', bg: 'bg-slate-100', link: '/operator/routes'        },
+    { title: 'Manage Schedules',   desc: 'Schedule departures and set prices',     icon: '&#128197;', bg: 'bg-green-50',  link: '/operator/schedules'     },
+    { title: 'Revenue Analytics',  desc: 'Track earnings and performance',         icon: '&#128202;', bg: 'bg-yellow-50', link: '/operator/analytics'     },
+    { title: 'Promo Codes',        desc: 'Create discount codes for customers',    icon: '&#127991;', bg: 'bg-purple-50', link: '/operator/promo-codes'   },
+    { title: 'Announcements',      desc: 'Post trip notices to passengers',        icon: '&#128226;', bg: 'bg-red-50',    link: '/operator/announcements' },
+    { title: 'Passenger Manifest', desc: 'View and print passenger list per trip', icon: '&#128101;', bg: 'bg-slate-100', link: '/operator/manifest'      },
   ];
 
   tips = [
-    { icon: '✅', bg: 'bg-green-50',  text: 'Set bus status to Available to allow customer bookings.' },
-    { icon: '🕐', bg: 'bg-blue-50',   text: 'Keep schedules updated with correct departure times.'    },
-    { icon: '🔧', bg: 'bg-orange-50', text: 'Mark buses as Under Repair if temporarily unavailable.'  },
-    { icon: '💰', bg: 'bg-yellow-50', text: 'Competitive pricing increases your booking rate.'         },
+    { icon: '&#9989;',  bg: 'bg-green-50',  text: 'Set bus status to Available to allow customer bookings.' },
+    { icon: '&#128336;',bg: 'bg-slate-100', text: 'Keep schedules updated with correct departure times.'    },
+    { icon: '&#128295;',bg: 'bg-red-50',    text: 'Mark buses as Under Repair if temporarily unavailable.'  },
+    { icon: '&#128176;',bg: 'bg-yellow-50', text: 'Competitive pricing increases your booking rate.'         },
   ];
 
   ngOnInit() {
-    // Fleet stats (indices 3, 4, 5)
-    this.busSvc.getAll().subscribe({ next: d => this.update(3, String(d.length)), error: () => this.update(3, '—') });
-    this.routeSvc.getAll().subscribe({ next: d => this.update(4, String(d.length)), error: () => this.update(4, '—') });
-    this.schedSvc.getAll().subscribe({ next: d => this.update(5, String(d.length)), error: () => this.update(5, '—') });
-    // Booking stats (indices 0, 1, 2)
+    this.busSvc.getAll().subscribe({ next: d => this.update(3, String(d.length)), error: () => this.update(3, '&#8212;') });
+    this.routeSvc.getAll().subscribe({ next: d => this.update(4, String(d.length)), error: () => this.update(4, '&#8212;') });
+    this.schedSvc.getAll().subscribe({ next: d => this.update(5, String(d.length)), error: () => this.update(5, '&#8212;') });
     this.bookingSvc.getOperatorStats().subscribe({
       next: s => {
         this.update(0, String(s.totalBookings));
         this.update(1, String(s.confirmedBookings));
-        this.update(2, '₹' + s.revenue.toLocaleString('en-IN'));
+        this.update(2, 'Rs' + s.revenue.toLocaleString('en-IN'));
       },
-      error: () => { this.update(0, '—'); this.update(1, '—'); this.update(2, '—'); },
+      error: () => { this.update(0, '&#8212;'); this.update(1, '&#8212;'); this.update(2, '&#8212;'); },
     });
   }
 

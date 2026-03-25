@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, computed } from '@angular/core';
+﻿import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -9,10 +9,10 @@ import { AnalyticsService, OperatorAnalytics, DailyRevenue } from '../../../serv
   standalone: true,
   imports: [CommonModule, RouterLink, FormsModule],
   template: `
-  <div class="min-h-screen bg-slate-50">
+  <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
 
     <!-- Header -->
-    <div class="bg-white border-b border-slate-200 shadow-sm">
+    <div class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div class="flex items-center gap-3">
           <a routerLink="/operator" class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 hover:border-red-300 hover:bg-red-50 transition-colors text-slate-500 hover:text-red-600">
@@ -21,13 +21,13 @@ import { AnalyticsService, OperatorAnalytics, DailyRevenue } from '../../../serv
             </svg>
           </a>
           <div>
-            <h1 class="text-base font-bold text-slate-900">Revenue Analytics</h1>
-            <p class="text-xs text-slate-500">Track your earnings and performance</p>
+            <h1 class="text-base font-bold text-slate-900 dark:text-white">Revenue Analytics</h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Track your earnings and performance</p>
           </div>
         </div>
         <div class="flex items-center gap-2">
           <label class="text-xs text-slate-500 font-medium">Period:</label>
-          <select [(ngModel)]="selectedDays" (ngModelChange)="load()" class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+          <select [(ngModel)]="selectedDays" (ngModelChange)="load()" class="text-sm border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-1.5 bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500">
             <option [value]="7">Last 7 days</option>
             <option [value]="30">Last 30 days</option>
             <option [value]="90">Last 90 days</option>
@@ -51,34 +51,34 @@ import { AnalyticsService, OperatorAnalytics, DailyRevenue } from '../../../serv
 
         <!-- KPI Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
             <div class="w-11 h-11 rounded-xl bg-yellow-50 flex items-center justify-center text-xl mb-3">💰</div>
-            <p class="text-2xl font-extrabold text-slate-900">₹{{ data()!.totalRevenue | number:'1.0-0' }}</p>
-            <p class="text-xs text-slate-500 mt-1">Total Revenue</p>
+            <p class="text-2xl font-extrabold text-slate-900 dark:text-white">₹{{ data()!.totalRevenue | number:'1.0-0' }}</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Total Revenue</p>
           </div>
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
             <div class="w-11 h-11 rounded-xl bg-purple-50 flex items-center justify-center text-xl mb-3">🎫</div>
-            <p class="text-2xl font-extrabold text-slate-900">{{ data()!.totalBookings }}</p>
-            <p class="text-xs text-slate-500 mt-1">Total Bookings</p>
+            <p class="text-2xl font-extrabold text-slate-900 dark:text-white">{{ data()!.totalBookings }}</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Total Bookings</p>
           </div>
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
             <div class="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center text-xl mb-3">📊</div>
-            <p class="text-2xl font-extrabold text-slate-900">{{ data()!.averageOccupancyRate | number:'1.0-1' }}%</p>
-            <p class="text-xs text-slate-500 mt-1">Avg Occupancy</p>
+            <p class="text-2xl font-extrabold text-slate-900 dark:text-white">{{ data()!.averageOccupancyRate | number:'1.0-1' }}%</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Avg Occupancy</p>
           </div>
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
             <div class="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center text-xl mb-3">⭐</div>
-            <p class="text-2xl font-extrabold text-slate-900">{{ data()!.averageRating | number:'1.1-1' }}</p>
-            <p class="text-xs text-slate-500 mt-1">Avg Rating ({{ data()!.totalReviews }} reviews)</p>
+            <p class="text-2xl font-extrabold text-slate-900 dark:text-white">{{ data()!.averageRating | number:'1.1-1' }}</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Avg Rating ({{ data()!.totalReviews }} reviews)</p>
           </div>
         </div>
 
         <!-- Revenue Chart -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
             <div>
-              <h2 class="font-bold text-slate-900">Daily Revenue</h2>
-              <p class="text-xs text-slate-400 mt-0.5">Revenue trend over selected period</p>
+              <h2 class="font-bold text-slate-900 dark:text-white">Daily Revenue</h2>
+              <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Revenue trend over selected period</p>
             </div>
             <div class="flex items-center gap-4 text-xs text-slate-500">
               <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-red-500 inline-block"></span>Revenue</span>
@@ -89,7 +89,7 @@ import { AnalyticsService, OperatorAnalytics, DailyRevenue } from '../../../serv
             @if (data()!.dailyRevenue.length === 0) {
               <div class="text-center py-12 text-slate-400">
                 <p class="text-4xl mb-2">📈</p>
-                <p class="text-sm">No revenue data for this period</p>
+                <p class="text-sm dark:text-slate-400">No revenue data for this period</p>
               </div>
             } @else {
               <!-- Bar chart -->
@@ -123,12 +123,12 @@ import { AnalyticsService, OperatorAnalytics, DailyRevenue } from '../../../serv
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           <!-- Top Routes -->
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-100">
-              <h2 class="font-bold text-slate-900">Top Routes</h2>
-              <p class="text-xs text-slate-400 mt-0.5">Best performing routes by revenue</p>
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
+              <h2 class="font-bold text-slate-900 dark:text-white">Top Routes</h2>
+              <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Best performing routes by revenue</p>
             </div>
-            <div class="divide-y divide-slate-50">
+            <div class="divide-y divide-slate-50 dark:divide-slate-700">
               @if (data()!.topRoutes.length === 0) {
                 <div class="text-center py-10 text-slate-400 text-sm">No route data available</div>
               }
@@ -139,17 +139,17 @@ import { AnalyticsService, OperatorAnalytics, DailyRevenue } from '../../../serv
                     {{ i + 1 }}
                   </div>
                   <div class="flex-1 min-w-0">
-                    <p class="font-semibold text-slate-800 text-sm font-mono">{{ route.routeCode }}</p>
+                    <p class="font-semibold text-slate-800 dark:text-white text-sm font-mono">{{ route.routeCode }}</p>
                     <div class="flex items-center gap-3 mt-1">
                       <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div class="h-full bg-red-500 rounded-full" [style.width.%]="routeBarWidth(route.totalRevenue)"></div>
                       </div>
-                      <span class="text-xs text-slate-400 whitespace-nowrap">{{ route.occupancyRate | number:'1.0-0' }}% occ.</span>
+                      <span class="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">{{ route.occupancyRate | number:'1.0-0' }}% occ.</span>
                     </div>
                   </div>
                   <div class="text-right flex-shrink-0">
-                    <p class="font-bold text-slate-900 text-sm">₹{{ route.totalRevenue | number:'1.0-0' }}</p>
-                    <p class="text-xs text-slate-400">{{ route.totalBookings }} bookings</p>
+                    <p class="font-bold text-slate-900 dark:text-white text-sm">₹{{ route.totalRevenue | number:'1.0-0' }}</p>
+                    <p class="text-xs text-slate-400 dark:text-slate-500">{{ route.totalBookings }} bookings</p>
                   </div>
                 </div>
               }
@@ -157,17 +157,17 @@ import { AnalyticsService, OperatorAnalytics, DailyRevenue } from '../../../serv
           </div>
 
           <!-- Booking Breakdown -->
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-100">
-              <h2 class="font-bold text-slate-900">Booking Breakdown</h2>
-              <p class="text-xs text-slate-400 mt-0.5">Status distribution</p>
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700">
+              <h2 class="font-bold text-slate-900 dark:text-white">Booking Breakdown</h2>
+              <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Status distribution</p>
             </div>
             <div class="p-6 space-y-4">
               @for (item of bookingBreakdown(); track item.label) {
                 <div>
                   <div class="flex justify-between text-sm mb-1.5">
-                    <span class="font-medium text-slate-700">{{ item.label }}</span>
-                    <span class="font-bold text-slate-900">{{ item.count }} <span class="text-slate-400 font-normal text-xs">({{ item.pct | number:'1.0-1' }}%)</span></span>
+                    <span class="font-medium text-slate-700 dark:text-slate-300">{{ item.label }}</span>
+                    <span class="font-bold text-slate-900 dark:text-white">{{ item.count }} <span class="text-slate-400 font-normal text-xs">({{ item.pct | number:'1.0-1' }}%)</span></span>
                   </div>
                   <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden">
                     <div class="h-full rounded-full transition-all" [class]="item.color" [style.width.%]="item.pct"></div>

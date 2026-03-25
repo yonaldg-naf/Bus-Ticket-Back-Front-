@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+﻿import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -10,10 +10,10 @@ import { ToastService } from '../../../services/toast.service';
   standalone: true,
   imports: [CommonModule, RouterLink, FormsModule],
   template: `
-  <div class="min-h-screen bg-slate-50">
+  <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
 
     <!-- Header -->
-    <div class="bg-white border-b border-slate-200 shadow-sm">
+    <div class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div class="flex items-center gap-3">
           <a routerLink="/operator" class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 hover:border-red-300 hover:bg-red-50 transition-colors text-slate-500 hover:text-red-600">
@@ -22,8 +22,8 @@ import { ToastService } from '../../../services/toast.service';
             </svg>
           </a>
           <div>
-            <h1 class="text-base font-bold text-slate-900">Promo Codes</h1>
-            <p class="text-xs text-slate-500">Create and manage discount codes</p>
+            <h1 class="text-base font-bold text-slate-900 dark:text-white">Promo Codes</h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Create and manage discount codes</p>
           </div>
         </div>
         <button (click)="showForm.set(!showForm())"
@@ -40,9 +40,9 @@ import { ToastService } from '../../../services/toast.service';
 
       <!-- Create Form -->
       @if (showForm()) {
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-            <h2 class="font-bold text-slate-900">Create Promo Code</h2>
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+            <h2 class="font-bold text-slate-900 dark:text-white">Create Promo Code</h2>
             <button (click)="showForm.set(false)" class="text-slate-400 hover:text-slate-600 transition-colors">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -95,10 +95,10 @@ import { ToastService } from '../../../services/toast.service';
       }
 
       <!-- Promo Codes List -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 class="font-bold text-slate-900">My Promo Codes</h2>
-          <span class="text-xs text-slate-400">{{ codes().length }} total</span>
+      <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+          <h2 class="font-bold text-slate-900 dark:text-white">My Promo Codes</h2>
+          <span class="text-xs text-slate-400 dark:text-slate-500">{{ codes().length }} total</span>
         </div>
 
         @if (loading()) {
@@ -110,27 +110,27 @@ import { ToastService } from '../../../services/toast.service';
             Loading…
           </div>
         } @else if (codes().length === 0) {
-          <div class="text-center py-16 text-slate-400">
+          <div class="text-center py-16 text-slate-400 dark:text-slate-500">
             <p class="text-4xl mb-3">🏷️</p>
-            <p class="font-medium text-slate-500">No promo codes yet</p>
+            <p class="font-medium text-slate-500 dark:text-slate-400">No promo codes yet</p>
             <p class="text-sm mt-1">Create your first discount code above</p>
           </div>
         } @else {
-          <div class="divide-y divide-slate-50">
+          <div class="divide-y divide-slate-50 dark:divide-slate-700">
             @for (code of codes(); track code.id) {
               <div class="px-6 py-4 flex items-center gap-4 flex-wrap">
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-3 flex-wrap">
-                    <span class="font-mono font-bold text-slate-900 text-base tracking-wider">{{ code.code }}</span>
+                    <span class="font-mono font-bold text-slate-900 dark:text-white text-base tracking-wider">{{ code.code }}</span>
                     <span class="px-2 py-0.5 rounded-full text-xs font-semibold"
                       [class]="code.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'">
                       {{ code.isActive ? 'Active' : 'Inactive' }}
                     </span>
-                    <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                    <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400">
                       {{ code.discountType === 2 ? code.discountValue + '%' : '₹' + code.discountValue }} off
                     </span>
                   </div>
-                  <div class="flex items-center gap-4 mt-1.5 text-xs text-slate-400 flex-wrap">
+                  <div class="flex items-center gap-4 mt-1.5 text-xs text-slate-400 dark:text-slate-500 flex-wrap">
                     <span>{{ code.usedCount }}/{{ code.maxUses }} used</span>
                     @if (code.minBookingAmount) { <span>Min ₹{{ code.minBookingAmount }}</span> }
                     <span>Expires {{ formatDate(code.expiresAtUtc) }}</span>
