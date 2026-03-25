@@ -166,8 +166,8 @@ export class RegisterComponent {
       next: (res) => {
         this.loading.set(false);
         if (res.role === 'PendingOperator') {
-          this.toast.success('Account created! Your operator request is pending admin approval. 🕐');
-          this.router.navigate(['/home']);
+          this.toast.success('Application submitted! Awaiting admin approval. 🕐');
+          this.router.navigate(['/auth/pending-approval']);
         } else if (res.role === 'Admin') {
           this.toast.success('Welcome, Admin!');
           this.router.navigate(['/admin']);

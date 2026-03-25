@@ -171,9 +171,10 @@ import { Location } from '@angular/common';
               </div>
             }
 
-            <button (click)="proceed()" [disabled]="selectedSeats().length === 0"
+            <button (click)="proceed()" [disabled]="selectedSeats().length === 0 || holdExpired()"
               class="w-full py-4 rounded-2xl font-bold text-white bg-red-600 hover:bg-red-700 active:scale-95 transition-all shadow-lg shadow-red-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none text-base">
-              @if (selectedSeats().length === 0) { Select seats to continue }
+              @if (holdExpired()) { Hold expired — please reselect seats }
+              @else if (selectedSeats().length === 0) { Select seats to continue }
               @else { Continue with {{ selectedSeats().length }} seat{{ selectedSeats().length !== 1 ? 's' : '' }} }
             </button>
             <p class="text-center text-xs text-gray-400 flex items-center justify-center gap-1.5">
@@ -203,6 +204,7 @@ export class SeatSelectionComponent implements OnInit, OnDestroy {
   private holdTimer: any;
 
   total = computed(() => this.selectedSeats().length * (this.draft()?.schedule?.basePrice ?? 0));
+  holdExpired = computed(() => this.holdSeconds() === 0);
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('scheduleId')!;
@@ -273,7 +275,7 @@ export class SeatSelectionComponent implements OnInit, OnDestroy {
   }
 
   proceed() {
-    if (this.selectedSeats().length === 0) return;
+    if (this.selectedSeats().length === 0 || this.holdExpired()) return;
     if (this.holdTimer) clearInterval(this.holdTimer);
     this.bookingState.setSeats(this.selectedSeats());
     this.router.navigate(['/booking/passengers', this.route.snapshot.paramMap.get('scheduleId')!]);

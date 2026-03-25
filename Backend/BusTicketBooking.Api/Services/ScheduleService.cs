@@ -151,6 +151,35 @@ namespace BusTicketBooking.Services
             return Map(entity, bus, route);
         }
 
+        // ========================= CANCEL (with reason) =========================
+        public async Task<ScheduleResponseDto?> CancelAsync(Guid id, string reason, CancellationToken ct = default)
+        {
+            var sched = await _db.BusSchedules
+                .Include(s => s.Bus)
+                .Include(s => s.Route)
+                .FirstOrDefaultAsync(s => s.Id == id, ct);
+
+            if (sched is null) return null;
+
+            sched.IsCancelledByOperator = true;
+            sched.CancelReason = reason;
+            sched.UpdatedAtUtc = DateTime.UtcNow;
+
+            // Cancel all active bookings for this schedule
+            var bookings = await _db.Bookings
+                .Where(b => b.ScheduleId == id && b.Status != BookingStatus.OperatorCancelled && b.Status != BookingStatus.Cancelled)
+                .ToListAsync(ct);
+
+            foreach (var b in bookings)
+            {
+                b.Status = BookingStatus.OperatorCancelled;
+                b.UpdatedAtUtc = DateTime.UtcNow;
+            }
+
+            await _db.SaveChangesAsync(ct);
+            return Map(sched, sched.Bus!, sched.Route!);
+        }
+
         // ========================= DELETE (SOFT CANCEL) =========================
         public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
         {

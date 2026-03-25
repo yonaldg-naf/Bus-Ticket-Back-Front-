@@ -29,7 +29,7 @@ import { BookingService } from '../../../services/booking.service';
         <div class="flex items-center gap-3">
           @if (auth.currentUser()?.companyName) {
             <div class="flex items-center gap-2 px-3 py-1.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
-              <span class="text-sm">&#127970;</span>
+              <span class="text-sm">🏢</span>
               <span class="text-xs font-semibold text-red-700 dark:text-red-400">{{ auth.currentUser()?.companyName }}</span>
             </div>
           }
@@ -85,7 +85,7 @@ import { BookingService } from '../../../services/booking.service';
 
         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
           <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
-            <span class="text-lg">&#128161;</span>
+            <span class="text-lg">💡</span>
             <h2 class="font-bold text-slate-900 dark:text-white">Quick Tips</h2>
           </div>
           <div class="p-4 space-y-3">
@@ -110,42 +110,42 @@ export class OperatorDashboardComponent implements OnInit {
   private bookingSvc = inject(BookingService);
 
   stats = signal([
-    { label: 'Total Bookings', icon: '&#127915;', value: '&#8212;', loading: true, bg: 'bg-purple-50 dark:bg-purple-900/20', badge: 'Bookings', badgeCls: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' },
-    { label: 'Confirmed',      icon: '&#9989;',   value: '&#8212;', loading: true, bg: 'bg-green-50 dark:bg-green-900/20',  badge: 'Paid',     badgeCls: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'   },
-    { label: 'Revenue',        icon: '&#128176;', value: '&#8212;', loading: true, bg: 'bg-yellow-50 dark:bg-yellow-900/20',badge: 'Earned',   badgeCls: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400'},
-    { label: 'My Buses',       icon: '&#128652;', value: '&#8212;', loading: true, bg: 'bg-red-50 dark:bg-red-900/20',      badge: 'Fleet',    badgeCls: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'           },
-    { label: 'My Routes',      icon: '&#128506;', value: '&#8212;', loading: true, bg: 'bg-slate-100 dark:bg-slate-700',    badge: 'Routes',   badgeCls: 'bg-slate-200 text-slate-600 dark:bg-slate-600 dark:text-slate-300'      },
-    { label: 'My Schedules',   icon: '&#128197;', value: '&#8212;', loading: true, bg: 'bg-red-50 dark:bg-red-900/20',      badge: 'Trips',    badgeCls: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'          },
+    { label: 'Total Bookings', icon: '🎫', value: '—', loading: true, bg: 'bg-purple-50 dark:bg-purple-900/20', badge: 'Bookings', badgeCls: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' },
+    { label: 'Confirmed',      icon: '✅', value: '—', loading: true, bg: 'bg-green-50 dark:bg-green-900/20',  badge: 'Paid',     badgeCls: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'   },
+    { label: 'Revenue',        icon: '💰', value: '—', loading: true, bg: 'bg-yellow-50 dark:bg-yellow-900/20',badge: 'Earned',   badgeCls: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400'},
+    { label: 'My Buses',       icon: '🚌', value: '—', loading: true, bg: 'bg-red-50 dark:bg-red-900/20',      badge: 'Fleet',    badgeCls: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'           },
+    { label: 'My Routes',      icon: '🗺️', value: '—', loading: true, bg: 'bg-slate-100 dark:bg-slate-700',    badge: 'Routes',   badgeCls: 'bg-slate-200 text-slate-600 dark:bg-slate-600 dark:text-slate-300'      },
+    { label: 'My Schedules',   icon: '🗓️', value: '—', loading: true, bg: 'bg-red-50 dark:bg-red-900/20',      badge: 'Trips',    badgeCls: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'          },
   ]);
 
   cards = [
-    { title: 'Manage Buses',       desc: 'Add, edit and manage your fleet',       icon: '&#128652;', bg: 'bg-red-50',    link: '/operator/buses'         },
-    { title: 'Manage Routes',      desc: 'Create and update bus routes',           icon: '&#128506;', bg: 'bg-slate-100', link: '/operator/routes'        },
-    { title: 'Manage Schedules',   desc: 'Schedule departures and set prices',     icon: '&#128197;', bg: 'bg-green-50',  link: '/operator/schedules'     },
-    { title: 'Revenue Analytics',  desc: 'Track earnings and performance',         icon: '&#128202;', bg: 'bg-yellow-50', link: '/operator/analytics'     },
-    { title: 'Promo Codes',        desc: 'Create discount codes for customers',    icon: '&#127991;', bg: 'bg-purple-50', link: '/operator/promo-codes'   },
-    { title: 'Announcements',      desc: 'Post trip notices to passengers',        icon: '&#128226;', bg: 'bg-red-50',    link: '/operator/announcements' },
-    { title: 'Passenger Manifest', desc: 'View and print passenger list per trip', icon: '&#128101;', bg: 'bg-slate-100', link: '/operator/manifest'      },
+    { title: 'Manage Buses',       desc: 'Add, edit and manage your fleet',       icon: '🚌', bg: 'bg-red-50',    link: '/operator/buses'         },
+    { title: 'Manage Routes',      desc: 'Create and update bus routes',           icon: '🗺️', bg: 'bg-slate-100', link: '/operator/routes'        },
+    { title: 'Manage Schedules',   desc: 'Schedule departures and set prices',     icon: '🗓️', bg: 'bg-green-50',  link: '/operator/schedules'     },
+    { title: 'Revenue Analytics',  desc: 'Track earnings and performance',         icon: '📊', bg: 'bg-yellow-50', link: '/operator/analytics'     },
+    { title: 'Promo Codes',        desc: 'Create discount codes for customers',    icon: '🏷️', bg: 'bg-purple-50', link: '/operator/promo-codes'   },
+    { title: 'Announcements',      desc: 'Post trip notices to passengers',        icon: '📢', bg: 'bg-red-50',    link: '/operator/announcements' },
+    { title: 'Passenger Manifest', desc: 'View and print passenger list per trip', icon: '👥', bg: 'bg-slate-100', link: '/operator/manifest'      },
   ];
 
   tips = [
-    { icon: '&#9989;',  bg: 'bg-green-50',  text: 'Set bus status to Available to allow customer bookings.' },
-    { icon: '&#128336;',bg: 'bg-slate-100', text: 'Keep schedules updated with correct departure times.'    },
-    { icon: '&#128295;',bg: 'bg-red-50',    text: 'Mark buses as Under Repair if temporarily unavailable.'  },
-    { icon: '&#128176;',bg: 'bg-yellow-50', text: 'Competitive pricing increases your booking rate.'         },
+    { icon: '✅', bg: 'bg-green-50',  text: 'Set bus status to Available to allow customer bookings.' },
+    { icon: '🕐', bg: 'bg-slate-100', text: 'Keep schedules updated with correct departure times.'    },
+    { icon: '🔧', bg: 'bg-red-50',    text: 'Mark buses as Under Repair if temporarily unavailable.'  },
+    { icon: '💰', bg: 'bg-yellow-50', text: 'Competitive pricing increases your booking rate.'         },
   ];
 
   ngOnInit() {
-    this.busSvc.getAll().subscribe({ next: d => this.update(3, String(d.length)), error: () => this.update(3, '&#8212;') });
-    this.routeSvc.getAll().subscribe({ next: d => this.update(4, String(d.length)), error: () => this.update(4, '&#8212;') });
-    this.schedSvc.getAll().subscribe({ next: d => this.update(5, String(d.length)), error: () => this.update(5, '&#8212;') });
+    this.busSvc.getAll().subscribe({ next: d => this.update(3, String(d.length)), error: () => this.update(3, '—') });
+    this.routeSvc.getAll().subscribe({ next: d => this.update(4, String(d.length)), error: () => this.update(4, '—') });
+    this.schedSvc.getAll().subscribe({ next: d => this.update(5, String(d.length)), error: () => this.update(5, '—') });
     this.bookingSvc.getOperatorStats().subscribe({
       next: s => {
         this.update(0, String(s.totalBookings));
         this.update(1, String(s.confirmedBookings));
         this.update(2, 'Rs' + s.revenue.toLocaleString('en-IN'));
       },
-      error: () => { this.update(0, '&#8212;'); this.update(1, '&#8212;'); this.update(2, '&#8212;'); },
+      error: () => { this.update(0, '—'); this.update(1, '—'); this.update(2, '—'); },
     });
   }
 

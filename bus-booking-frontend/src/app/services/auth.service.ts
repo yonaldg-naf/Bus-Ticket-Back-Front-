@@ -70,6 +70,7 @@ export class AuthService {
 
         if (res.role === 'Admin') this.router.navigate(['/admin']);
         else if (res.role === 'Operator') this.router.navigate(['/operator']);
+        else if (res.role === 'PendingOperator') this.router.navigate(['/auth/pending-approval']);
         else this.router.navigate(['/home']);
       })
     );

@@ -146,6 +146,11 @@ export class ScheduleService {
     return this.http.delete<void>(`${this.base}/${id}`);
   }
 
+  /** PATCH /api/Schedules/{id}/cancel */
+  cancel(id: string, reason: string): Observable<ScheduleResponse> {
+    return this.http.patch<ScheduleResponse>(`${this.base}/${id}/cancel`, { reason });
+  }
+
   /**
    * GET /api/Schedules/{busCode}/{departureUtc}/availability
    * Note: departureUtc must be an ISO UTC string the backend can parse.

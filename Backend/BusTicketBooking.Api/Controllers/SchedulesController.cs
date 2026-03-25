@@ -1,8 +1,7 @@
 ﻿// kept from your previous controller
 using BusTicketBooking.Contexts;
 using BusTicketBooking.Dtos.Common;
-using BusTicketBooking.Dtos.Schedules;
-using BusTicketBooking.Interfaces;
+using BusTicketBooking.Dtos.Schedules;using BusTicketBooking.Interfaces;
 using BusTicketBooking.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -97,6 +96,16 @@ namespace BusTicketBooking.Controllers
         {
             var ok = await _schedules.DeleteAsync(id, ct);
             return ok ? NoContent() : NotFound();
+        }
+
+        /// <summary>Cancel a schedule with a reason (marks as cancelled, does NOT delete).</summary>
+        [Authorize(Roles = $"{Roles.Admin},{Roles.Operator}")]
+        [HttpPatch("{id:guid}/cancel")]
+        [ProducesResponseType(typeof(ScheduleResponseDto), 200)]
+        public async Task<IActionResult> Cancel([FromRoute] Guid id, [FromBody] CancelScheduleRequestDto dto, CancellationToken ct)
+        {
+            var result = await _schedules.CancelAsync(id, dto.Reason, ct);
+            return result is null ? NotFound() : Ok(result);
         }
 
         // ===== Your GET search endpoints (kept) =====

@@ -13,6 +13,7 @@ export const routes: Routes = [
     children: [
       { path: 'login',    canActivate: [noAuthGuard], loadComponent: () => import('./pages/auth/login/login.component').then(m => m.LoginComponent) },
       { path: 'register', canActivate: [noAuthGuard], loadComponent: () => import('./pages/auth/register/register.component').then(m => m.RegisterComponent) },
+      { path: 'pending-approval', canActivate: [authGuard], loadComponent: () => import('./pages/auth/pending-approval/pending-approval.component').then(m => m.PendingApprovalComponent) },
       { path: '', redirectTo: 'login', pathMatch: 'full' },
     ],
   },
