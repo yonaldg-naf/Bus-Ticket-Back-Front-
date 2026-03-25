@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+﻿import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -11,21 +11,21 @@ import { ToastService } from '../../../services/toast.service';
   standalone: true,
   imports: [CommonModule, RouterLink, FormsModule],
   template: `
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
 
     <!-- Sticky search bar -->
-    <div class="bg-white border-b border-gray-100 shadow-sm sticky top-16 z-30">
+    <div class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm sticky top-16 z-30">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between flex-wrap gap-3">
         <div class="flex items-center gap-3 text-sm">
-          <div class="flex items-center gap-2 font-bold text-gray-900 text-base">
+          <div class="flex items-center gap-2 font-bold text-slate-900 dark:text-white text-base">
             <span>{{ fromCity() }}</span>
             <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
             </svg>
             <span>{{ toCity() }}</span>
           </div>
-          <span class="text-gray-300 hidden sm:inline">·</span>
-          <span class="text-gray-500 text-sm hidden sm:inline">{{ dateDisplay() }}</span>
+          <span class="text-slate-300 dark:text-slate-600 hidden sm:inline">·</span>
+          <span class="text-slate-500 dark:text-slate-400 text-sm hidden sm:inline">{{ dateDisplay() }}</span>
           @if (!loading()) {
             <span class="px-2.5 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-bold">
               {{ totalCount() }} result{{ totalCount() !== 1 ? 's' : '' }}
@@ -34,8 +34,8 @@ import { ToastService } from '../../../services/toast.service';
         </div>
         <div class="flex items-center gap-2">
           <button (click)="filtersOpen.update(v => !v)"
-            class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border transition-colors"
-            [class]="filtersOpen() ? 'border-red-400 text-red-600 bg-red-50' : 'border-gray-200 text-gray-600 hover:border-red-300 hover:text-red-600'">
+            class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-xl border transition-colors"
+            [class]="filtersOpen() ? 'border-red-400 text-red-600 bg-red-50' : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-red-300 hover:text-red-600'">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
             </svg>
@@ -45,7 +45,7 @@ import { ToastService } from '../../../services/toast.service';
             }
           </button>
           <select [(ngModel)]="sortBy" (ngModelChange)="onSortChange()"
-            class="text-sm px-3 py-1.5 border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 font-medium text-gray-700">
+            class="text-sm px-3 py-1.5 border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 font-medium text-slate-700">
             <option value="departure|asc">Departure ↑ Earliest</option>
             <option value="departure|desc">Departure ↓ Latest</option>
             <option value="price|asc">Price ↑ Cheapest</option>
@@ -53,7 +53,7 @@ import { ToastService } from '../../../services/toast.service';
             <option value="busCode|asc">Bus Code A–Z</option>
           </select>
           <a routerLink="/home"
-            class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:border-red-300 hover:text-red-600 transition-colors">
+            class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 rounded-xl hover:border-red-300 hover:text-red-600 transition-colors">
             ← Edit Search
           </a>
         </div>
@@ -66,9 +66,9 @@ import { ToastService } from '../../../services/toast.service';
         <!-- Filter Sidebar -->
         @if (filtersOpen()) {
           <aside class="w-64 flex-shrink-0 hidden lg:block">
-            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm sticky top-32 overflow-hidden">
-              <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 class="font-bold text-gray-900 text-sm">Filters</h3>
+            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm sticky top-32 overflow-hidden">
+              <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                <h3 class="font-bold text-slate-900 dark:text-white text-sm">Filters</h3>
                 @if (activeFilterCount() > 0) {
                   <button (click)="clearFilters()" class="text-xs text-red-600 font-semibold hover:underline">Clear all</button>
                 }
@@ -77,15 +77,15 @@ import { ToastService } from '../../../services/toast.service';
 
                 <!-- Bus Type -->
                 <div>
-                  <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Bus Type</p>
+                  <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">Bus Type</p>
                   <div class="space-y-2">
                     @for (bt of busTypeOptions; track bt.value) {
                       <label class="flex items-center gap-2.5 cursor-pointer group">
                         <input type="checkbox" [checked]="filterBusTypes.includes(bt.value)"
                           (change)="toggleBusType(bt.value)"
                           class="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer"/>
-                        <span class="text-sm text-gray-700 group-hover:text-gray-900 flex-1">{{ bt.label }}</span>
-                        <span class="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{{ busTypeCount(bt.value) }}</span>
+                        <span class="text-sm text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white flex-1">{{ bt.label }}</span>
+                        <span class="text-xs text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded-full">{{ busTypeCount(bt.value) }}</span>
                       </label>
                     }
                   </div>
@@ -93,15 +93,15 @@ import { ToastService } from '../../../services/toast.service';
 
                 <!-- Departure Time -->
                 <div>
-                  <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Departure Time</p>
+                  <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">Departure Time</p>
                   <div class="grid grid-cols-2 gap-2">
                     @for (slot of timeSlots; track slot.key) {
                       <button (click)="toggleTimeSlot(slot.key)"
                         class="flex flex-col items-center p-2.5 rounded-xl border-2 text-xs font-medium transition-all"
-                        [class]="filterTimeSlots.includes(slot.key) ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'">
+                        [class]="filterTimeSlots().includes(slot.key) ? 'border-red-500 bg-red-50 text-red-700' : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-slate-300'">
                         <span class="text-base mb-0.5">{{ slot.icon }}</span>
                         <span class="font-semibold">{{ slot.label }}</span>
-                        <span class="text-gray-400 font-normal text-[10px]">{{ slot.time }}</span>
+                        <span class="text-slate-400 dark:text-slate-500 font-normal text-[10px]">{{ slot.time }}</span>
                       </button>
                     }
                   </div>
@@ -109,9 +109,9 @@ import { ToastService } from '../../../services/toast.service';
 
                 <!-- Price Range -->
                 <div>
-                  <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Price Range</p>
+                  <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">Price Range</p>
                   <div class="space-y-3">
-                    <div class="flex items-center justify-between text-sm font-semibold text-gray-900">
+                    <div class="flex items-center justify-between text-sm font-semibold text-slate-900 dark:text-white">
                       <span>₹{{ priceMin }}</span>
                       <span>₹{{ priceMax }}</span>
                     </div>
@@ -121,7 +121,7 @@ import { ToastService } from '../../../services/toast.service';
                     <input type="range" [(ngModel)]="priceMax" [min]="priceMin + 1" [max]="absMaxPrice" step="50"
                       (change)="applyBackendFilters()"
                       class="w-full accent-red-600 cursor-pointer"/>
-                    <div class="flex justify-between text-xs text-gray-400">
+                    <div class="flex justify-between text-xs text-slate-400 dark:text-slate-500">
                       <span>₹{{ absMinPrice }}</span>
                       <span>₹{{ absMaxPrice }}</span>
                     </div>
@@ -138,26 +138,26 @@ import { ToastService } from '../../../services/toast.service';
 
           <!-- Mobile filter bar -->
           @if (filtersOpen()) {
-            <div class="lg:hidden bg-white rounded-2xl border border-gray-200 shadow-sm p-4 mb-4 space-y-4">
+            <div class="lg:hidden bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 mb-4 space-y-4">
               <div>
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Bus Type</p>
+                <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Bus Type</p>
                 <div class="flex flex-wrap gap-2">
                   @for (bt of busTypeOptions; track bt.value) {
                     <button (click)="toggleBusType(bt.value)"
-                      class="px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all"
-                      [class]="filterBusTypes.includes(bt.value) ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-200 text-gray-600'">
+                      class="px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all"
+                      [class]="filterBusTypes.includes(bt.value) ? 'border-red-500 bg-red-50 text-red-700' : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300'">
                       {{ bt.label }}
                     </button>
                   }
                 </div>
               </div>
               <div>
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Departure Time</p>
+                <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Departure Time</p>
                 <div class="flex flex-wrap gap-2">
                   @for (slot of timeSlots; track slot.key) {
                     <button (click)="toggleTimeSlot(slot.key)"
-                      class="px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all"
-                      [class]="filterTimeSlots.includes(slot.key) ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-200 text-gray-600'">
+                      class="px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all"
+                      [class]="filterTimeSlots().includes(slot.key) ? 'border-red-500 bg-red-50 text-red-700' : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300'">
                       {{ slot.icon }} {{ slot.label }}
                     </button>
                   }
@@ -170,7 +170,7 @@ import { ToastService } from '../../../services/toast.service';
           @if (loading()) {
             <div class="space-y-4">
               @for (_ of [1,2,3,4]; track $index) {
-                <div class="bg-white rounded-2xl border border-gray-200 p-6 animate-pulse">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 animate-pulse">
                   <div class="flex items-start justify-between gap-4">
                     <div class="flex items-start gap-4 flex-1">
                       <div class="w-14 h-14 skeleton rounded-2xl"></div>
@@ -193,9 +193,9 @@ import { ToastService } from '../../../services/toast.service';
           <!-- No results from API -->
           @if (!loading() && allItems().length === 0) {
             <div class="flex flex-col items-center justify-center py-24 text-center">
-              <div class="w-24 h-24 bg-gray-100 rounded-3xl flex items-center justify-center text-5xl mb-5">🔍</div>
-              <h3 class="text-xl font-bold text-gray-800">No buses found</h3>
-              <p class="text-gray-500 mt-2 max-w-xs text-sm">No buses available for this route on {{ dateDisplay() }}.</p>
+              <div class="w-24 h-24 bg-slate-100 dark:bg-slate-700 rounded-3xl flex items-center justify-center text-5xl mb-5">🔍</div>
+              <h3 class="text-xl font-bold text-slate-800 dark:text-white">No buses found</h3>
+              <p class="text-slate-500 dark:text-slate-400 mt-2 max-w-xs text-sm">No buses available for this route on {{ dateDisplay() }}.</p>
               <a routerLink="/home" class="btn-primary mt-6 px-6 py-3">← Change Search</a>
             </div>
           }
@@ -204,8 +204,8 @@ import { ToastService } from '../../../services/toast.service';
           @if (!loading() && allItems().length > 0 && displayItems().length === 0) {
             <div class="flex flex-col items-center justify-center py-20 text-center">
               <div class="text-5xl mb-4">🎛️</div>
-              <h3 class="text-lg font-bold text-gray-800">No buses match your filters</h3>
-              <p class="text-gray-500 mt-1.5 text-sm">Try relaxing your filter criteria</p>
+              <h3 class="text-lg font-bold text-slate-800 dark:text-white">No buses match your filters</h3>
+              <p class="text-slate-500 dark:text-slate-400 mt-1.5 text-sm">Try relaxing your filter criteria</p>
               <button (click)="clearFilters()" class="btn-primary mt-5 px-6 py-2.5">Clear Filters</button>
             </div>
           }
@@ -224,24 +224,24 @@ import { ToastService } from '../../../services/toast.service';
                       </div>
                       <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 flex-wrap mb-1">
-                          <h3 class="font-extrabold text-gray-900 text-base">{{ s.busCode }}</h3>
+                          <h3 class="font-extrabold text-slate-900 dark:text-white text-base">{{ s.busCode }}</h3>
                           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold" [class]="busTypeBadgeClass(s.busType)">
                             {{ busTypeLabel(s.busType) }}
                           </span>
-                          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
                             {{ timeSlotLabel(s.departureUtc) }}
                           </span>
                         </div>
-                        <p class="text-xs text-gray-400 font-mono mb-2">{{ s.registrationNumber }}</p>
+                        <p class="text-xs text-slate-400 dark:text-slate-500 font-mono mb-2">{{ s.registrationNumber }}</p>
                         <div class="flex items-center gap-3 text-sm">
                           <div class="text-center">
-                            <p class="font-bold text-gray-900 text-base">{{ formatTime(s.departureUtc) }}</p>
-                            <p class="text-xs text-gray-400">{{ formatDate(s.departureUtc) }}</p>
+                            <p class="font-bold text-slate-900 dark:text-white text-base">{{ formatTime(s.departureUtc) }}</p>
+                            <p class="text-xs text-slate-400 dark:text-slate-500">{{ formatDate(s.departureUtc) }}</p>
                           </div>
                           <div class="flex-1 flex items-center gap-1 min-w-[60px]">
-                            <div class="flex-1 h-px bg-gray-200"></div>
-                            <span class="text-xs text-gray-400 px-1">{{ s.routeCode }}</span>
-                            <div class="flex-1 h-px bg-gray-200"></div>
+                            <div class="flex-1 h-px bg-slate-200 dark:bg-slate-600"></div>
+                            <span class="text-xs text-slate-400 dark:text-slate-500 px-1">{{ s.routeCode }}</span>
+                            <div class="flex-1 h-px bg-slate-200 dark:bg-slate-600"></div>
                           </div>
                         </div>
                       </div>
@@ -254,8 +254,8 @@ import { ToastService } from '../../../services/toast.service';
                           <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>
                           <span class="text-xs text-green-600 font-semibold">{{ s.totalSeats }} seats</span>
                         </div>
-                        <p class="text-2xl font-extrabold text-gray-900">₹{{ s.basePrice | number:'1.0-0' }}</p>
-                        <p class="text-xs text-gray-400">per seat</p>
+                        <p class="text-2xl font-extrabold text-slate-900 dark:text-white">₹{{ s.basePrice | number:'1.0-0' }}</p>
+                        <p class="text-xs text-slate-400 dark:text-slate-500">per seat</p>
                       </div>
                       <button (click)="selectBus(s)"
                         class="px-5 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 active:scale-95 transition-all shadow-md shadow-red-200 whitespace-nowrap text-sm">
@@ -265,7 +265,7 @@ import { ToastService } from '../../../services/toast.service';
                   </div>
 
                   <!-- Tags -->
-                  <div class="mt-4 pt-4 border-t border-gray-100 flex items-center gap-4 flex-wrap text-xs text-gray-500">
+                  <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center gap-4 flex-wrap text-xs text-slate-500 dark:text-slate-400">
                     @for (tag of featureTags; track tag) {
                       <span class="flex items-center gap-1.5">
                         <svg class="w-3.5 h-3.5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
@@ -274,7 +274,7 @@ import { ToastService } from '../../../services/toast.service';
                         {{ tag }}
                       </span>
                     }
-                    <span class="ml-auto text-xs text-gray-300 font-mono">{{ s.id.slice(0,8) }}…</span>
+                    <span class="ml-auto text-xs text-slate-300 dark:text-slate-600 font-mono">{{ s.id.slice(0,8) }}…</span>
                   </div>
                 </div>
               </div>
@@ -308,7 +308,7 @@ export class SearchResultsComponent implements OnInit {
 
   // Client-side filters (applied after backend fetch)
   filterBusTypes: number[] = [];
-  filterTimeSlots: string[] = [];
+  filterTimeSlots = signal<string[]>([]);
   priceMin = 0;
   priceMax = 9999;
   absMinPrice = 0;
@@ -334,7 +334,7 @@ export class SearchResultsComponent implements OnInit {
   activeFilterCount = computed(() => {
     let c = 0;
     if (this.filterBusTypes.length) c++;
-    if (this.filterTimeSlots.length) c++;
+    if (this.filterTimeSlots().length) c++;
     if (this.priceMin > this.absMinPrice || this.priceMax < this.absMaxPrice) c++;
     return c;
   });
@@ -342,8 +342,8 @@ export class SearchResultsComponent implements OnInit {
   // Client-side filter on top of backend results (for time-slot & price range)
   displayItems = computed(() => {
     let list = this.allItems();
-    if (this.filterTimeSlots.length)
-      list = list.filter(s => this.filterTimeSlots.includes(this.getTimeSlot(s.departureUtc)));
+    if (this.filterTimeSlots().length)
+      list = list.filter(s => this.filterTimeSlots().includes(this.getTimeSlot(s.departureUtc)));
     list = list.filter(s => s.basePrice >= this.priceMin && s.basePrice <= this.priceMax);
     return list;
   });
@@ -413,15 +413,15 @@ export class SearchResultsComponent implements OnInit {
   }
 
   toggleTimeSlot(key: string) {
-    this.filterTimeSlots = this.filterTimeSlots.includes(key)
-      ? this.filterTimeSlots.filter(k => k !== key)
-      : [...this.filterTimeSlots, key];
+    this.filterTimeSlots.update(slots =>
+      slots.includes(key) ? slots.filter(k => k !== key) : [...slots, key]
+    );
     // Time slot is client-side only (no backend param), no reload needed
   }
 
   clearFilters() {
     this.filterBusTypes = [];
-    this.filterTimeSlots = [];
+    this.filterTimeSlots.set([]);
     this.priceMin = this.absMinPrice;
     this.priceMax = this.absMaxPrice;
     this.reload();

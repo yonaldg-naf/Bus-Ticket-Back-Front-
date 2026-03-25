@@ -46,7 +46,7 @@ import { OperatorApprovalService } from '../../../services/operator-approval.ser
               {{ auth.currentUser()?.fullName?.[0]?.toUpperCase() }}
             </div>
             <div class="hidden sm:block">
-              <p class="text-xs font-semibold text-slate-800">{{ auth.currentUser()?.fullName }}</p>
+              <p class="text-xs font-semibold text-slate-800 dark:text-white">{{ auth.currentUser()?.fullName }}</p>
               <p class="text-xs text-slate-400 dark:text-slate-500">Administrator</p>
             </div>
           </div>
@@ -71,7 +71,7 @@ import { OperatorApprovalService } from '../../../services/operator-approval.ser
             } @else {
               <p class="text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums">{{ s.value }}</p>
             }
-            <p class="text-xs text-slate-500 mt-1 font-medium">{{ s.label }}</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">{{ s.label }}</p>
           </div>
         }
       </div>
@@ -93,20 +93,20 @@ import { OperatorApprovalService } from '../../../services/operator-approval.ser
             <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
               @for (card of adminCards; track card.title) {
                 <a [routerLink]="card.link"
-                  class="flex items-center gap-4 p-4 rounded-xl border-2 border-slate-100 hover:border-red-200 hover:bg-red-50/40 transition-all group cursor-pointer">
+                  class="flex items-center gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 hover:border-red-300 dark:hover:border-red-700 hover:bg-red-50/40 dark:hover:bg-red-900/10 transition-all group cursor-pointer">
                   <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 shadow-sm transition-transform group-hover:scale-110" [class]="card.bg">
                     {{ card.icon }}
                   </div>
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2">
-                      <h3 class="font-semibold text-sm text-slate-800 group-hover:text-red-700 transition-colors">{{ card.title }}</h3>
+                      <h3 class="font-semibold text-sm text-slate-800 dark:text-white group-hover:text-red-700 dark:group-hover:text-red-400 transition-colors">{{ card.title }}</h3>
                       @if (card.badge) {
                         <span class="px-1.5 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-700">{{ card.badge }}</span>
                       }
                     </div>
-                    <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">{{ card.desc }}</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{{ card.desc }}</p>
                   </div>
-                  <svg class="w-4 h-4 text-slate-300 group-hover:text-red-400 flex-shrink-0 transition-all group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-4 h-4 text-slate-400 dark:text-slate-500 group-hover:text-red-400 flex-shrink-0 transition-all group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                   </svg>
                 </a>
@@ -178,10 +178,10 @@ import { OperatorApprovalService } from '../../../services/operator-approval.ser
                     {{ log.isSuccess ? '✓' : '!' }}
                   </div>
                   <div class="min-w-0 flex-1">
-                    <p class="text-xs font-medium text-slate-700 line-clamp-2 leading-relaxed">{{ log.description }}</p>
+                    <p class="text-xs font-medium text-slate-700 dark:text-slate-200 line-clamp-2 leading-relaxed">{{ log.description }}</p>
                     <div class="flex items-center gap-2 mt-1">
                       <span class="text-xs text-slate-400 dark:text-slate-500">{{ log.username ?? 'System' }}</span>
-                      <span class="text-slate-200">·</span>
+                      <span class="text-slate-300 dark:text-slate-600">·</span>
                       <span class="text-xs text-slate-400 dark:text-slate-500">{{ formatRelative(log.createdAtUtc) }}</span>
                     </div>
                   </div>

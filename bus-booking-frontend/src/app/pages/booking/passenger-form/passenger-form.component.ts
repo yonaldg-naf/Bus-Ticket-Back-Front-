@@ -12,25 +12,25 @@ import { ToastService } from '../../../services/toast.service';
   standalone: true,
   imports: [ReactiveFormsModule, CommonModule],
   template: `
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
 
     <!-- Header -->
-    <div class="bg-white border-b border-gray-100 shadow-sm">
+    <div class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
         <button (click)="goBack()"
-          class="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 hover:border-red-300 hover:bg-red-50 transition-colors text-gray-500 hover:text-red-600">
+          class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-slate-500 dark:text-slate-300 hover:text-red-600">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
           </svg>
         </button>
         <div>
-          <h1 class="text-lg font-extrabold text-gray-900">Passenger Details</h1>
+          <h1 class="text-lg font-extrabold text-slate-900 dark:text-white">Passenger Details</h1>
           @if (draft()) {
-            <p class="text-sm text-gray-500">
-              <span class="font-semibold text-gray-700">{{ draft()!.schedule.busCode }}</span>
-              <span class="mx-1.5 text-gray-300">·</span>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+              <span class="font-semibold text-slate-700 dark:text-slate-200">{{ draft()!.schedule.busCode }}</span>
+              <span class="mx-1.5 text-slate-300 dark:text-slate-600">·</span>
               {{ draft()!.schedule.routeCode }}
-              <span class="mx-1.5 text-gray-300">·</span>
+              <span class="mx-1.5 text-slate-300 dark:text-slate-600">·</span>
               {{ formatTime(draft()!.schedule.departureUtc) }}
             </p>
           }
@@ -66,29 +66,29 @@ import { ToastService } from '../../../services/toast.service';
           <form [formGroup]="form" (ngSubmit)="onSubmit()">
             <div formArrayName="passengers" class="space-y-5">
               @for (pg of passengersArray.controls; track $index) {
-                <div [formGroupName]="$index" class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div [formGroupName]="$index" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
 
                   <!-- Passenger card header -->
-                  <div class="px-5 py-3.5 border-b border-gray-100 bg-gray-50/60 flex items-center justify-between">
+                  <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-700/40 flex items-center justify-between">
                     <div class="flex items-center gap-3">
                       <div class="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                         {{ $index + 1 }}
                       </div>
                       <div>
-                        <p class="font-semibold text-gray-800 text-sm">Passenger {{ $index + 1 }}</p>
-                        <p class="text-xs text-gray-500">Seat <span class="font-semibold text-red-600">{{ draft()?.selectedSeats?.[$index] }}</span></p>
+                        <p class="font-semibold text-slate-800 dark:text-white text-sm">Passenger {{ $index + 1 }}</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Seat <span class="font-semibold text-red-600">{{ draft()?.selectedSeats?.[$index] }}</span></p>
                       </div>
                     </div>
 
                     <!-- Self / Someone else toggle — only for first passenger -->
                     @if ($index === 0) {
-                      <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                      <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
                         <button type="button"
                           (click)="setBookingFor($index, 'self')"
                           class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all"
                           [class]="bookingFor()[$index] === 'self'
-                            ? 'bg-white text-red-600 shadow-sm'
-                            : 'text-gray-500 hover:text-gray-700'">
+                            ? 'bg-white dark:bg-slate-600 text-red-600 shadow-sm'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'">
                           <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
                           </svg>
@@ -98,8 +98,8 @@ import { ToastService } from '../../../services/toast.service';
                           (click)="setBookingFor($index, 'other')"
                           class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all"
                           [class]="bookingFor()[$index] === 'other'
-                            ? 'bg-white text-red-600 shadow-sm'
-                            : 'text-gray-500 hover:text-gray-700'">
+                            ? 'bg-white dark:bg-slate-600 text-red-600 shadow-sm'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'">
                           <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
                           </svg>
@@ -110,7 +110,7 @@ import { ToastService } from '../../../services/toast.service';
 
                     <!-- For other passengers: just someone else label -->
                     @if ($index > 0) {
-                      <span class="text-xs text-gray-400 flex items-center gap-1">
+                      <span class="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
                         <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
                         </svg>
@@ -121,15 +121,15 @@ import { ToastService } from '../../../services/toast.service';
 
                   <!-- "Booking for yourself" info strip -->
                   @if ($index === 0 && bookingFor()[$index] === 'self') {
-                    <div class="px-5 py-3 bg-blue-50 border-b border-blue-100 flex items-center gap-2.5">
+                    <div class="px-5 py-3 bg-red-50/50 dark:bg-red-900/10 border-b border-red-100 dark:border-red-900/20 flex items-center gap-2.5">
                       <div class="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                         {{ currentUserInitial() }}
                       </div>
                       <div class="flex-1 min-w-0">
-                        <p class="text-sm font-semibold text-gray-800">{{ auth.currentUser()?.fullName }}</p>
-                        <p class="text-xs text-gray-500">Your details have been filled in automatically</p>
+                        <p class="text-sm font-semibold text-slate-800 dark:text-white">{{ auth.currentUser()?.fullName }}</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Your details have been filled in automatically</p>
                       </div>
-                      <svg class="w-4 h-4 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <svg class="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                       </svg>
                     </div>
@@ -146,12 +146,12 @@ import { ToastService } from '../../../services/toast.service';
                       }
                     </div>
                     <div>
-                      <label class="form-label">Age <span class="text-gray-400 font-normal">(optional)</span></label>
+                      <label class="form-label">Age <span class="text-slate-400 dark:text-slate-500 font-normal">(optional)</span></label>
                       <input formControlName="age" type="number" placeholder="25" min="0" max="120" class="form-input"/>
                     </div>
                     <div>
                       <label class="form-label">Seat No</label>
-                      <input formControlName="seatNo" type="text" class="form-input bg-gray-50 text-gray-500" readonly/>
+                      <input formControlName="seatNo" type="text" class="form-input bg-slate-50 dark:bg-slate-600 text-slate-500 dark:text-slate-400" readonly/>
                     </div>
                   </div>
                 </div>
@@ -183,34 +183,34 @@ import { ToastService } from '../../../services/toast.service';
 
         <!-- Booking Summary Sidebar -->
         <div class="space-y-4">
-          <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 sticky top-20">
-            <h3 class="font-semibold text-gray-800 mb-4">Booking Summary</h3>
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 sticky top-20">
+            <h3 class="font-semibold text-slate-800 dark:text-white mb-4">Booking Summary</h3>
             @if (draft()) {
               <div class="space-y-2.5 text-sm mb-4">
                 <div class="flex justify-between">
-                  <span class="text-gray-500">Bus</span>
-                  <span class="font-medium text-gray-800">{{ draft()!.schedule.busCode }}</span>
+                  <span class="text-slate-500 dark:text-slate-400">Bus</span>
+                  <span class="font-medium text-slate-800 dark:text-white">{{ draft()!.schedule.busCode }}</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-gray-500">Route</span>
-                  <span class="font-medium text-gray-800">{{ draft()!.schedule.routeCode }}</span>
+                  <span class="text-slate-500 dark:text-slate-400">Route</span>
+                  <span class="font-medium text-slate-800 dark:text-white">{{ draft()!.schedule.routeCode }}</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-gray-500">Departure</span>
-                  <span class="font-medium text-gray-800 text-right text-xs">{{ formatTime(draft()!.schedule.departureUtc) }}</span>
+                  <span class="text-slate-500 dark:text-slate-400">Departure</span>
+                  <span class="font-medium text-slate-800 dark:text-white text-right text-xs">{{ formatTime(draft()!.schedule.departureUtc) }}</span>
                 </div>
                 <div class="flex justify-between">
-                  <span class="text-gray-500">Seats</span>
+                  <span class="text-slate-500 dark:text-slate-400">Seats</span>
                   <span class="font-medium text-red-600">{{ draft()!.selectedSeats.join(', ') }}</span>
                 </div>
-                <div class="pt-2 border-t border-gray-100 flex justify-between font-bold text-gray-900 text-base">
+                <div class="pt-2 border-t border-slate-100 dark:border-slate-700 flex justify-between font-bold text-slate-900 dark:text-white text-base">
                   <span>Total</span>
                   <span class="text-red-600">₹{{ draftTotal() | number:'1.0-0' }}</span>
                 </div>
               </div>
             }
-            <div class="p-3 bg-blue-50 border border-blue-100 rounded-lg">
-              <p class="text-xs text-blue-700 flex items-start gap-1.5">
+            <div class="p-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl">
+              <p class="text-xs text-slate-600 dark:text-slate-300 flex items-start gap-1.5">
                 <svg class="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
                 </svg>

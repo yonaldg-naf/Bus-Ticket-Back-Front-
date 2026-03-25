@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, computed } from '@angular/core';
+﻿import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -12,19 +12,21 @@ interface CityResponse { city: string; stopCount: number; }
   standalone: true,
   imports: [ReactiveFormsModule, CommonModule, RouterLink, FormsModule],
   template: `
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
 
     <!-- ── Hero ── -->
-    <section class="relative bg-gradient-to-br from-red-600 via-red-700 to-red-800 overflow-hidden">
-      <div class="absolute inset-0 opacity-10 pointer-events-none">
+    <section class="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
+      <div class="absolute inset-0 opacity-5 pointer-events-none">
         <div class="absolute top-10 left-10 w-72 h-72 rounded-full border-[50px] border-white"></div>
         <div class="absolute bottom-0 right-20 w-96 h-96 rounded-full border-[60px] border-white"></div>
         <div class="absolute top-1/2 left-1/2 w-48 h-48 rounded-full border-[30px] border-white -translate-x-1/2 -translate-y-1/2"></div>
       </div>
+      <!-- Red accent line at top -->
+      <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-600 via-red-500 to-red-600"></div>
 
       <div class="relative max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
         <div class="flex justify-center mb-5">
-          <span class="inline-flex items-center gap-2 px-4 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-semibold border border-white/30">
+          <span class="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-sm rounded-full text-white text-sm font-semibold border border-white/20">
             🚌 India's Fastest Growing Bus Platform
           </span>
         </div>
@@ -32,43 +34,43 @@ interface CityResponse { city: string; stopCount: number; }
         <div class="text-center mb-10">
           <h1 class="text-4xl sm:text-6xl font-extrabold text-white leading-tight tracking-tight">
             Book Your Bus<br/>
-            <span class="text-yellow-300">Journey with Ease.</span>
+            <span class="text-red-400">Journey with Ease.</span>
           </h1>
-          <p class="text-red-100 mt-4 text-base sm:text-lg max-w-2xl mx-auto">
+          <p class="text-slate-300 mt-4 text-base sm:text-lg max-w-2xl mx-auto">
             Discover thousands of routes, compare fares, and reserve your seats in seconds. Travel smarter with BusGo.
           </p>
           <div class="flex flex-wrap justify-center gap-8 mt-8">
             @for (s of stats; track s.label) {
               <div class="text-center">
                 <p class="text-2xl sm:text-3xl font-extrabold text-white">{{ s.value }}</p>
-                <p class="text-red-200 text-xs mt-0.5">{{ s.label }}</p>
+                <p class="text-slate-400 text-xs mt-0.5">{{ s.label }}</p>
               </div>
             }
           </div>
         </div>
 
         <!-- Search Card -->
-        <div class="max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl p-6 sm:p-8">
+        <div class="max-w-4xl mx-auto bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8">
           <div class="flex items-center gap-2 mb-5">
             <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
               <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
               </svg>
             </div>
-            <h2 class="font-bold text-gray-900">Find Your Bus</h2>
-            <span class="text-sm text-gray-400 hidden sm:inline">Search from 500+ routes across India</span>
+            <h2 class="font-bold text-slate-900 dark:text-white">Find Your Bus</h2>
+            <span class="text-sm text-slate-400 dark:text-slate-500 hidden sm:inline">Search from 500+ routes across India</span>
           </div>
 
           <form [formGroup]="form" (ngSubmit)="onSearch()">
             <!-- Row 1: From / Swap / To -->
             <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-3 mb-4">
               <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">From</label>
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">From</label>
                 <div class="relative">
                   <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400 pointer-events-none" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                   </svg>
-                  <select formControlName="fromCity" class="w-full pl-9 pr-3 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm transition-colors appearance-none">
+                  <select formControlName="fromCity" class="w-full pl-9 pr-3 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm transition-colors appearance-none">
                     <option value="">Select departure city</option>
                     @for (c of cities(); track c.city) { <option [value]="c.city">{{ c.city }}</option> }
                   </select>
@@ -79,21 +81,21 @@ interface CityResponse { city: string; stopCount: number; }
               <!-- Swap button -->
               <div class="flex items-end pb-0.5">
                 <button type="button" (click)="swapCities()"
-                  class="w-10 h-10 rounded-xl border-2 border-gray-200 bg-white hover:border-red-400 hover:bg-red-50 flex items-center justify-center transition-all group"
+                  class="w-10 h-10 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 hover:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center justify-center transition-all group"
                   title="Swap cities">
-                  <svg class="w-4 h-4 text-gray-400 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-4 h-4 text-slate-400 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
                   </svg>
                 </button>
               </div>
 
               <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">To</label>
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">To</label>
                 <div class="relative">
                   <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400 pointer-events-none" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                   </svg>
-                  <select formControlName="toCity" class="w-full pl-9 pr-3 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm transition-colors appearance-none">
+                  <select formControlName="toCity" class="w-full pl-9 pr-3 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm transition-colors appearance-none">
                     <option value="">Select destination city</option>
                     @for (c of cities(); track c.city) { <option [value]="c.city">{{ c.city }}</option> }
                   </select>
@@ -105,28 +107,28 @@ interface CityResponse { city: string; stopCount: number; }
             <!-- Row 2: Date / Passengers / Search -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Travel Date</label>
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Travel Date</label>
                 <div class="relative">
                   <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                   </svg>
                   <input formControlName="date" type="date" [min]="today"
-                    class="w-full pl-9 pr-3 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm transition-colors"/>
+                    class="w-full pl-9 pr-3 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm transition-colors"/>
                 </div>
                 @if (isInvalid('date')) { <p class="text-red-500 text-xs mt-1">Required</p> }
               </div>
 
               <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Passengers</label>
-                <div class="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-white">
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Passengers</label>
+                <div class="flex items-center border border-slate-200 dark:border-slate-600 rounded-xl overflow-hidden bg-white dark:bg-slate-700">
                   <button type="button" (click)="decPassengers()"
-                    class="w-11 h-11 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-red-600 transition-colors text-lg font-bold flex-shrink-0">−</button>
+                    class="w-11 h-11 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600 hover:text-red-600 transition-colors text-lg font-bold flex-shrink-0">−</button>
                   <div class="flex-1 text-center">
-                    <span class="font-bold text-gray-900 text-base">{{ passengers }}</span>
-                    <span class="text-xs text-gray-400 ml-1">{{ passengers === 1 ? 'Passenger' : 'Passengers' }}</span>
+                    <span class="font-bold text-slate-900 dark:text-white text-base">{{ passengers }}</span>
+                    <span class="text-xs text-slate-400 dark:text-slate-500 ml-1">{{ passengers === 1 ? 'Passenger' : 'Passengers' }}</span>
                   </div>
                   <button type="button" (click)="incPassengers()"
-                    class="w-11 h-11 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-red-600 transition-colors text-lg font-bold flex-shrink-0">+</button>
+                    class="w-11 h-11 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-600 hover:text-red-600 transition-colors text-lg font-bold flex-shrink-0">+</button>
                 </div>
               </div>
 
@@ -154,9 +156,9 @@ interface CityResponse { city: string; stopCount: number; }
     </section>
 
     <!-- ── Trust strip ── -->
-    <section class="bg-white border-b border-gray-100 py-4">
+    <section class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 py-4">
       <div class="max-w-7xl mx-auto px-4 sm:px-6">
-        <div class="flex flex-wrap justify-center gap-6 sm:gap-10 text-sm font-medium text-gray-600">
+        <div class="flex flex-wrap justify-center gap-6 sm:gap-10 text-sm font-medium text-slate-600 dark:text-slate-300">
           @for (t of trustItems; track t) {
             <span class="flex items-center gap-2">
               <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
@@ -170,18 +172,18 @@ interface CityResponse { city: string; stopCount: number; }
     </section>
 
     <!-- ── Why choose us ── -->
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 py-16">
+    <section class="bg-slate-50 dark:bg-slate-900 max-w-7xl mx-auto px-4 sm:px-6 py-16">
       <div class="text-center mb-12">
         <span class="text-xs font-bold text-red-600 uppercase tracking-widest">Why choose us</span>
-        <h2 class="text-3xl font-extrabold text-gray-900 mt-2">Everything You Need<br/>to Travel Confidently</h2>
-        <p class="text-gray-500 mt-3 max-w-xl mx-auto">From booking to boarding, we've got every step of your journey covered.</p>
+        <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white mt-2">Everything You Need<br/>to Travel Confidently</h2>
+        <p class="text-slate-500 dark:text-slate-400 mt-3 max-w-xl mx-auto">From booking to boarding, we've got every step of your journey covered.</p>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         @for (f of features; track f.title) {
-          <div class="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-lg hover:border-red-100 hover:-translate-y-1 transition-all duration-200 group">
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 hover:shadow-lg hover:border-red-100 hover:-translate-y-1 transition-all duration-200 group">
             <div class="w-14 h-14 rounded-2xl mb-5 flex items-center justify-center text-3xl shadow-sm group-hover:scale-110 transition-transform" [class]="f.bg">{{ f.icon }}</div>
-            <h3 class="font-bold text-gray-900 mb-2">{{ f.title }}</h3>
-            <p class="text-sm text-gray-500 leading-relaxed">{{ f.desc }}</p>
+            <h3 class="font-bold text-slate-900 dark:text-white mb-2">{{ f.title }}</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{{ f.desc }}</p>
           </div>
         }
       </div>
@@ -209,15 +211,15 @@ interface CityResponse { city: string; stopCount: number; }
     </section>
 
     <!-- ── CTA ── -->
-    <section class="bg-white py-16">
+    <section class="bg-white dark:bg-slate-800 py-16">
       <div class="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-        <h2 class="text-3xl font-extrabold text-gray-900">Ready to Hit the Road?</h2>
-        <p class="text-gray-500 mt-3 text-lg">Join over 2 million travelers who book smarter with BusGo.</p>
+        <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white">Ready to Hit the Road?</h2>
+        <p class="text-slate-500 dark:text-slate-400 mt-3 text-lg">Join over 2 million travelers who book smarter with BusGo.</p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center mt-8">
           <a routerLink="/auth/register" class="px-8 py-3.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-all shadow-lg shadow-red-200 text-base">
             Create Free Account
           </a>
-          <a routerLink="/auth/login" class="px-8 py-3.5 border-2 border-gray-200 text-gray-700 font-semibold rounded-xl hover:border-red-300 hover:text-red-600 transition-all text-base">
+          <a routerLink="/auth/login" class="px-8 py-3.5 border-2 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-semibold rounded-xl hover:border-red-300 hover:text-red-600 transition-all text-base">
             I have an account
           </a>
         </div>

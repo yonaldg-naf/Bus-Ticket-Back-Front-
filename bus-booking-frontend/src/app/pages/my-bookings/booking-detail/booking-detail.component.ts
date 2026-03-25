@@ -12,26 +12,26 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
   standalone: true,
   imports: [CommonModule, RouterLink, FormsModule],
   template: `
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
 
     <!-- Header -->
-    <div class="bg-white border-b border-gray-200 shadow-sm">
+    <div class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
       <div class="max-w-4xl mx-auto px-4 sm:px-6 py-5 flex items-center gap-3">
         <button (click)="router.navigate(['/my-bookings'])"
-          class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors text-gray-500">
+          class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-slate-500 dark:text-slate-300 hover:text-red-600">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
           </svg>
         </button>
         <div>
-          <h1 class="text-lg font-bold text-gray-900">Booking Details</h1>
-          <p class="text-sm text-gray-500">Full ticket information</p>
+          <h1 class="text-lg font-bold text-slate-900 dark:text-white">Booking Details</h1>
+          <p class="text-sm text-slate-500 dark:text-slate-400">Full ticket information</p>
         </div>
       </div>
     </div>
 
     @if (loading()) {
-      <div class="flex items-center justify-center py-24 gap-3 text-gray-400">
+      <div class="flex items-center justify-center py-24 gap-3 text-slate-400 dark:text-slate-500">
         <svg class="animate-spin w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
@@ -59,7 +59,7 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
         }
 
         <!-- Ticket Card -->
-        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
           <div class="bg-red-600 px-6 py-5">
             <div class="flex items-start justify-between">
               <div>
@@ -77,49 +77,49 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
             </div>
           </div>
 
-          <div class="relative border-t-2 border-dashed border-gray-200 mx-6">
-            <div class="absolute -left-9 -top-3.5 w-7 h-7 rounded-full bg-gray-50 border border-gray-200"></div>
-            <div class="absolute -right-9 -top-3.5 w-7 h-7 rounded-full bg-gray-50 border border-gray-200"></div>
+          <div class="relative border-t-2 border-dashed border-slate-200 dark:border-slate-600 mx-6">
+            <div class="absolute -left-9 -top-3.5 w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600"></div>
+            <div class="absolute -right-9 -top-3.5 w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600"></div>
           </div>
 
           <div class="px-6 py-5 space-y-3">
             <div class="flex justify-between text-sm">
-              <span class="text-gray-500">Booking Ref</span>
-              <span class="font-mono font-semibold text-gray-800 bg-gray-100 px-2 py-0.5 rounded text-xs">
+              <span class="text-slate-500 dark:text-slate-400">Booking Ref</span>
+              <span class="font-mono font-semibold text-slate-800 dark:text-white bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-xs">
                 #{{ booking()!.id.slice(0,8).toUpperCase() }}
               </span>
             </div>
             <div class="flex justify-between text-sm">
-              <span class="text-gray-500">Status</span>
+              <span class="text-slate-500 dark:text-slate-400">Status</span>
               <span class="badge" [class]="statusBadge(booking()!.status)">{{ statusLabel(booking()!.status) }}</span>
             </div>
             <div class="flex justify-between text-sm">
-              <span class="text-gray-500">Departure</span>
-              <span class="font-semibold text-gray-800">{{ formatDateTime(booking()!.departureUtc) }}</span>
+              <span class="text-slate-500 dark:text-slate-400">Departure</span>
+              <span class="font-semibold text-slate-800 dark:text-white">{{ formatDateTime(booking()!.departureUtc) }}</span>
             </div>
             <div class="flex justify-between text-sm">
-              <span class="text-gray-500">Booked on</span>
-              <span class="text-gray-600">{{ formatDateTime(booking()!.createdAtUtc) }}</span>
+              <span class="text-slate-500 dark:text-slate-400">Booked on</span>
+              <span class="text-slate-600 dark:text-slate-300">{{ formatDateTime(booking()!.createdAtUtc) }}</span>
             </div>
           </div>
 
-          <div class="relative border-t-2 border-dashed border-gray-200 mx-6">
-            <div class="absolute -left-9 -top-3.5 w-7 h-7 rounded-full bg-gray-50 border border-gray-200"></div>
-            <div class="absolute -right-9 -top-3.5 w-7 h-7 rounded-full bg-gray-50 border border-gray-200"></div>
+          <div class="relative border-t-2 border-dashed border-slate-200 dark:border-slate-600 mx-6">
+            <div class="absolute -left-9 -top-3.5 w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600"></div>
+            <div class="absolute -right-9 -top-3.5 w-7 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600"></div>
           </div>
 
           <div class="px-6 py-5">
-            <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Passengers</p>
+            <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Passengers</p>
             <div class="space-y-2">
               @for (p of booking()!.passengers; track p.seatNo) {
-                <div class="flex items-center justify-between py-2.5 px-3 bg-gray-50 rounded-xl">
+                <div class="flex items-center justify-between py-2.5 px-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
                   <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-bold text-sm flex-shrink-0">
                       {{ p.name[0].toUpperCase() }}
                     </div>
                     <div>
-                      <p class="font-semibold text-gray-900 text-sm">{{ p.name }}</p>
-                      @if (p.age) { <p class="text-xs text-gray-400">Age {{ p.age }}</p> }
+                      <p class="font-semibold text-slate-900 dark:text-white text-sm">{{ p.name }}</p>
+                      @if (p.age) { <p class="text-xs text-slate-400 dark:text-slate-500">Age {{ p.age }}</p> }
                     </div>
                   </div>
                   <span class="badge badge-info text-xs">Seat {{ p.seatNo }}</span>
@@ -128,8 +128,8 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
             </div>
           </div>
 
-          <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-            <span class="text-sm text-gray-500">Total Amount</span>
+          <div class="px-6 py-4 bg-slate-50 dark:bg-slate-700/50 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+            <span class="text-sm text-slate-500 dark:text-slate-400">Total Amount</span>
             <span class="text-2xl font-extrabold text-red-600">₹{{ booking()!.totalAmount | number:'1.0-0' }}</span>
           </div>
         </div>
@@ -160,10 +160,10 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
 
         <!-- Review Section (only for confirmed past trips) -->
         @if (booking()!.status === BookingStatus.Confirmed && isPastTrip()) {
-          <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div class="px-5 py-4 border-b border-gray-100">
-              <h2 class="font-semibold text-gray-800">Rate Your Trip</h2>
-              <p class="text-xs text-gray-400 mt-0.5">Share your experience to help other travelers</p>
+          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+              <h2 class="font-semibold text-slate-800 dark:text-white">Rate Your Trip</h2>
+              <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Share your experience to help other travelers</p>
             </div>
 
             @if (existingReview()) {
@@ -200,9 +200,9 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
                   </div>
                 </div>
                 <div>
-                  <p class="text-sm font-medium text-gray-700 mb-1">Comment (optional)</p>
+                  <p class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Comment (optional)</p>
                   <textarea [(ngModel)]="reviewComment" rows="3" placeholder="How was your journey?"
-                    class="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors resize-none">
+                    class="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors resize-none">
                   </textarea>
                 </div>
                 <button (click)="submitReview()" [disabled]="reviewRating === 0 || submittingReview()"
@@ -228,10 +228,10 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
                 <p class="text-sm font-semibold text-red-800">Why are you cancelling?</p>
                 <div class="grid grid-cols-2 gap-2">
                   @for (reason of cancelReasons; track reason) {
-                    <label class="flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-all text-sm"
+                    <label class="flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all text-sm"
                       [class]="cancelReason === reason
                         ? 'border-red-500 bg-red-100 text-red-700 font-medium'
-                        : 'border-gray-200 bg-white text-gray-700 hover:border-red-300'">
+                        : 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:border-red-300'">
                       <input type="radio" [(ngModel)]="cancelReason" [value]="reason" class="sr-only"/>
                       {{ reason }}
                     </label>
@@ -248,7 +248,7 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
                     {{ cancelling() ? 'Cancelling…' : 'Confirm Cancel' }}
                   </button>
                   <button (click)="showCancelForm.set(false); cancelReason = ''"
-                    class="flex-1 py-2.5 text-sm font-medium rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">
+                    class="flex-1 py-2.5 text-sm font-medium rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                     Keep Booking
                   </button>
                 </div>
@@ -258,7 +258,7 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
 
           <div class="flex gap-3">
             <a routerLink="/my-bookings"
-              class="flex-1 py-3 text-sm font-semibold rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors text-center">
+              class="flex-1 py-3 text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-center">
               ← All Bookings
             </a>
             <a routerLink="/home"
