@@ -24,8 +24,8 @@ namespace BusTicketBooking.Dtos.Schedules
         /// <summary>Option A: provide exact UTC.</summary>
         public DateTime? DepartureUtc { get; set; }
 
-        /// <summary>Option B: provide local time + TimeZoneId (e.g., "Asia/Kolkata").</summary>
-        public DateTime? DepartureLocal { get; set; }
+        /// <summary>Option B: provide local time as string "yyyy-MM-ddTHH:mm" + TimeZoneId.</summary>
+        public string? DepartureLocal { get; set; }
 
         /// <summary>Required when using DepartureLocal.</summary>
         [MaxLength(100)]

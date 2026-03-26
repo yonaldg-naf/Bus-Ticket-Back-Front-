@@ -24,6 +24,12 @@ namespace BusTicketBooking.Dtos.Schedules
         [Required]
         public DateOnly Date { get; set; }
 
+        /// <summary>
+        /// UTC offset of the customer's timezone in minutes (e.g. +330 for IST).
+        /// Used to convert the local date to a UTC window for correct filtering.
+        /// </summary>
+        public int UtcOffsetMinutes { get; set; } = 0;
+
         /// <summary>Allowed: "departure", "price", "busCode", "routeCode"</summary>
         [MaxLength(50)]
         public string? SortBy { get; set; } = "departure";

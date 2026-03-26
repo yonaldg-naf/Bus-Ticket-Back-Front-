@@ -126,6 +126,7 @@ export class OperatorDashboardComponent implements OnInit {
     { title: 'Promo Codes',        desc: 'Create discount codes for customers',    icon: '🏷️', bg: 'bg-purple-50', link: '/operator/promo-codes'   },
     { title: 'Announcements',      desc: 'Post trip notices to passengers',        icon: '📢', bg: 'bg-red-50',    link: '/operator/announcements' },
     { title: 'Passenger Manifest', desc: 'View and print passenger list per trip', icon: '👥', bg: 'bg-slate-100', link: '/operator/manifest'      },
+    { title: 'Complaints',         desc: 'View and respond to passenger complaints', icon: '💬', bg: 'bg-orange-50', link: '/operator/complaints'  },
   ];
 
   tips = [

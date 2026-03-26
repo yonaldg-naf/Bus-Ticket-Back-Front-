@@ -6,6 +6,7 @@ export interface BookingDraft {
   schedule: ScheduleResponse;
   selectedSeats: string[];
   passengers: BookingPassengerDto[];
+  promoCode?: string;
 }
 
 @Injectable({ providedIn: 'root' })

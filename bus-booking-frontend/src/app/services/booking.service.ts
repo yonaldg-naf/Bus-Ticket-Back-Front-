@@ -10,6 +10,7 @@ export { BookingResponse, BookingStatus, BookingPassengerDto };
 export interface CreateBookingRequest {
   scheduleId: string;
   passengers: BookingPassengerDto[];
+  promoCode?: string;
 }
 
 export interface CreateBookingByKeysRequest {
@@ -58,5 +59,9 @@ export class BookingService {
 
   getBySchedule(scheduleId: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.base}/schedule/${scheduleId}`);
+  }
+
+  busMiss(id: string): Observable<{ bookingId: string; status: string; originalAmount: number; refundAmount: number; message: string }> {
+    return this.http.post<any>(`${this.base}/${id}/bus-miss`, {});
   }
 }

@@ -13,7 +13,15 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+    {
+        // Ensure DateTime values are always serialized with 'Z' (UTC).
+        // Without this, System.Text.Json omits the 'Z' and browsers treat the
+        // value as local time instead of UTC, causing the time shift bug.
+        o.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter());
+        o.JsonSerializerOptions.Converters.Add(new UtcNullableDateTimeConverter());
+    });
 
 // Swagger + JWT bearer security
 builder.Services.AddEndpointsApiExplorer();

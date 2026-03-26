@@ -12,6 +12,10 @@ namespace BusTicketBooking.Models
         public BookingStatus Status { get; set; } = BookingStatus.Pending;
         public decimal TotalAmount { get; set; }
 
+        // Promo code applied at booking time
+        public string? PromoCode { get; set; }
+        public decimal DiscountAmount { get; set; } = 0;
+
         public User? User { get; set; }
         public BusSchedule? Schedule { get; set; }
 

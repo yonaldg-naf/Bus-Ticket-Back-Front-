@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using BusTicketBooking.Interfaces;
 using BusTicketBooking.Dtos.Stops;
+using BusTicketBooking.Models;
 
 namespace BusTicketBooking.Controllers
 {
@@ -17,7 +19,8 @@ namespace BusTicketBooking.Controllers
 
         // GET: api/Stops/cities
         [HttpGet("cities")]
-        public async Task<ActionResult<IEnumerable<CityResponseDto>>> GetCities()
+        [AllowAnonymous]
+        public async Task<ActionResult<IEnumerable<CityResponseDto>>> GetCities(CancellationToken ct = default)
         {
             var data = await _stopService.GetCitiesAsync();
             return Ok(data);
@@ -25,7 +28,8 @@ namespace BusTicketBooking.Controllers
 
         // GET: api/Stops/by-city/{city}
         [HttpGet("by-city/{city}")]
-        public async Task<ActionResult<IEnumerable<StopResponseDto>>> GetByCity(string city)
+        [AllowAnonymous]
+        public async Task<ActionResult<IEnumerable<StopResponseDto>>> GetByCity(string city, CancellationToken ct = default)
         {
             var data = await _stopService.GetStopsByCityAsync(city);
             return Ok(data);
@@ -33,7 +37,8 @@ namespace BusTicketBooking.Controllers
 
         // POST: api/Stops
         [HttpPost]
-        public async Task<ActionResult<StopResponseDto>> Create(CreateStopRequestDto dto)
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<ActionResult<StopResponseDto>> Create(CreateStopRequestDto dto, CancellationToken ct = default)
         {
             var created = await _stopService.CreateAsync(dto);
             return Ok(created);
@@ -41,7 +46,8 @@ namespace BusTicketBooking.Controllers
 
         // PUT: api/Stops/{id}
         [HttpPut("{id}")]
-        public async Task<ActionResult<StopResponseDto>> Update(Guid id, UpdateStopRequestDto dto)
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<ActionResult<StopResponseDto>> Update(Guid id, UpdateStopRequestDto dto, CancellationToken ct = default)
         {
             var updated = await _stopService.UpdateAsync(id, dto);
             return updated == null ? NotFound() : Ok(updated);
@@ -49,7 +55,8 @@ namespace BusTicketBooking.Controllers
 
         // DELETE: api/Stops/{id}
         [HttpDelete("{id}")]
-        public async Task<ActionResult> Delete(Guid id)
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<ActionResult> Delete(Guid id, CancellationToken ct = default)
         {
             var ok = await _stopService.DeleteAsync(id);
             return ok ? Ok() : NotFound();

@@ -1,12 +1,14 @@
 ﻿using BusTicketBooking.Dtos.Bookings;
 using BusTicketBooking.Interfaces;
 using BusTicketBooking.Models;
+using BusTicketBooking.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -254,6 +256,67 @@ namespace BusTicketBooking.Controllers
             var allowPriv = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.Operator);
             var ok = await _bookings.CancelAsync(GetUserId(), bookingId, allowPriv, ct);
             return ok ? Ok() : NotFound();
+        }
+
+        /// <summary>
+        /// Customer missed the bus. Enabled 5 min before departure, closes 5 min after.
+        /// Refunds 75% of the booking amount.
+        /// </summary>
+        [Authorize(Roles = Roles.Customer)]
+        [HttpPost("{bookingId:guid}/bus-miss")]
+        [ProducesResponseType(200)]
+        public async Task<IActionResult> BusMiss([FromRoute] Guid bookingId, CancellationToken ct)
+        {
+            var userId = GetUserId();
+
+            var booking = await _db.Bookings
+                .Include(b => b.Schedule)
+                .Include(b => b.Payment)
+                .FirstOrDefaultAsync(b => b.Id == bookingId && b.UserId == userId, ct);
+
+            if (booking is null) return NotFound("Booking not found.");
+
+            if (booking.Status != BookingStatus.Confirmed)
+                return BadRequest(new { message = "Only confirmed bookings can be marked as bus-missed." });
+
+            if (booking.Schedule is null)
+                return BadRequest(new { message = "Schedule information not available." });
+
+            var now = DateTime.UtcNow;
+            var departure = DateTime.SpecifyKind(booking.Schedule.DepartureUtc, DateTimeKind.Utc);
+            var windowOpen = departure.AddMinutes(-5);
+            var windowClose = departure.AddMinutes(5);
+
+            if (now < windowOpen)
+                return BadRequest(new { message = "Bus miss can only be reported from 5 minutes before departure." });
+
+            if (now > windowClose)
+                return BadRequest(new { message = "Bus miss window has closed (5 minutes after departure)." });
+
+            var refundAmount = Math.Round(booking.TotalAmount * 0.75m, 2);
+
+            booking.Status = BookingStatus.BusMissed;
+            booking.UpdatedAtUtc = now;
+
+            // Record refund in payment
+            if (booking.Payment != null)
+            {
+                booking.Payment.Amount = refundAmount;
+                booking.Payment.Status = PaymentStatus.Success;
+                booking.Payment.ProviderReference = "BUS-MISS-REFUND";
+                booking.Payment.UpdatedAtUtc = now;
+            }
+
+            await _db.SaveChangesAsync(ct);
+
+            return Ok(new
+            {
+                bookingId = booking.Id,
+                status = booking.Status.ToString(),
+                originalAmount = booking.TotalAmount,
+                refundAmount,
+                message = $"Bus miss recorded. ₹{refundAmount} (75%) will be refunded."
+            });
         }
     }
 }

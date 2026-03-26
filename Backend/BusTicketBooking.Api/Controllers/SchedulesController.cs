@@ -121,6 +121,7 @@ namespace BusTicketBooking.Controllers
             [FromQuery] int pageSize = 10,
             [FromQuery] string? sortBy = "departure",
             [FromQuery] string? sortDir = "asc",
+            [FromQuery] int utcOffsetMinutes = 0,
             CancellationToken ct = default)
         {
             if (fromStopId == Guid.Empty || toStopId == Guid.Empty)
@@ -128,7 +129,7 @@ namespace BusTicketBooking.Controllers
 
             var req = new PagedRequestDto { Page = page, PageSize = pageSize, SortBy = sortBy, SortDir = sortDir };
             var dateOnly = DateOnly.FromDateTime(date);
-            var res = await _schedules.SearchAsync(fromStopId, toStopId, dateOnly, req, ct);
+            var res = await _schedules.SearchAsync(fromStopId, toStopId, dateOnly, req, ct, utcOffsetMinutes);
             return Ok(res);
         }
 
@@ -143,6 +144,7 @@ namespace BusTicketBooking.Controllers
             [FromQuery] int pageSize = 10,
             [FromQuery] string? sortBy = "departure",
             [FromQuery] string? sortDir = "asc",
+            [FromQuery] int utcOffsetMinutes = 0,
             CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(fromCity) || string.IsNullOrWhiteSpace(toCity))
@@ -164,7 +166,7 @@ namespace BusTicketBooking.Controllers
             foreach (var fs in fromStops)
                 foreach (var ts in toStops)
                 {
-                    var pageResult = await _schedules.SearchAsync(fs.Id, ts.Id, dateOnly, req, ct);
+                    var pageResult = await _schedules.SearchAsync(fs.Id, ts.Id, dateOnly, req, ct, utcOffsetMinutes);
                     foreach (var item in pageResult.Items)
                         unique[item.Id] = item;
                 }

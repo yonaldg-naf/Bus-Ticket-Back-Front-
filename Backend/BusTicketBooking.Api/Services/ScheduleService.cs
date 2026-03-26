@@ -119,36 +119,35 @@ namespace BusTicketBooking.Services
         // ========================= UPDATE =========================
         public async Task<ScheduleResponseDto?> UpdateAsync(Guid id, UpdateScheduleRequestDto dto, CancellationToken ct = default)
         {
-            var entity = await _schedules.GetByIdAsync(id, ct);
+            var entity = await _db.BusSchedules
+                .Include(s => s.Bus)
+                .Include(s => s.Route)
+                .FirstOrDefaultAsync(s => s.Id == id, ct);
+
             if (entity is null) return null;
 
-            var depUtc = EnsureUtc(dto.DepartureUtc);
+            var depUtc = ConvertToUtc(
+                DateTime.SpecifyKind(
+                    DateTime.Parse(dto.DepartureLocal, System.Globalization.CultureInfo.InvariantCulture),
+                    DateTimeKind.Unspecified),
+                dto.TimeZoneId);
 
             if (depUtc < DateTime.UtcNow.AddMinutes(-1))
                 throw new InvalidOperationException("Departure time must be in the future.");
 
-            var bus = await _buses.GetByIdAsync(dto.BusId, ct)
-                ?? throw new InvalidOperationException("Bus not found.");
-
-            var route = await _routes.GetByIdAsync(dto.RouteId, ct)
-                ?? throw new InvalidOperationException("Route not found.");
-
-            var dup = (await _schedules.FindAsync(
-                s => s.Id != id && s.BusId == dto.BusId && s.DepartureUtc == depUtc,
-                ct)).Any();
+            var dup = await _db.BusSchedules.AnyAsync(
+                s => s.Id != id && s.BusId == entity.BusId && s.DepartureUtc == depUtc, ct);
 
             if (dup)
                 throw new InvalidOperationException("A schedule for this bus at the specified time already exists.");
 
-            entity.BusId = dto.BusId;
-            entity.RouteId = dto.RouteId;
             entity.DepartureUtc = depUtc;
             entity.BasePrice = dto.BasePrice;
             entity.UpdatedAtUtc = DateTime.UtcNow;
 
-            await _schedules.UpdateAsync(entity, ct);
+            await _db.SaveChangesAsync(ct);
 
-            return Map(entity, bus, route);
+            return Map(entity, entity.Bus!, entity.Route!);
         }
 
         // ========================= CANCEL (with reason) =========================
@@ -224,13 +223,18 @@ namespace BusTicketBooking.Services
             Guid toStopId,
             DateOnly date,
             PagedRequestDto request,
-            CancellationToken ct = default)
+            CancellationToken ct = default,
+            int utcOffsetMinutes = 0)
         {
+            var offsetSpan  = TimeSpan.FromMinutes(utcOffsetMinutes);
+            var dayStartUtc = date.ToDateTime(TimeOnly.MinValue) - offsetSpan;
+            var dayEndUtc   = dayStartUtc.AddDays(1);
+
             var baseQuery = _db.BusSchedules
                 .Include(s => s.Bus)
                 .Include(s => s.Route)!.ThenInclude(r => r.RouteStops)
                 .AsNoTracking()
-                .Where(s => DateOnly.FromDateTime(s.DepartureUtc) == date);
+                .Where(s => s.DepartureUtc >= dayStartUtc && s.DepartureUtc < dayEndUtc);
 
             var list = await baseQuery.ToListAsync(ct);
 
@@ -318,7 +322,11 @@ namespace BusTicketBooking.Services
 
             DateTime depUtc = dto.DepartureUtc.HasValue
                 ? EnsureUtc(dto.DepartureUtc.Value)
-                : ConvertToUtc(dto.DepartureLocal!.Value, dto.TimeZoneId!);
+                : ConvertToUtc(
+                    DateTime.SpecifyKind(
+                        DateTime.Parse(dto.DepartureLocal!, System.Globalization.CultureInfo.InvariantCulture),
+                        DateTimeKind.Unspecified),
+                    dto.TimeZoneId!);
 
             if (depUtc < DateTime.UtcNow.AddMinutes(-1))
                 throw new InvalidOperationException("Departure time must be in the future.");
@@ -369,14 +377,19 @@ namespace BusTicketBooking.Services
                 };
             }
 
+            // Convert the customer's local date to a UTC window using their timezone offset.
+            // e.g. IST (UTC+330): "2026-03-26" local = 2026-03-25T18:30Z to 2026-03-26T18:29:59Z
+            var offsetSpan  = TimeSpan.FromMinutes(dto.UtcOffsetMinutes);
+            var dayStartUtc = dto.Date.ToDateTime(TimeOnly.MinValue) - offsetSpan;
+            var dayEndUtc   = dayStartUtc.AddDays(1);
+
             var baseQuery = _db.BusSchedules
                 .Include(s => s.Bus)
                 .Include(s => s.Route)!.ThenInclude(r => r.RouteStops)
                 .AsNoTracking()
-                .Where(s => DateOnly.FromDateTime(s.DepartureUtc) == dto.Date);
+                .Where(s => s.DepartureUtc >= dayStartUtc && s.DepartureUtc < dayEndUtc);
 
             var list = await baseQuery.ToListAsync(ct);
-
             var filtered = list.Where(s =>
             {
                 var stops = s.Route!.RouteStops.OrderBy(rs => rs.Order).ToList();
@@ -496,7 +509,8 @@ namespace BusTicketBooking.Services
             {
                 DateTimeKind.Utc => dt,
                 DateTimeKind.Local => dt.ToUniversalTime(),
-                _ => DateTime.SpecifyKind(dt, DateTimeKind.Local).ToUniversalTime()
+                // Unspecified kind — the field is named DepartureUtc so treat it as UTC directly
+                _ => DateTime.SpecifyKind(dt, DateTimeKind.Utc)
             };
 
         private static DateTime ConvertToUtc(DateTime local, string timeZoneId)

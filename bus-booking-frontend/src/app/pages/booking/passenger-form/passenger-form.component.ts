@@ -2,6 +2,7 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormBuilder, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { BookingService, BookingPassengerDto } from '../../../services/booking.service';
 import { BookingStateService } from '../../../services/booking-state.service';
 import { AuthService } from '../../../services/auth.service';
@@ -10,7 +11,7 @@ import { ToastService } from '../../../services/toast.service';
 @Component({
   selector: 'app-passenger-form',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule],
+  imports: [ReactiveFormsModule, CommonModule, FormsModule],
   template: `
   <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
 
@@ -167,6 +168,14 @@ import { ToastService } from '../../../services/toast.service';
               </div>
             }
 
+            <!-- Promo Code -->
+            <div class="mt-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
+              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Promo Code (optional)</label>
+              <input [(ngModel)]="promoCode" [ngModelOptions]="{standalone: true}" placeholder="Enter promo code" maxlength="50"
+                class="w-full text-sm border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 uppercase transition-colors"/>
+              <p class="text-xs text-slate-400 mt-1">Discount will be applied to your booking total.</p>
+            </div>
+
             <button type="submit" [disabled]="loading()" class="btn-primary w-full py-3.5 text-base mt-5">
               @if (loading()) {
                 <svg class="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
@@ -237,6 +246,7 @@ export class PassengerFormComponent implements OnInit {
   loading    = signal(false);
   errorMsg   = signal('');
   draft      = this.bookingState.draft;
+  promoCode  = '';
 
   // Tracks "Me" or "Someone else" per passenger slot
   bookingFor = signal<('self' | 'other')[]>([]);
@@ -320,7 +330,7 @@ export class PassengerFormComponent implements OnInit {
       name: p.name, age: p.age ?? undefined, seatNo: p.seatNo,
     }));
 
-    this.bookingSvc.create({ scheduleId, passengers }).subscribe({
+    this.bookingSvc.create({ scheduleId, passengers, promoCode: this.promoCode.trim().toUpperCase() || undefined }).subscribe({
       next: booking => {
         this.bookingState.setPassengers(passengers);
         this.toast.success('Booking created! Complete payment to confirm.');

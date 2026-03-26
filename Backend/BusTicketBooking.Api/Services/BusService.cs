@@ -257,9 +257,25 @@ namespace BusTicketBooking.Services
             UpdatedAtUtc = e.UpdatedAtUtc
         };
 
-        public Task<BusResponseDto> CreateAsync(CreateBusRequestDto dto, CancellationToken ct = default)
+        public async Task<BusResponseDto> CreateAsync(CreateBusRequestDto dto, CancellationToken ct = default)
         {
-            throw new NotImplementedException();
+            if (dto.OperatorId == Guid.Empty)
+                throw new InvalidOperationException("OperatorId is required.");
+
+            var dup = (await _buses.FindAsync(b => b.OperatorId == dto.OperatorId && b.Code == dto.Code, ct)).Any();
+            if (dup) throw new InvalidOperationException("Bus code already exists for this operator.");
+
+            var e = new Bus
+            {
+                OperatorId = dto.OperatorId,
+                Code = dto.Code.Trim(),
+                RegistrationNumber = dto.RegistrationNumber.Trim(),
+                BusType = dto.BusType,
+                TotalSeats = dto.TotalSeats,
+                Status = dto.Status
+            };
+            e = await _buses.AddAsync(e, ct);
+            return Map(e);
         }
     }
 }

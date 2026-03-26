@@ -421,6 +421,7 @@ export class SearchResultsComponent implements OnInit {
       sortBy:   field,
       sortDir:  dir,
       pageSize: 100,
+      utcOffsetMinutes: -new Date().getTimezoneOffset(),
       // Pass busType to backend if single type selected
       busType:  this.filterBusTypes.length === 1 ? this.filterBusTypes[0] : undefined,
       minPrice: this.priceMin > this.absMinPrice ? this.priceMin : undefined,

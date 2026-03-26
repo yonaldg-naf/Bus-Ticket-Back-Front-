@@ -93,7 +93,7 @@ import { Location } from '@angular/common';
 
             <!-- Visual Bus Layout -->
             <div class="p-5">
-              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Bus Layout · Max 6 seats per booking</p>
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Bus Layout · Maximum 6 seats per booking</p>
               <!-- Column headers with window/aisle labels -->
               <div class="grid grid-cols-[1fr_1fr_20px_1fr_1fr] gap-1.5 mb-2 px-1">
                 <div class="text-center">

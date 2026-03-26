@@ -33,6 +33,7 @@ export interface SearchSchedulesByKeysRequest {
   toCity: string;
   toStopName?: string;
   date: string;
+  utcOffsetMinutes?: number;
   page?: number;
   pageSize?: number;
   sortBy?: string;
@@ -86,7 +87,7 @@ export class ScheduleService {
     return this.http.post<ScheduleResponse>(`${this.base}/by-keys`, body);
   }
 
-  update(id: string, body: { busId: string; routeId: string; departureUtc: string; basePrice: number }): Observable<ScheduleResponse> {
+  update(id: string, body: { departureLocal: string; timeZoneId: string; basePrice: number }): Observable<ScheduleResponse> {
     return this.http.put<ScheduleResponse>(`${this.base}/${id}`, body);
   }
 

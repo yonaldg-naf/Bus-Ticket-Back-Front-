@@ -23,8 +23,8 @@ namespace BusTicketBooking.Controllers
 
         // Helper to get logged-in userId & role
         private Guid CurrentUserId =>
-            Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
-                        ?? User.FindFirstValue("sub"));
+            Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier)
+                        ?? User.FindFirstValue("sub"), out var id) ? id : Guid.Empty;
 
         private string CurrentRole =>
             User.FindFirstValue(ClaimTypes.Role)

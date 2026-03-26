@@ -55,6 +55,7 @@ export const routes: Routes = [
       { path: 'promo-codes',     loadComponent: () => import('./pages/operator/promo-codes/promo-codes.component').then(m => m.PromoCodesComponent) },
       { path: 'announcements',   loadComponent: () => import('./pages/operator/announcements/announcements.component').then(m => m.AnnouncementsComponent) },
       { path: 'manifest',        loadComponent: () => import('./pages/operator/passenger-manifest/passenger-manifest.component').then(m => m.PassengerManifestComponent) },
+      { path: 'complaints',      loadComponent: () => import('./pages/operator/complaints/complaints.component').then(m => m.ComplaintsComponent) },
     ],
   },
   {

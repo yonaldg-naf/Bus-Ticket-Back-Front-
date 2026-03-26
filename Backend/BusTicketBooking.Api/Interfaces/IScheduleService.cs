@@ -16,7 +16,7 @@ namespace BusTicketBooking.Interfaces
         Task<ScheduleResponseDto?> GetByIdAsync(Guid id, CancellationToken ct = default);
         Task<ScheduleResponseDto?> UpdateAsync(Guid id, UpdateScheduleRequestDto dto, CancellationToken ct = default);
         Task<bool> DeleteAsync(Guid id, CancellationToken ct = default);
-        Task<PagedResult<ScheduleResponseDto>> SearchAsync(Guid fromStopId, Guid toStopId, DateOnly date, PagedRequestDto request, CancellationToken ct = default);
+        Task<PagedResult<ScheduleResponseDto>> SearchAsync(Guid fromStopId, Guid toStopId, DateOnly date, PagedRequestDto request, CancellationToken ct = default, int utcOffsetMinutes = 0);
         Task<SeatAvailabilityResponseDto> GetAvailabilityAsync(Guid scheduleId, CancellationToken ct = default);
 
         // NEW (by-keys)

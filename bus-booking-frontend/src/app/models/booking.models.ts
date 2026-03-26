@@ -6,6 +6,7 @@ export enum BookingStatus {
   Cancelled = 3,
   Refunded = 4,
   OperatorCancelled = 5,
+  BusMissed = 6,
 }
 
 export const BookingStatusLabels: Record<BookingStatus, string> = {
@@ -14,6 +15,7 @@ export const BookingStatusLabels: Record<BookingStatus, string> = {
   [BookingStatus.Cancelled]: 'Cancelled',
   [BookingStatus.Refunded]: 'Refunded',
   [BookingStatus.OperatorCancelled]: 'Cancelled by operator',
+  [BookingStatus.BusMissed]: 'Bus Missed',
 };
 
 // ─── Passenger ────────────────────────────────────────────────────────────────
@@ -32,6 +34,8 @@ export interface BookingResponse {
   scheduleId: string;
   status: BookingStatus;
   totalAmount: number;
+  promoCode?: string;
+  discountAmount: number;
   createdAtUtc: string;
   updatedAtUtc?: string;
   busCode: string;

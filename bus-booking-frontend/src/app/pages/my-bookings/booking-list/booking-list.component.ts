@@ -154,10 +154,20 @@ export class BookingListComponent implements OnInit {
   filtered = computed(() => {
     const all = this.bookings();
     const f   = this.activeFilter();
+    const now = new Date();
     if (f === 'all')       return all;
-    if (f === 'upcoming')  return all.filter(b => b.status === BookingStatus.Pending || b.status === BookingStatus.Confirmed);
-    if (f === 'completed') return all.filter(b => b.status === BookingStatus.Refunded);
-    if (f === 'cancelled') return all.filter(b => b.status === BookingStatus.Cancelled || b.status === BookingStatus.OperatorCancelled);
+    if (f === 'upcoming')  return all.filter(b =>
+      (b.status === BookingStatus.Pending || b.status === BookingStatus.Confirmed) &&
+      new Date(b.departureUtc) >= now
+    );
+    if (f === 'completed') return all.filter(b =>
+      b.status === BookingStatus.Refunded ||
+      b.status === BookingStatus.BusMissed ||
+      (b.status === BookingStatus.Confirmed && new Date(b.departureUtc) < now)
+    );
+    if (f === 'cancelled') return all.filter(b =>
+      b.status === BookingStatus.Cancelled || b.status === BookingStatus.OperatorCancelled
+    );
     return all;
   });
 
@@ -209,6 +219,7 @@ export class BookingListComponent implements OnInit {
       [BookingStatus.Refunded]:          'badge badge-gray',
       [BookingStatus.Cancelled]:         'badge badge-error',
       [BookingStatus.OperatorCancelled]: 'badge badge-error',
+      [BookingStatus.BusMissed]:         'badge badge-warning',
     };
     return map[s] ?? 'badge badge-gray';
   }
@@ -220,6 +231,7 @@ export class BookingListComponent implements OnInit {
       [BookingStatus.Refunded]:          'bg-gray-100',
       [BookingStatus.Cancelled]:         'bg-red-50',
       [BookingStatus.OperatorCancelled]: 'bg-red-50',
+      [BookingStatus.BusMissed]:         'bg-amber-50',
     };
     return map[s] ?? 'bg-gray-100';
   }

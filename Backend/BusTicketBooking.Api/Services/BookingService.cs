@@ -89,6 +89,34 @@ namespace BusTicketBooking.Services
 
             var total = schedule.BasePrice * dto.Passengers.Count;
 
+            // Apply promo code if provided
+            decimal discount = 0;
+            string? appliedPromoCode = null;
+            if (!string.IsNullOrWhiteSpace(dto.PromoCode))
+            {
+                var promo = await _db.PromoCodes
+                    .FirstOrDefaultAsync(p => p.Code == dto.PromoCode.ToUpper().Trim() && p.IsActive, ct);
+
+                if (promo != null
+                    && promo.ExpiresAtUtc >= DateTime.UtcNow
+                    && promo.UsedCount < promo.MaxUses
+                    && (!promo.MinBookingAmount.HasValue || total >= promo.MinBookingAmount.Value))
+                {
+                    discount = promo.DiscountType == 2
+                        ? Math.Round(total * promo.DiscountValue / 100, 2)
+                        : promo.DiscountValue;
+
+                    if (promo.MaxDiscountAmount.HasValue && discount > promo.MaxDiscountAmount.Value)
+                        discount = promo.MaxDiscountAmount.Value;
+
+                    discount = Math.Min(discount, total);
+                    appliedPromoCode = promo.Code;
+                    promo.UsedCount++;
+                }
+            }
+
+            var finalAmount = total - discount;
+
             await using var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
 
             var requestedSeats = dto.Passengers.Select(p => p.SeatNo.Trim()).ToList();
@@ -111,7 +139,9 @@ namespace BusTicketBooking.Services
                 UserId = userId,
                 ScheduleId = dto.ScheduleId,
                 Status = BookingStatus.Pending,
-                TotalAmount = total
+                TotalAmount = finalAmount,
+                PromoCode = appliedPromoCode,
+                DiscountAmount = discount
             };
 
             await _bookings.AddAsync(entity, ct);
@@ -131,7 +161,7 @@ namespace BusTicketBooking.Services
             var payment = new Payment
             {
                 BookingId = entity.Id,
-                Amount = total,
+                Amount = finalAmount,
                 Status = PaymentStatus.Initiated,
                 ProviderReference = "INIT"
             };
@@ -296,6 +326,34 @@ namespace BusTicketBooking.Services
 
             var total = schedule.BasePrice * dto.Passengers.Count;
 
+            // Apply promo code if provided
+            decimal discount = 0;
+            string? appliedPromoCode = null;
+            if (!string.IsNullOrWhiteSpace(dto.PromoCode))
+            {
+                var promo = await _db.PromoCodes
+                    .FirstOrDefaultAsync(p => p.Code == dto.PromoCode.ToUpper().Trim() && p.IsActive, ct);
+
+                if (promo != null
+                    && promo.ExpiresAtUtc >= DateTime.UtcNow
+                    && promo.UsedCount < promo.MaxUses
+                    && (!promo.MinBookingAmount.HasValue || total >= promo.MinBookingAmount.Value))
+                {
+                    discount = promo.DiscountType == 2
+                        ? Math.Round(total * promo.DiscountValue / 100, 2)
+                        : promo.DiscountValue;
+
+                    if (promo.MaxDiscountAmount.HasValue && discount > promo.MaxDiscountAmount.Value)
+                        discount = promo.MaxDiscountAmount.Value;
+
+                    discount = Math.Min(discount, total);
+                    appliedPromoCode = promo.Code;
+                    promo.UsedCount++;
+                }
+            }
+
+            var finalAmount = total - discount;
+
             await using var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
 
             var requestedSeats = dto.Passengers.Select(p => p.SeatNo.Trim()).ToList();
@@ -318,7 +376,9 @@ namespace BusTicketBooking.Services
                 UserId = userId,
                 ScheduleId = schedule.Id,
                 Status = BookingStatus.Pending,
-                TotalAmount = total
+                TotalAmount = finalAmount,
+                PromoCode = appliedPromoCode,
+                DiscountAmount = discount
             };
 
             await _bookings.AddAsync(entity, ct);
@@ -338,7 +398,7 @@ namespace BusTicketBooking.Services
             var payment = new Payment
             {
                 BookingId = entity.Id,
-                Amount = total,
+                Amount = finalAmount,
                 Status = PaymentStatus.Initiated,
                 ProviderReference = "INIT"
             };
@@ -379,6 +439,8 @@ namespace BusTicketBooking.Services
                 ScheduleId = e.ScheduleId,
                 Status = e.Status,
                 TotalAmount = e.TotalAmount,
+                PromoCode = e.PromoCode,
+                DiscountAmount = e.DiscountAmount,
                 CreatedAtUtc = e.CreatedAtUtc,
                 UpdatedAtUtc = e.UpdatedAtUtc,
 
@@ -434,7 +496,7 @@ namespace BusTicketBooking.Services
             {
                 DateTimeKind.Utc => dt,
                 DateTimeKind.Local => dt.ToUniversalTime(),
-                _ => DateTime.SpecifyKind(dt, DateTimeKind.Local).ToUniversalTime()
+                _ => DateTime.SpecifyKind(dt, DateTimeKind.Utc)
             };
     }
 }

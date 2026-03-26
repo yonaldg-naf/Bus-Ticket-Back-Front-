@@ -299,8 +299,8 @@ export class ManageSchedulesComponent implements OnInit {
     this.saving.set(true);
     if (this.editId()) {
       this.scheduleSvc.update(this.editId()!, {
-        busId: '', routeId: '',
-        departureUtc: new Date(v.departureLocal!).toISOString(),
+        departureLocal: v.departureLocal!,
+        timeZoneId: Intl.DateTimeFormat().resolvedOptions().timeZone,
         basePrice: v.basePrice!,
       }).subscribe({
         next: u => { this.schedules.update(l => l.map(s => s.id === u.id ? u : s)); this.saving.set(false); this.closeForm(); this.toast.success('Schedule updated.'); },

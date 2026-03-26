@@ -21,9 +21,35 @@ namespace BusTicketBooking.Contexts
         public DbSet<Review> Reviews => Set<Review>();
         public DbSet<PromoCode> PromoCodes => Set<PromoCode>();
         public DbSet<Announcement> Announcements => Set<Announcement>();
+        public DbSet<Complaint> Complaints => Set<Complaint>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // ── Global: stamp all DateTime columns as UTC when read from DB ──────────
+            // SQL Server datetime2 has no timezone info; EF returns Kind=Unspecified.
+            // This causes incorrect comparisons with DateTime.UtcNow in business logic.
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                foreach (var property in entityType.GetProperties()
+                    .Where(p => p.ClrType == typeof(DateTime) || p.ClrType == typeof(DateTime?)))
+                {
+                    if (property.ClrType == typeof(DateTime))
+                    {
+                        property.SetValueConverter(new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<DateTime, DateTime>(
+                            v => v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc),
+                            v => DateTime.SpecifyKind(v, DateTimeKind.Utc)
+                        ));
+                    }
+                    else
+                    {
+                        property.SetValueConverter(new Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<DateTime?, DateTime?>(
+                            v => v == null ? v : v.Value.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v.Value, DateTimeKind.Utc),
+                            v => v == null ? v : DateTime.SpecifyKind(v.Value, DateTimeKind.Utc)
+                        ));
+                    }
+                }
+            }
+
             // BaseEntity concurrency token
             foreach (var entity in modelBuilder.Model.GetEntityTypes())
             {
@@ -122,6 +148,8 @@ namespace BusTicketBooking.Contexts
             modelBuilder.Entity<Booking>(e =>
             {
                 e.Property(b => b.TotalAmount).HasPrecision(10, 2);
+                e.Property(b => b.DiscountAmount).HasPrecision(10, 2);
+                e.Property(b => b.PromoCode).HasMaxLength(50);
 
                 e.HasOne(b => b.User)
                  .WithMany(u => u.Bookings)
@@ -204,6 +232,16 @@ namespace BusTicketBooking.Contexts
                 e.Property(a => a.Message).HasMaxLength(500).IsRequired();
                 e.Property(a => a.Type).HasMaxLength(20).IsRequired();
                 e.HasOne(a => a.Schedule).WithMany().HasForeignKey(a => a.ScheduleId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Complaint
+            modelBuilder.Entity<Complaint>(e =>
+            {
+                e.Property(c => c.Message).HasMaxLength(1000).IsRequired();
+                e.Property(c => c.Reply).HasMaxLength(1000);
+                e.Property(c => c.Status).HasMaxLength(20).IsRequired();
+                e.HasOne(c => c.Booking).WithMany().HasForeignKey(c => c.BookingId).OnDelete(DeleteBehavior.Cascade);
+                e.HasOne(c => c.User).WithMany().HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Restrict);
             });
 
             base.OnModelCreating(modelBuilder);
