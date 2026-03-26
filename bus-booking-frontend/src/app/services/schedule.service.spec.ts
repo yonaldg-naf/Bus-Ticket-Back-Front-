@@ -99,16 +99,17 @@ describe('ScheduleService', () => {
 
   // ── update() ──────────────────────────────────────────────────
   describe('update()', () => {
-    it('PUTs to /api/schedules/:id with all required fields', () => {
+    it('PUTs to /api/schedules/:id with departureLocal, timeZoneId and basePrice', () => {
       const body = {
-        busId: 'bus-001', routeId: 'route-001',
-        departureUtc: '2025-06-01T08:00:00Z', basePrice: 600,
+        departureLocal: '2025-06-01T15:25',
+        timeZoneId: 'Asia/Kolkata',
+        basePrice: 600,
       };
       service.update('sched-001', body).subscribe(s => expect(s.basePrice).toBe(600));
       const req = http.expectOne('/api/schedules/sched-001');
       expect(req.request.method).toBe('PUT');
-      expect(req.request.body.busId).toBe('bus-001');
-      expect(req.request.body.routeId).toBe('route-001');
+      expect(req.request.body.departureLocal).toBe('2025-06-01T15:25');
+      expect(req.request.body.timeZoneId).toBe('Asia/Kolkata');
       expect(req.request.body.basePrice).toBe(600);
       req.flush({ ...mockSchedule, basePrice: 600 });
     });

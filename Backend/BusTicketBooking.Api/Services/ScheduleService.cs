@@ -229,12 +229,16 @@ namespace BusTicketBooking.Services
             var offsetSpan  = TimeSpan.FromMinutes(utcOffsetMinutes);
             var dayStartUtc = date.ToDateTime(TimeOnly.MinValue) - offsetSpan;
             var dayEndUtc   = dayStartUtc.AddDays(1);
+            var now         = DateTime.UtcNow;
 
             var baseQuery = _db.BusSchedules
                 .Include(s => s.Bus)
                 .Include(s => s.Route)!.ThenInclude(r => r.RouteStops)
                 .AsNoTracking()
-                .Where(s => s.DepartureUtc >= dayStartUtc && s.DepartureUtc < dayEndUtc);
+                .Where(s => s.DepartureUtc >= dayStartUtc
+                         && s.DepartureUtc < dayEndUtc
+                         && s.DepartureUtc > now               // exclude departed
+                         && !s.IsCancelledByOperator);          // exclude cancelled
 
             var list = await baseQuery.ToListAsync(ct);
 
@@ -287,7 +291,10 @@ namespace BusTicketBooking.Services
             var allSeats = Enumerable.Range(1, totalSeats).Select(i => i.ToString()).ToList();
 
             var bookedSeats = await _db.Bookings
-                .Where(b => b.ScheduleId == scheduleId && b.Status != BookingStatus.Cancelled)
+                .Where(b => b.ScheduleId == scheduleId
+                         && b.Status != BookingStatus.Cancelled
+                         && b.Status != BookingStatus.OperatorCancelled
+                         && b.Status != BookingStatus.BusMissed)
                 .SelectMany(b => b.Passengers.Select(p => p.SeatNo))
                 .ToListAsync(ct);
 
@@ -382,12 +389,16 @@ namespace BusTicketBooking.Services
             var offsetSpan  = TimeSpan.FromMinutes(dto.UtcOffsetMinutes);
             var dayStartUtc = dto.Date.ToDateTime(TimeOnly.MinValue) - offsetSpan;
             var dayEndUtc   = dayStartUtc.AddDays(1);
+            var now         = DateTime.UtcNow;
 
             var baseQuery = _db.BusSchedules
                 .Include(s => s.Bus)
                 .Include(s => s.Route)!.ThenInclude(r => r.RouteStops)
                 .AsNoTracking()
-                .Where(s => s.DepartureUtc >= dayStartUtc && s.DepartureUtc < dayEndUtc);
+                .Where(s => s.DepartureUtc >= dayStartUtc
+                         && s.DepartureUtc < dayEndUtc
+                         && s.DepartureUtc > now               // exclude departed
+                         && !s.IsCancelledByOperator);          // exclude cancelled
 
             var list = await baseQuery.ToListAsync(ct);
             var filtered = list.Where(s =>

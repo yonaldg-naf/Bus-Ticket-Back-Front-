@@ -10,6 +10,7 @@ const mockBooking: BookingResponse = {
   scheduleId: 'schedule-001',
   status: BookingStatus.Pending,
   totalAmount: 500,
+  discountAmount: 0,
   createdAtUtc: '2025-01-01T10:00:00Z',
   busCode: 'BUS-01',
   registrationNumber: 'TN01AB1234',

@@ -37,9 +37,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- THE ONLY PROJECT YOU NEED TO REFERENCE -->
 		<ProjectReference Include="..\BusTicketBooking.Api\BusTicketBooking.csproj" />
-		<ProjectReference Include="..\BusTicketBooking\BusTicketBooking.csproj" />
 	</ItemGroup>
 
 </Project>

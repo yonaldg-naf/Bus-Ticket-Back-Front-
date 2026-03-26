@@ -66,13 +66,15 @@ namespace BusTicketBooking.Services
             if (schedule.IsCancelledByOperator)
                 throw new InvalidOperationException("This schedule was cancelled by the operator.");
 
+            if (schedule.DepartureUtc <= DateTime.UtcNow)
+                throw new InvalidOperationException("This schedule has already departed. Booking is no longer available.");
+
             var busStatus = schedule.Bus?.Status ?? BusStatus.NotAvailable;
             if (busStatus != BusStatus.Available)
             {
                 var reason = busStatus == BusStatus.UnderRepair ? "Bus is under repair." : "Bus is not available.";
                 throw new InvalidOperationException(reason);
             }
-
             var totalSeats = schedule.Bus?.TotalSeats ?? 0;
             if (totalSeats <= 0) totalSeats = 40;
 
@@ -89,9 +91,14 @@ namespace BusTicketBooking.Services
 
             var total = schedule.BasePrice * dto.Passengers.Count;
 
-            // Apply promo code if provided
+            // Promo + seat check + booking creation all inside one serializable transaction
             decimal discount = 0;
             string? appliedPromoCode = null;
+            var finalAmount = total;
+
+            await using var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+
+            // Apply promo inside transaction so UsedCount increment is atomic with booking
             if (!string.IsNullOrWhiteSpace(dto.PromoCode))
             {
                 var promo = await _db.PromoCodes
@@ -115,9 +122,7 @@ namespace BusTicketBooking.Services
                 }
             }
 
-            var finalAmount = total - discount;
-
-            await using var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+            finalAmount = total - discount;
 
             var requestedSeats = dto.Passengers.Select(p => p.SeatNo.Trim()).ToList();
 
@@ -303,6 +308,9 @@ namespace BusTicketBooking.Services
             if (schedule.IsCancelledByOperator)
                 throw new InvalidOperationException("This schedule was cancelled by the operator.");
 
+            if (schedule.DepartureUtc <= DateTime.UtcNow)
+                throw new InvalidOperationException("This schedule has already departed. Booking is no longer available.");
+
             var busStatus = schedule.Bus?.Status ?? BusStatus.NotAvailable;
             if (busStatus != BusStatus.Available)
             {
@@ -315,7 +323,6 @@ namespace BusTicketBooking.Services
 
             var allowedSeats = GenerateNumericSeats(totalSeats);
             var allowedSet = new HashSet<string>(allowedSeats, StringComparer.OrdinalIgnoreCase);
-
             var invalid = dto.Passengers
                 .Select(p => p.SeatNo.Trim())
                 .Where(s => !allowedSet.Contains(s))
@@ -326,9 +333,14 @@ namespace BusTicketBooking.Services
 
             var total = schedule.BasePrice * dto.Passengers.Count;
 
-            // Apply promo code if provided
+            // Promo + seat check + booking creation all inside one serializable transaction
             decimal discount = 0;
             string? appliedPromoCode = null;
+            var finalAmount = total;
+
+            await using var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+
+            // Apply promo inside transaction so UsedCount increment is atomic with booking
             if (!string.IsNullOrWhiteSpace(dto.PromoCode))
             {
                 var promo = await _db.PromoCodes
@@ -352,9 +364,7 @@ namespace BusTicketBooking.Services
                 }
             }
 
-            var finalAmount = total - discount;
-
-            await using var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+            finalAmount = total - discount;
 
             var requestedSeats = dto.Passengers.Select(p => p.SeatNo.Trim()).ToList();
 
