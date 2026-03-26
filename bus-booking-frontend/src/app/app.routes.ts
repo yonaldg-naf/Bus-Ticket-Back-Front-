@@ -44,6 +44,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent),
   },
   {
+    path: 'wallet',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/wallet/wallet.component').then(m => m.WalletComponent),
+  },
+  {
     path: 'operator',
     canActivate: [authGuard, roleGuard('Operator', 'Admin')],
     children: [

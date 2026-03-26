@@ -107,6 +107,15 @@ import { ThemeService } from '../../services/theme.service';
                       </div>
                       My Bookings
                     </a>
+                    <a routerLink="/wallet" (click)="dropOpen.set(false)"
+                      class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                      <div class="w-7 h-7 rounded-lg bg-green-50 dark:bg-green-900/30 flex items-center justify-center">
+                        <svg class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                        </svg>
+                      </div>
+                      My Wallet
+                    </a>
                     <div class="my-1.5 border-t border-gray-100 dark:border-slate-600"></div>
                     <button (click)="logout()"
                       class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">

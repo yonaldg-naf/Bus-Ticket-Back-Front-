@@ -54,4 +54,5 @@ export interface BookingResponse {
 export interface PayBookingRequest {
   amount: number;
   providerReference?: string;
+  useWallet?: boolean;
 }

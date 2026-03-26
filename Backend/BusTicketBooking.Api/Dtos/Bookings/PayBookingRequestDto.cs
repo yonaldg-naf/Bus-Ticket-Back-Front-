@@ -9,5 +9,8 @@ namespace BusTicketBooking.Dtos.Bookings
 
         [MaxLength(100)]
         public string ProviderReference { get; set; } = "MOCK-PAYMENT";
+
+        /// <summary>If true, deduct from the user's wallet balance instead of external payment.</summary>
+        public bool UseWallet { get; set; } = false;
     }
 }

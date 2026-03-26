@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { BookingService } from '../../../services/booking.service';
 import { ToastService } from '../../../services/toast.service';
 import { PromoCodeService, ValidatePromoResponse } from '../../../services/promo-code.service';
+import { WalletService } from '../../../services/wallet.service';
 import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../models/booking.models';
 
 @Component({
@@ -191,7 +192,7 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
               <!-- Pay button -->
               @if (booking()!.status === BookingStatus.Pending) {
                 <button (click)="processPayment()" [disabled]="payLoading()"
-                  class="btn-primary w-full py-3.5 text-base mb-3">
+                  class="btn-primary w-full py-3.5 text-base mb-2">
                   @if (payLoading()) {
                     <svg class="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
                       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
@@ -202,6 +203,30 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
                     🔒 Pay ₹{{ finalAmount() | number:'1.0-0' }}
                   }
                 </button>
+
+                <!-- Wallet pay button -->
+                <div class="border border-slate-200 dark:border-slate-600 rounded-xl p-3 mb-3">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">💳 Wallet Balance</span>
+                    <span class="text-sm font-bold" [class]="walletBalance() >= finalAmount() ? 'text-green-600' : 'text-red-500'">
+                      ₹{{ walletBalance() | number:'1.0-2' }}
+                    </span>
+                  </div>
+                  <button (click)="processWalletPayment()" [disabled]="payLoading() || walletBalance() < finalAmount()"
+                    class="w-full py-2.5 text-sm font-semibold rounded-xl transition-colors"
+                    [class]="walletBalance() >= finalAmount()
+                      ? 'bg-green-600 hover:bg-green-700 text-white'
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-400 cursor-not-allowed'">
+                    @if (walletBalance() >= finalAmount()) {
+                      ✅ Pay ₹{{ finalAmount() | number:'1.0-0' }} with Wallet
+                    } @else {
+                      Insufficient wallet balance
+                    }
+                  </button>
+                  @if (walletBalance() < finalAmount()) {
+                    <a routerLink="/wallet" class="block text-center text-xs text-red-600 hover:underline mt-1.5">Add money to wallet →</a>
+                  }
+                </div>
               }
 
               @if (booking()!.status === BookingStatus.Confirmed) {
@@ -255,6 +280,7 @@ export class BookingConfirmComponent implements OnInit {
   private bookingSvc = inject(BookingService);
   private toast      = inject(ToastService);
   private promoSvc   = inject(PromoCodeService);
+  private walletSvc  = inject(WalletService);
 
   BookingStatus = BookingStatus;
   loading     = signal(true);
@@ -264,6 +290,7 @@ export class BookingConfirmComponent implements OnInit {
   promoResult = signal<ValidatePromoResponse | null>(null);
   promoError  = signal('');
   promoInput  = '';
+  walletBalance = signal(0);
 
   finalAmount(): number {
     const b = this.booking();
@@ -278,6 +305,8 @@ export class BookingConfirmComponent implements OnInit {
       next:  b  => { this.booking.set(b); this.loading.set(false); },
       error: () => { this.toast.error('Booking not found.'); this.router.navigate(['/my-bookings']); },
     });
+    // Load wallet balance
+    this.walletSvc.get().subscribe({ next: w => this.walletBalance.set(w.balance), error: () => {} });
   }
 
   applyPromo() {
@@ -365,9 +394,32 @@ export class BookingConfirmComponent implements OnInit {
     this.bookingSvc.pay(this.booking()!.id, {
       amount: this.finalAmount(),
       providerReference: `PAY-${Date.now()}`,
+      useWallet: false,
     }).subscribe({
       next:  b  => { this.booking.set(b); this.payLoading.set(false); this.toast.success('Payment successful! 🎉'); },
       error: err => { this.payLoading.set(false); this.toast.error(err.error?.message ?? 'Payment failed.'); },
+    });
+  }
+
+  processWalletPayment() {
+    if (!this.booking()) return;
+    if (this.walletBalance() < this.finalAmount()) {
+      this.toast.error(`Insufficient wallet balance. You have ₹${this.walletBalance().toFixed(0)}, need ₹${this.finalAmount().toFixed(0)}.`);
+      return;
+    }
+    this.payLoading.set(true);
+    this.bookingSvc.pay(this.booking()!.id, {
+      amount: this.finalAmount(),
+      providerReference: 'WALLET',
+      useWallet: true,
+    }).subscribe({
+      next: b => {
+        this.booking.set(b);
+        this.walletBalance.update(bal => bal - this.finalAmount());
+        this.payLoading.set(false);
+        this.toast.success('Paid with wallet! 🎉');
+      },
+      error: err => { this.payLoading.set(false); this.toast.error(err.error?.message ?? 'Wallet payment failed.'); },
     });
   }
 

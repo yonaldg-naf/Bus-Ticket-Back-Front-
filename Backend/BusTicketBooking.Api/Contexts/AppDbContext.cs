@@ -22,6 +22,8 @@ namespace BusTicketBooking.Contexts
         public DbSet<PromoCode> PromoCodes => Set<PromoCode>();
         public DbSet<Announcement> Announcements => Set<Announcement>();
         public DbSet<Complaint> Complaints => Set<Complaint>();
+        public DbSet<Wallet> Wallets => Set<Wallet>();
+        public DbSet<WalletTransaction> WalletTransactions => Set<WalletTransaction>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -242,6 +244,27 @@ namespace BusTicketBooking.Contexts
                 e.Property(c => c.Status).HasMaxLength(20).IsRequired();
                 e.HasOne(c => c.Booking).WithMany().HasForeignKey(c => c.BookingId).OnDelete(DeleteBehavior.Cascade);
                 e.HasOne(c => c.User).WithMany().HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Wallet
+            modelBuilder.Entity<Wallet>(e =>
+            {
+                e.Property(w => w.Balance).HasPrecision(12, 2);
+                e.HasIndex(w => w.UserId).IsUnique(); // one wallet per user
+                e.HasOne(w => w.User).WithMany().HasForeignKey(w => w.UserId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // WalletTransaction
+            modelBuilder.Entity<WalletTransaction>(e =>
+            {
+                e.Property(t => t.Amount).HasPrecision(12, 2);
+                e.Property(t => t.BalanceAfter).HasPrecision(12, 2);
+                e.Property(t => t.Type).HasMaxLength(10).IsRequired();
+                e.Property(t => t.Reason).HasMaxLength(50).IsRequired();
+                e.Property(t => t.Description).HasMaxLength(200);
+                e.HasIndex(t => t.UserId);
+                e.HasIndex(t => t.BookingId);
+                e.HasOne(t => t.Wallet).WithMany().HasForeignKey(t => t.WalletId).OnDelete(DeleteBehavior.Cascade);
             });
 
             base.OnModelCreating(modelBuilder);

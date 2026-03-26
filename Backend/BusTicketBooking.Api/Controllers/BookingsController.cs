@@ -2,6 +2,7 @@
 using BusTicketBooking.Interfaces;
 using BusTicketBooking.Models;
 using BusTicketBooking.Models.Enums;
+using BusTicketBooking.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -21,11 +22,13 @@ namespace BusTicketBooking.Controllers
     {
         private readonly IBookingService _bookings;
         private readonly BusTicketBooking.Contexts.AppDbContext _db;
+        private readonly WalletService _walletSvc;
 
-        public BookingsController(IBookingService bookings, BusTicketBooking.Contexts.AppDbContext db)
+        public BookingsController(IBookingService bookings, BusTicketBooking.Contexts.AppDbContext db, WalletService walletSvc)
         {
             _bookings = bookings;
             _db = db;
+            _walletSvc = walletSvc;
         }
 
         private Guid GetUserId()
@@ -101,7 +104,7 @@ namespace BusTicketBooking.Controllers
             var allowPriv = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.Operator);
             try
             {
-                var updated = await _bookings.PayAsync(GetUserId(), id, dto.Amount, dto.ProviderReference, allowPriv, ct);
+                var updated = await _bookings.PayAsync(GetUserId(), id, dto.Amount, dto.ProviderReference, dto.UseWallet, allowPriv, ct);
                 return updated is null ? NotFound() : Ok(updated);
             }
             catch (InvalidOperationException ex)
@@ -309,13 +312,20 @@ namespace BusTicketBooking.Controllers
 
             await _db.SaveChangesAsync(ct);
 
+            // Credit 75% refund to wallet
+            await _walletSvc.CreditAsync(
+                userId, refundAmount, "BusMissRefund",
+                bookingId: bookingId,
+                description: $"75% refund for missed bus — booking #{bookingId.ToString()[..8].ToUpper()}",
+                ct: ct);
+
             return Ok(new
             {
                 bookingId = booking.Id,
                 status = booking.Status.ToString(),
                 originalAmount = booking.TotalAmount,
                 refundAmount,
-                message = $"Bus miss recorded. ₹{refundAmount} (75%) will be refunded."
+                message = $"Bus miss recorded. ₹{refundAmount} (75%) has been added to your wallet."
             });
         }
     }

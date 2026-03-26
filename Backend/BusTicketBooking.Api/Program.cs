@@ -91,6 +91,9 @@ builder.Services.AddScoped<IBookingService, BookingService>();
 // ? NEW: needed for From/To dropdowns (cities & stops)
 builder.Services.AddScoped<IStopService, StopService>();
 
+// Wallet
+builder.Services.AddScoped<WalletService>();
+
 // Audit & error logging
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<BusTicketBooking.Middlewares.GlobalExceptionMiddleware>();

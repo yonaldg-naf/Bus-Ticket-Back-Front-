@@ -19,17 +19,20 @@ namespace BusTicketBooking.Services
         private readonly IRepository<Bus> _buses;
         private readonly IRepository<BusRoute> _routes;
         private readonly AppDbContext _db;
+        private readonly WalletService _wallet;
 
         public ScheduleService(
             IRepository<BusSchedule> schedules,
             IRepository<Bus> buses,
             IRepository<BusRoute> routes,
-            AppDbContext db)
+            AppDbContext db,
+            WalletService wallet)
         {
             _schedules = schedules;
             _buses = buses;
             _routes = routes;
             _db = db;
+            _wallet = wallet;
         }
 
         // ========================= CREATE =========================
@@ -164,15 +167,28 @@ namespace BusTicketBooking.Services
             sched.CancelReason = reason;
             sched.UpdatedAtUtc = DateTime.UtcNow;
 
-            // Cancel all active bookings for this schedule
+            // Cancel all active bookings and issue full refunds to wallets
             var bookings = await _db.Bookings
-                .Where(b => b.ScheduleId == id && b.Status != BookingStatus.OperatorCancelled && b.Status != BookingStatus.Cancelled)
+                .Include(b => b.Payment)
+                .Where(b => b.ScheduleId == id
+                         && b.Status != BookingStatus.OperatorCancelled
+                         && b.Status != BookingStatus.Cancelled)
                 .ToListAsync(ct);
 
             foreach (var b in bookings)
             {
                 b.Status = BookingStatus.OperatorCancelled;
                 b.UpdatedAtUtc = DateTime.UtcNow;
+
+                // Full refund for confirmed paid bookings
+                if (b.Payment?.Status == PaymentStatus.Success)
+                {
+                    await _wallet.CreditAsync(
+                        b.UserId, b.TotalAmount, "OperatorCancelRefund",
+                        bookingId: b.Id,
+                        description: $"Full refund — operator cancelled schedule #{id.ToString()[..8].ToUpper()}",
+                        ct: ct);
+                }
             }
 
             await _db.SaveChangesAsync(ct);

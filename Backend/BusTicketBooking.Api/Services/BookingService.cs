@@ -21,19 +21,22 @@ namespace BusTicketBooking.Services
         private readonly IRepository<Payment> _payments;
         private readonly IRepository<BusSchedule> _schedules;
         private readonly AppDbContext _db;
+        private readonly WalletService _wallet;
 
         public BookingService(
             IRepository<Booking> bookings,
             IRepository<BookingPassenger> passengers,
             IRepository<Payment> payments,
             IRepository<BusSchedule> schedules,
-            AppDbContext db)
+            AppDbContext db,
+            WalletService wallet)
         {
             _bookings = bookings;
             _passengers = passengers;
             _payments = payments;
             _schedules = schedules;
             _db = db;
+            _wallet = wallet;
         }
 
         // ===========================
@@ -221,7 +224,11 @@ namespace BusTicketBooking.Services
         // ===========================
         public async Task<bool> CancelAsync(Guid userId, Guid bookingId, bool allowPrivileged = false, CancellationToken ct = default)
         {
-            var booking = await _bookings.GetByIdAsync(bookingId, ct);
+            var booking = await _db.Bookings
+                .Include(b => b.Schedule)
+                .Include(b => b.Payment)
+                .FirstOrDefaultAsync(b => b.Id == bookingId, ct);
+
             if (booking is null) return false;
 
             if (!allowPrivileged && booking.UserId != userId)
@@ -229,10 +236,34 @@ namespace BusTicketBooking.Services
 
             if (booking.Status == BookingStatus.Cancelled) return true;
 
+            // Calculate refund based on policy (only for confirmed bookings that were paid)
+            if (booking.Status == BookingStatus.Confirmed && booking.Payment?.Status == PaymentStatus.Success)
+            {
+                var hoursUntilDeparture = booking.Schedule is null
+                    ? 0
+                    : (booking.Schedule.DepartureUtc - DateTime.UtcNow).TotalHours;
+
+                int refundPct = hoursUntilDeparture >= 48 ? 100
+                              : hoursUntilDeparture >= 24 ? 75
+                              : hoursUntilDeparture >= 6  ? 50
+                              : hoursUntilDeparture >= 0  ? 25
+                              : 0;
+
+                if (refundPct > 0)
+                {
+                    var refundAmount = Math.Round(booking.TotalAmount * refundPct / 100, 2);
+                    await _wallet.CreditAsync(
+                        booking.UserId, refundAmount, "CancellationRefund",
+                        bookingId: bookingId,
+                        description: $"Refund ({refundPct}%) for cancelled booking #{bookingId.ToString()[..8].ToUpper()}",
+                        ct: ct);
+                }
+            }
+
             booking.Status = BookingStatus.Cancelled;
             booking.UpdatedAtUtc = DateTime.UtcNow;
 
-            await _bookings.UpdateAsync(booking, ct);
+            await _db.SaveChangesAsync(ct);
             return true;
         }
 
@@ -240,6 +271,9 @@ namespace BusTicketBooking.Services
         // PAY BOOKING
         // ===========================
         public async Task<BookingResponseDto?> PayAsync(Guid userId, Guid bookingId, decimal amount, string providerRef, bool allowPrivileged = false, CancellationToken ct = default)
+            => await PayAsync(userId, bookingId, amount, providerRef, false, allowPrivileged, ct);
+
+        public async Task<BookingResponseDto?> PayAsync(Guid userId, Guid bookingId, decimal amount, string providerRef, bool useWallet, bool allowPrivileged = false, CancellationToken ct = default)
         {
             var booking = await _db.Bookings
                 .Include(b => b.Payment)
@@ -253,17 +287,26 @@ namespace BusTicketBooking.Services
                 booking.Status == BookingStatus.OperatorCancelled)
                 throw new InvalidOperationException("Cannot pay a cancelled booking.");
 
-            booking.Payment ??= new Payment
-            {
-                BookingId = booking.Id,
-                Amount = booking.TotalAmount
-            };
+            var payAmount = amount <= 0 ? booking.TotalAmount : amount;
 
-            booking.Payment.Amount = amount <= 0 ? booking.TotalAmount : amount;
+            if (useWallet)
+            {
+                var debited = await _wallet.DebitAsync(
+                    userId, payAmount, "BookingPayment",
+                    bookingId: bookingId,
+                    description: $"Payment for booking #{bookingId.ToString()[..8].ToUpper()}",
+                    ct: ct);
+
+                if (!debited)
+                    throw new InvalidOperationException("Insufficient wallet balance.");
+
+                providerRef = "WALLET";
+            }
+
+            booking.Payment ??= new Payment { BookingId = booking.Id, Amount = booking.TotalAmount };
+            booking.Payment.Amount = payAmount;
             booking.Payment.Status = PaymentStatus.Success;
-            booking.Payment.ProviderReference = string.IsNullOrWhiteSpace(providerRef)
-                ? "MOCK-PAYMENT"
-                : providerRef.Trim();
+            booking.Payment.ProviderReference = string.IsNullOrWhiteSpace(providerRef) ? "MOCK-PAYMENT" : providerRef.Trim();
 
             booking.Status = BookingStatus.Confirmed;
             booking.UpdatedAtUtc = DateTime.UtcNow;
