@@ -22,7 +22,7 @@ namespace BusTicketBooking.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<CityResponseDto>>> GetCities(CancellationToken ct = default)
         {
-            var data = await _stopService.GetCitiesAsync();
+            var data = await _stopService.GetCitiesAsync(ct);
             return Ok(data);
         }
 
@@ -31,7 +31,7 @@ namespace BusTicketBooking.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<StopResponseDto>>> GetByCity(string city, CancellationToken ct = default)
         {
-            var data = await _stopService.GetStopsByCityAsync(city);
+            var data = await _stopService.GetStopsByCityAsync(city, ct);
             return Ok(data);
         }
 
@@ -40,7 +40,7 @@ namespace BusTicketBooking.Controllers
         [Authorize(Roles = Roles.Admin)]
         public async Task<ActionResult<StopResponseDto>> Create(CreateStopRequestDto dto, CancellationToken ct = default)
         {
-            var created = await _stopService.CreateAsync(dto);
+            var created = await _stopService.CreateAsync(dto, ct);
             return Ok(created);
         }
 
@@ -49,7 +49,7 @@ namespace BusTicketBooking.Controllers
         [Authorize(Roles = Roles.Admin)]
         public async Task<ActionResult<StopResponseDto>> Update(Guid id, UpdateStopRequestDto dto, CancellationToken ct = default)
         {
-            var updated = await _stopService.UpdateAsync(id, dto);
+            var updated = await _stopService.UpdateAsync(id, dto, ct);
             return updated == null ? NotFound() : Ok(updated);
         }
 
@@ -58,7 +58,7 @@ namespace BusTicketBooking.Controllers
         [Authorize(Roles = Roles.Admin)]
         public async Task<ActionResult> Delete(Guid id, CancellationToken ct = default)
         {
-            var ok = await _stopService.DeleteAsync(id);
+            var ok = await _stopService.DeleteAsync(id, ct);
             return ok ? Ok() : NotFound();
         }
     }

@@ -242,11 +242,9 @@ namespace BusTicketBooking.Controllers
                 // Known business-rule errors (seat taken, invalid seat, schedule not found, bus not available)
                 return Conflict(new { message = ex.Message });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                // TODO: inject ILogger<BookingsController> and log details here
-                // _logger.LogError(ex, "CreateByKeys failed for user {UserId} and bus {BusCode}", GetUserId(), dto?.BusCode);
-                return Conflict(new { message = "Could not create booking. " + ex.Message });
+                return Conflict(new { message = "Could not create booking. Please try again." });
             }
         }
 

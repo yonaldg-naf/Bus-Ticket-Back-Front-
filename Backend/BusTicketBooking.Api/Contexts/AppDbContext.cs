@@ -89,6 +89,7 @@ namespace BusTicketBooking.Contexts
             {
                 e.Property(b => b.Code).HasMaxLength(50).IsRequired();
                 e.Property(b => b.RegistrationNumber).HasMaxLength(50).IsRequired();
+                e.Property(b => b.Amenities).HasMaxLength(500);
                 e.HasIndex(b => new { b.OperatorId, b.Code }).IsUnique();
                 e.HasOne(b => b.Operator)
                  .WithMany(o => o.Buses)

@@ -18,6 +18,7 @@ export interface BusResponse {
   busType: BusType;
   totalSeats: number;
   status: BusStatus;
+  amenities: string[];
   createdAtUtc: string;
   updatedAtUtc?: string;
 }
@@ -29,12 +30,14 @@ export interface CreateBusByOperatorRequest {
   busType: BusType;
   totalSeats: number;
   status?: BusStatus;
+  amenities?: string[];
 }
 export interface UpdateBusRequest {
   registrationNumber: string;
   busType: BusType;
   totalSeats: number;
   status: BusStatus;
+  amenities?: string[];
 }
 
 @Injectable({ providedIn: 'root' })

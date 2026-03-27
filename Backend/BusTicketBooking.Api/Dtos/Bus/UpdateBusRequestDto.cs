@@ -16,5 +16,8 @@ namespace BusTicketBooking.Dtos.Bus
 
         [Required]
         public BusStatus Status { get; set; } = BusStatus.Available;  // <-- added
+
+        /// <summary>List of amenities e.g. ["AC","WiFi","ChargingPort","WaterBottle","Blanket"]</summary>
+        public List<string> Amenities { get; set; } = new();
     }
 }

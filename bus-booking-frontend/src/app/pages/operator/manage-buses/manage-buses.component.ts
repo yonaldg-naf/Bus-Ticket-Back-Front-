@@ -102,6 +102,21 @@ import { BusResponse, BusType, BusStatus, CreateBusByOperatorRequest, UpdateBusR
                   <option [value]="1">Available</option><option [value]="2">Under Repair</option><option [value]="3">Not Available</option>
                 </select>
               </div>
+              <div class="sm:col-span-2 lg:col-span-3">
+                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-2">Amenities</label>
+                <div class="flex flex-wrap gap-2">
+                  @for (a of amenityOptions; track a.key) {
+                    <label class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border cursor-pointer transition-colors text-xs font-medium select-none"
+                      [class]="selectedAmenities.includes(a.key)
+                        ? 'border-red-400 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+                        : 'border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:border-red-300'">
+                      <input type="checkbox" class="hidden" [checked]="selectedAmenities.includes(a.key)" (change)="toggleAmenity(a.key)"/>
+                      <span>{{ a.icon }}</span>
+                      <span>{{ a.label }}</span>
+                    </label>
+                  }
+                </div>
+              </div>
               <div class="flex items-end gap-3">
                 <button type="submit" [disabled]="saving()" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl disabled:opacity-50 transition-colors">
                   {{ saving() ? 'Saving...' : (editingId() ? 'Update Bus' : 'Add Bus') }}
@@ -162,6 +177,7 @@ import { BusResponse, BusType, BusStatus, CreateBusByOperatorRequest, UpdateBusR
                 <th class="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide hidden sm:table-cell">Registration</th>
                 <th class="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Type</th>
                 <th class="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide hidden md:table-cell">Seats</th>
+                <th class="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide hidden lg:table-cell">Amenities</th>
                 <th class="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Status</th>
                 <th class="px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide text-right">Actions</th>
               </tr>
@@ -180,6 +196,19 @@ import { BusResponse, BusType, BusStatus, CreateBusByOperatorRequest, UpdateBusR
                   <td class="px-6 py-4 font-mono text-slate-500 dark:text-slate-400 text-xs hidden sm:table-cell">{{ bus.registrationNumber }}</td>
                   <td class="px-6 py-4 text-slate-600 dark:text-slate-300">{{ busTypeLabel(bus.busType) }}</td>
                   <td class="px-6 py-4 text-slate-600 dark:text-slate-300 hidden md:table-cell">{{ bus.totalSeats }}</td>
+                  <td class="px-6 py-4 hidden lg:table-cell">
+                    @if (bus.amenities?.length) {
+                      <div class="flex flex-wrap gap-1">
+                        @for (a of bus.amenities; track a) {
+                          <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full text-xs">
+                            {{ amenityLabel(a) }}
+                          </span>
+                        }
+                      </div>
+                    } @else {
+                      <span class="text-xs text-slate-400">—</span>
+                    }
+                  </td>
                   <td class="px-6 py-4">
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" [class]="statusBadge(bus.status)">
                       <span class="w-1.5 h-1.5 rounded-full" [class]="statusDot(bus.status)"></span>
@@ -218,6 +247,29 @@ export class ManageBusesComponent implements OnInit {
   filterType   = '';
   filterStatus = '';
 
+  selectedAmenities: string[] = [];
+
+  amenityOptions = [
+    { key: 'ac',       icon: '❄️',  label: 'AC' },
+    { key: 'wifi',     icon: '📶',  label: 'WiFi' },
+    { key: 'charging', icon: '🔌',  label: 'Charging Point' },
+    { key: 'blanket',  icon: '🛌',  label: 'Blanket & Pillow' },
+    { key: 'water',    icon: '💧',  label: 'Water Bottle' },
+    { key: 'sleeper',  icon: '🛏️', label: 'Sleeper Berth' },
+    { key: 'tv',       icon: '📺',  label: 'Entertainment' },
+    { key: 'toilet',   icon: '🚻',  label: 'Toilet' },
+  ];
+
+  toggleAmenity(key: string) {
+    this.selectedAmenities = this.selectedAmenities.includes(key)
+      ? this.selectedAmenities.filter(k => k !== key)
+      : [...this.selectedAmenities, key];
+  }
+
+  amenityLabel(key: string): string {
+    return this.amenityOptions.find(a => a.key === key)?.label ?? key;
+  }
+
   filteredBuses = computed(() => {
     let list = this.buses();
     const q = this.searchQuery.toLowerCase();
@@ -248,6 +300,7 @@ export class ManageBusesComponent implements OnInit {
 
   openForm() {
     this.editingId.set(null);
+    this.selectedAmenities = [];
     this.form.get('code')?.enable();
     this.form.reset({ busType: BusType.Seater, totalSeats: 40, status: BusStatus.Available });
     this.showForm.set(true);
@@ -255,12 +308,13 @@ export class ManageBusesComponent implements OnInit {
 
   editBus(bus: BusResponse) {
     this.editingId.set(bus.id);
+    this.selectedAmenities = [...(bus.amenities ?? [])];
     this.form.patchValue({ code: bus.code, registrationNumber: bus.registrationNumber, busType: bus.busType, totalSeats: bus.totalSeats, status: bus.status });
     this.form.get('code')?.disable();
     this.showForm.set(true);
   }
 
-  cancelForm() { this.showForm.set(false); this.editingId.set(null); this.form.get('code')?.enable(); }
+  cancelForm() { this.showForm.set(false); this.editingId.set(null); this.selectedAmenities = []; this.form.get('code')?.enable(); }
 
   onSubmit() {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
@@ -268,7 +322,7 @@ export class ManageBusesComponent implements OnInit {
     const v = this.form.value;
     const id = this.editingId();
     if (id) {
-      const dto: UpdateBusRequest = { registrationNumber: v.registrationNumber!, busType: +v.busType!, totalSeats: +v.totalSeats!, status: +v.status! };
+      const dto: UpdateBusRequest = { registrationNumber: v.registrationNumber!, busType: +v.busType!, totalSeats: +v.totalSeats!, status: +v.status!, amenities: this.selectedAmenities };
       this.busService.update(id, dto).subscribe({
         next: () => { this.toast.success('Bus updated.'); this.cancelForm(); this.loadBuses(); this.saving.set(false); },
         error: err => { this.saving.set(false); this.toast.error(err.error?.message ?? 'Update failed.'); },
@@ -278,6 +332,7 @@ export class ManageBusesComponent implements OnInit {
         operatorUsername: this.authService.currentUser()?.username ?? '',
         code: v.code!, registrationNumber: v.registrationNumber!,
         busType: +v.busType!, totalSeats: +v.totalSeats!, status: +v.status!,
+        amenities: this.selectedAmenities,
       };
       this.busService.createByOperator(dto).subscribe({
         next: () => { this.toast.success('Bus added!'); this.cancelForm(); this.loadBuses(); this.saving.set(false); },

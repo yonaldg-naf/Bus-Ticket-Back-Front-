@@ -20,6 +20,9 @@
         public bool IsCancelledByOperator { get; set; }
         public string? CancelReason { get; set; }
 
+        /// <summary>Amenities on this bus e.g. ["AC","WiFi","ChargingPort"]</summary>
+        public List<string> Amenities { get; set; } = new();
+
         public DateTime CreatedAtUtc { get; set; }
         public DateTime? UpdatedAtUtc { get; set; }
     }

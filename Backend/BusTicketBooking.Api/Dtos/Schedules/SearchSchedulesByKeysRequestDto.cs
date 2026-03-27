@@ -47,6 +47,12 @@ namespace BusTicketBooking.Dtos.Schedules
         /// <summary>Optional: maximum price filter</summary>
         public decimal? MaxPrice { get; set; }
 
+        /// <summary>
+        /// Optional: filter by required amenities. Only schedules whose bus has ALL listed amenities are returned.
+        /// e.g. ["AC","WiFi"]
+        /// </summary>
+        public List<string>? Amenities { get; set; }
+
         [Range(1, 100)]
         public int Page { get; set; } = 1;
 

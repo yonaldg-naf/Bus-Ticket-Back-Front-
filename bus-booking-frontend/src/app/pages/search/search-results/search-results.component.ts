@@ -352,21 +352,23 @@ export class SearchResultsComponent implements OnInit {
     { key: 'water',    label: 'Water Bottle',     icon: '💧' },
   ];
 
-  // Derive amenities from busType
+  // Derive amenity tags from actual API data, fall back to busType map if empty
   private busTypeAmenities(busType: number): string[] {
     const map: Record<number, string[]> = {
-      1: ['charging', 'water'],                          // Seater
-      2: ['charging', 'water', 'blanket'],               // SemiSleeper
-      3: ['sleeper', 'charging', 'water', 'blanket'],    // Sleeper
-      4: ['ac', 'charging', 'water', 'blanket'],         // AC
-      5: ['charging', 'water'],                          // NonAC
+      1: ['charging', 'water'],
+      2: ['charging', 'water', 'blanket'],
+      3: ['sleeper', 'charging', 'water', 'blanket'],
+      4: ['ac', 'charging', 'water', 'blanket'],
+      5: ['charging', 'water'],
     };
     return map[busType] ?? [];
   }
 
   amenityTags(s: ScheduleResponse): { icon: string; label: string }[] {
-    const amenities = this.busTypeAmenities(s.busType);
-    return this.amenityOptions.filter(a => amenities.includes(a.key));
+    const keys = s.amenities?.length
+      ? s.amenities.map(a => a.toLowerCase())
+      : this.busTypeAmenities(s.busType);
+    return this.amenityOptions.filter(a => keys.includes(a.key));
   }
 
   activeFilterCount = computed(() => {
@@ -386,7 +388,9 @@ export class SearchResultsComponent implements OnInit {
     list = list.filter(s => s.basePrice >= this.priceMin && s.basePrice <= this.priceMax);
     if (this.filterAmenities.length) {
       list = list.filter(s => {
-        const has = this.busTypeAmenities(s.busType);
+        const has = s.amenities?.length
+          ? s.amenities.map(a => a.toLowerCase())
+          : this.busTypeAmenities(s.busType);
         return this.filterAmenities.every(a => has.includes(a));
       });
     }

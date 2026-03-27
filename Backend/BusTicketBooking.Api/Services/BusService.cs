@@ -77,6 +77,7 @@ namespace BusTicketBooking.Services
             bus.BusType = dto.BusType;
             bus.TotalSeats = dto.TotalSeats;
             bus.Status = dto.Status;
+            bus.Amenities = dto.Amenities.Count > 0 ? string.Join(",", dto.Amenities.Select(a => a.Trim())) : null;
             bus.UpdatedAtUtc = DateTime.UtcNow;
 
             await _buses.UpdateAsync(bus, ct);
@@ -148,6 +149,7 @@ namespace BusTicketBooking.Services
             entity.BusType = dto.BusType;
             entity.TotalSeats = dto.TotalSeats;
             entity.Status = dto.Status;
+            entity.Amenities = dto.Amenities.Count > 0 ? string.Join(",", dto.Amenities.Select(a => a.Trim())) : null;
             entity.UpdatedAtUtc = DateTime.UtcNow;
 
             await _buses.UpdateAsync(entity, ct);
@@ -191,7 +193,8 @@ namespace BusTicketBooking.Services
                 RegistrationNumber = dto.RegistrationNumber.Trim(),
                 BusType = dto.BusType,
                 TotalSeats = dto.TotalSeats,
-                Status = dto.Status
+                Status = dto.Status,
+                Amenities = dto.Amenities.Count > 0 ? string.Join(",", dto.Amenities.Select(a => a.Trim())) : null
             };
             e = await _buses.AddAsync(e, ct);
             return Map(e);
@@ -253,6 +256,12 @@ namespace BusTicketBooking.Services
             BusType = e.BusType,
             TotalSeats = e.TotalSeats,
             Status = e.Status,
+            Amenities = string.IsNullOrWhiteSpace(e.Amenities)
+                ? new List<string>()
+                : e.Amenities.Split(',', System.StringSplitOptions.RemoveEmptyEntries)
+                             .Select(a => a.Trim())
+                             .Where(a => a.Length > 0)
+                             .ToList(),
             CreatedAtUtc = e.CreatedAtUtc,
             UpdatedAtUtc = e.UpdatedAtUtc
         };
@@ -272,7 +281,8 @@ namespace BusTicketBooking.Services
                 RegistrationNumber = dto.RegistrationNumber.Trim(),
                 BusType = dto.BusType,
                 TotalSeats = dto.TotalSeats,
-                Status = dto.Status
+                Status = dto.Status,
+                Amenities = dto.Amenities.Count > 0 ? string.Join(",", dto.Amenities.Select(a => a.Trim())) : null
             };
             e = await _buses.AddAsync(e, ct);
             return Map(e);

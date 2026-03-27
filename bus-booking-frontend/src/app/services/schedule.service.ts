@@ -21,6 +21,7 @@ export interface ScheduleResponse {
   totalSeats: number;
   departureUtc: string;
   basePrice: number;
+  amenities: string[];
   createdAtUtc: string;
   updatedAtUtc?: string;
   isCancelledByOperator?: boolean;

@@ -1,7 +1,8 @@
 ﻿// kept from your previous controller
 using BusTicketBooking.Contexts;
 using BusTicketBooking.Dtos.Common;
-using BusTicketBooking.Dtos.Schedules;using BusTicketBooking.Interfaces;
+using BusTicketBooking.Dtos.Schedules;
+using BusTicketBooking.Interfaces;
 using BusTicketBooking.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

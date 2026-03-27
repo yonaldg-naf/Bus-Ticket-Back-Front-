@@ -17,6 +17,11 @@ namespace BusTicketBooking.Models
         // Simple layout fields for v1; (a separate SeatLayout entity can be added later)
         public int TotalSeats { get; set; } = 40;
 
+        /// <summary>
+        /// Comma-separated list of amenities e.g. "AC,WiFi,ChargingPort,WaterBottle,Blanket"
+        /// </summary>
+        public string? Amenities { get; set; }
+
         public BusOperator? Operator { get; set; }
         public ICollection<BusSchedule> Schedules { get; set; } = new List<BusSchedule>();
     }

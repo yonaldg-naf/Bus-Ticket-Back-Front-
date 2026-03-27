@@ -22,6 +22,7 @@ export interface CreateBookingByKeysRequest {
 export interface PayBookingRequest {
   amount: number;
   providerReference?: string;
+  useWallet?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })

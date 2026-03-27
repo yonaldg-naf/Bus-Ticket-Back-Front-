@@ -13,5 +13,8 @@ namespace BusTicketBooking.Dtos.Bus
         public BusStatus Status { get; set; }     // <-- added
         public DateTime CreatedAtUtc { get; set; }
         public DateTime? UpdatedAtUtc { get; set; }
+
+        /// <summary>List of amenities e.g. ["AC","WiFi","ChargingPort"]</summary>
+        public List<string> Amenities { get; set; } = new();
     }
 }

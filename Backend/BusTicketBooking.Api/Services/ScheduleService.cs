@@ -434,6 +434,17 @@ namespace BusTicketBooking.Services
                 filtered = filtered.Where(x => x.BasePrice >= dto.MinPrice.Value);
             if (dto.MaxPrice.HasValue)
                 filtered = filtered.Where(x => x.BasePrice <= dto.MaxPrice.Value);
+            if (dto.Amenities != null && dto.Amenities.Count > 0)
+            {
+                var required = dto.Amenities
+                    .Select(a => a.Trim().ToLowerInvariant())
+                    .Where(a => a.Length > 0)
+                    .ToList();
+
+                filtered = filtered.Where(x =>
+                    required.All(req =>
+                        x.Amenities.Any(a => a.ToLowerInvariant() == req)));
+            }
 
             var sortBy = (dto.SortBy ?? "departure").Trim().ToLowerInvariant();
             bool desc = dto.SortDir?.ToLower() == "desc";
@@ -567,7 +578,13 @@ namespace BusTicketBooking.Services
                 CreatedAtUtc = e.CreatedAtUtc,
                 UpdatedAtUtc = e.UpdatedAtUtc,
                 IsCancelledByOperator = e.IsCancelledByOperator,
-                CancelReason = e.CancelReason
+                CancelReason = e.CancelReason,
+                Amenities = string.IsNullOrWhiteSpace(bus.Amenities)
+                    ? new List<string>()
+                    : bus.Amenities.Split(',', System.StringSplitOptions.RemoveEmptyEntries)
+                                   .Select(a => a.Trim())
+                                   .Where(a => a.Length > 0)
+                                   .ToList()
             };
 
         public async Task<SeatAvailabilityResponseDto> GetAvailabilityByKeysAsync(string busCode, DateTime departureUtc, CancellationToken ct = default)
@@ -586,20 +603,5 @@ namespace BusTicketBooking.Services
             return await GetAvailabilityAsync(schedule.Id, ct);
         }
 
-        public async Task<ScheduleResponseDto?> GetByBusCodeAndDepartureAsync(string busCode, DateTime departureUtc, CancellationToken ct = default)
-        {
-            var depUtc = EnsureUtc(departureUtc);
-            var e = await _db.BusSchedules
-                .Include(s => s.Bus)
-                .Include(s => s.Route)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(s =>
-                    s.Bus!.Code == busCode &&
-                    s.DepartureUtc >= depUtc.AddSeconds(-30) &&
-                    s.DepartureUtc <= depUtc.AddSeconds(30),
-                    ct);
-
-            return e is null ? null : Map(e, e.Bus!, e.Route!);
-        }
     }
 }
