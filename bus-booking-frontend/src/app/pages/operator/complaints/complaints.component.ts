@@ -12,7 +12,7 @@ import { ToastService } from '../../../services/toast.service';
   template: `
   <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
     <div class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
-      <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
         <a routerLink="/operator" class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-slate-500 dark:text-slate-300 hover:text-red-600">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -25,7 +25,7 @@ import { ToastService } from '../../../services/toast.service';
       </div>
     </div>
 
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-4">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-4">
 
       <!-- Filter tabs -->
       <div class="flex gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-1.5 w-fit shadow-sm">
@@ -177,3 +177,4 @@ export class ComplaintsComponent implements OnInit {
     return new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 }
+

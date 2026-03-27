@@ -17,7 +17,7 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
 
     <!-- Header -->
     <div class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
-      <div class="max-w-4xl mx-auto px-4 sm:px-6 py-5 flex items-center gap-3">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex items-center gap-3">
         <button (click)="router.navigate(['/my-bookings'])"
           class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-slate-500 dark:text-slate-300 hover:text-red-600">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -42,7 +42,7 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
     }
 
     @if (!loading() && booking()) {
-      <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
 
         <!-- Operator cancel banner -->
         @if (booking()!.status === BookingStatus.OperatorCancelled) {
@@ -526,3 +526,4 @@ export class BookingDetailComponent implements OnInit {
     });
   }
 }
+

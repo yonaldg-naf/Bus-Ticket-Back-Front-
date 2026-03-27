@@ -1,4 +1,4 @@
-﻿import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -14,7 +14,7 @@ import { ToastService } from '../../../services/toast.service';
 
     <!-- Header -->
     <div class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
-      <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div class="flex items-center gap-3">
           <a routerLink="/operator" class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 hover:border-red-300 hover:bg-red-50 transition-colors text-slate-500 hover:text-red-600">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,7 +36,7 @@ import { ToastService } from '../../../services/toast.service';
       </div>
     </div>
 
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
 
       <!-- Create Form -->
       @if (showForm()) {
@@ -57,24 +57,24 @@ import { ToastService } from '../../../services/toast.service';
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1.5">Discount Type *</label>
               <select [(ngModel)]="form.discountType" class="input-field">
-                <option [value]="1">Flat Amount (₹)</option>
+                <option [value]="1">Flat Amount (?)</option>
                 <option [value]="2">Percentage (%)</option>
               </select>
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1.5">Discount Value *</label>
-              <input [(ngModel)]="form.discountValue" type="number" min="1" placeholder="{{ form.discountType === 2 ? 'e.g. 10 (%)' : 'e.g. 100 (₹)' }}" class="input-field"/>
+              <input [(ngModel)]="form.discountValue" type="number" min="1" placeholder="{{ form.discountType === 2 ? 'e.g. 10 (%)' : 'e.g. 100 (?)' }}" class="input-field"/>
             </div>
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1.5">Max Uses *</label>
               <input [(ngModel)]="form.maxUses" type="number" min="1" placeholder="e.g. 100" class="input-field"/>
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1.5">Min Booking Amount (₹)</label>
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5">Min Booking Amount (?)</label>
               <input [(ngModel)]="form.minBookingAmount" type="number" min="0" placeholder="Optional" class="input-field"/>
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1.5">Max Discount (₹)</label>
+              <label class="block text-xs font-semibold text-slate-600 mb-1.5">Max Discount (?)</label>
               <input [(ngModel)]="form.maxDiscountAmount" type="number" min="0" placeholder="Optional cap" class="input-field"/>
             </div>
             <div class="sm:col-span-2">
@@ -84,7 +84,7 @@ import { ToastService } from '../../../services/toast.service';
             <div class="sm:col-span-2 flex gap-3 pt-2">
               <button (click)="create()" [disabled]="saving()"
                 class="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50">
-                {{ saving() ? 'Creating…' : 'Create Code' }}
+                {{ saving() ? 'Creating�' : 'Create Code' }}
               </button>
               <button (click)="showForm.set(false)" class="px-6 py-2.5 border border-slate-200 text-slate-600 text-sm font-medium rounded-xl hover:bg-slate-50 transition-colors">
                 Cancel
@@ -107,11 +107,11 @@ import { ToastService } from '../../../services/toast.service';
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
             </svg>
-            Loading…
+            Loading�
           </div>
         } @else if (codes().length === 0) {
           <div class="text-center py-16 text-slate-400 dark:text-slate-500">
-            <p class="text-4xl mb-3">🏷️</p>
+            <p class="text-4xl mb-3">???</p>
             <p class="font-medium text-slate-500 dark:text-slate-400">No promo codes yet</p>
             <p class="text-sm mt-1">Create your first discount code above</p>
           </div>
@@ -127,12 +127,12 @@ import { ToastService } from '../../../services/toast.service';
                       {{ code.isActive ? 'Active' : 'Inactive' }}
                     </span>
                     <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400">
-                      {{ code.discountType === 2 ? code.discountValue + '%' : '₹' + code.discountValue }} off
+                      {{ code.discountType === 2 ? code.discountValue + '%' : '?' + code.discountValue }} off
                     </span>
                   </div>
                   <div class="flex items-center gap-4 mt-1.5 text-xs text-slate-400 dark:text-slate-500 flex-wrap">
                     <span>{{ code.usedCount }}/{{ code.maxUses }} used</span>
-                    @if (code.minBookingAmount) { <span>Min ₹{{ code.minBookingAmount }}</span> }
+                    @if (code.minBookingAmount) { <span>Min ?{{ code.minBookingAmount }}</span> }
                     <span>Expires {{ formatDate(code.expiresAtUtc) }}</span>
                   </div>
                 </div>
@@ -216,3 +216,4 @@ export class PromoCodesComponent implements OnInit {
     return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 }
+

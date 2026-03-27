@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
+// using System.Collections.Generic; // not used in this controller
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -116,7 +116,7 @@ namespace BusTicketBooking.Controllers
         // ===== Operator Stats =====
 
         /// <summary>Returns booking totals for all buses owned by the calling operator.</summary>
-        [Authorize(Roles = Roles.Operator)]
+        [Authorize(Roles = Roles.Operator + "," + Roles.Admin)]
         [HttpGet("operator-stats")]
         [ProducesResponseType(200)]
         public async Task<IActionResult> GetOperatorStats(CancellationToken ct)

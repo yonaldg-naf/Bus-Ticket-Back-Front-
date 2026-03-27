@@ -25,7 +25,7 @@ namespace BusTicketBooking.Controllers
             User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub"), out var id) ? id : Guid.Empty;
 
         /// <summary>Operator: full revenue analytics for their fleet.</summary>
-        [Authorize(Roles = Roles.Operator)]
+        [Authorize(Roles = Roles.Operator + "," + Roles.Admin)]
         [HttpGet("operator")]
         public async Task<IActionResult> GetOperatorAnalytics([FromQuery] int days = 30, CancellationToken ct = default)
         {

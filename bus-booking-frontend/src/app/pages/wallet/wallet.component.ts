@@ -14,7 +14,7 @@ import { ToastService } from '../../services/toast.service';
 
     <!-- Header -->
     <div class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
-      <div class="max-w-2xl mx-auto px-4 sm:px-6 py-5 flex items-center gap-3">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex items-center gap-3">
         <a routerLink="/home" class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-slate-500 dark:text-slate-300 hover:text-red-600">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -27,7 +27,10 @@ import { ToastService } from '../../services/toast.service';
       </div>
     </div>
 
-    <div class="max-w-2xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left: balance + top-up -->
+        <div class="lg:col-span-1 space-y-5">
 
       <!-- Balance card -->
       <div class="bg-gradient-to-br from-red-600 to-red-700 rounded-2xl p-6 text-white shadow-lg shadow-red-200 dark:shadow-red-900/30">
@@ -64,7 +67,10 @@ import { ToastService } from '../../services/toast.service';
           </button>
         </div>
       </div>
+        </div>
 
+        <!-- Right: transactions -->
+        <div class="lg:col-span-2">
       <!-- Transactions -->
       <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
@@ -112,6 +118,8 @@ import { ToastService } from '../../services/toast.service';
             }
           </div>
         }
+      </div>
+        </div>
       </div>
     </div>
   </div>
@@ -176,3 +184,4 @@ export class WalletComponent implements OnInit {
     return new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 }
+

@@ -15,6 +15,9 @@ export enum BusStatus {
 }
 
 // ─── Schedule Models ──────────────────────────────────────────────────────────
+// NOTE: ScheduleResponse below is a minimal version used by BookingStateService.
+// The full ScheduleResponse (with amenities, isCancelledByOperator, etc.) lives
+// in services/schedule.service.ts and is used by all search/display components.
 
 export interface ScheduleResponse {
   id: string;
@@ -28,6 +31,13 @@ export interface ScheduleResponse {
   createdAtUtc: string;
   updatedAtUtc?: string;
 }
+
+// These two interfaces are duplicated in services/schedule.service.ts which has
+// the up-to-date versions. These are kept only for backwards compatibility.
+// Use the ones from schedule.service.ts for any new code.
+
+// export interface CreateScheduleByKeysRequest { ... } // see schedule.service.ts
+// export interface SearchSchedulesByKeysRequest { ... } // see schedule.service.ts
 
 export interface CreateScheduleByKeysRequest {
   operatorUsername?: string;

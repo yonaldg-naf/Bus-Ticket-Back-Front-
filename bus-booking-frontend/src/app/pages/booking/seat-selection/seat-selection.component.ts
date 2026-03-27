@@ -14,7 +14,7 @@ import { Location } from '@angular/common';
   template: `
   <div class="min-h-screen bg-gray-50 dark:bg-slate-900">
     <div class="bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700 shadow-sm">
-      <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
         <div class="flex items-center gap-3 mb-4">
           <button (click)="goBack()" class="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 hover:border-red-300 hover:bg-red-50 transition-colors text-gray-500 hover:text-red-600">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
@@ -24,8 +24,8 @@ import { Location } from '@angular/common';
             @if (draft()) {
               <p class="text-sm text-gray-500 dark:text-slate-400">
                 <span class="font-semibold text-gray-700 dark:text-slate-200">{{ draft()!.schedule.busCode }}</span>
-                <span class="mx-1.5 text-gray-300">·</span>{{ draft()!.schedule.routeCode }}
-                <span class="mx-1.5 text-gray-300">·</span>{{ formatTime(draft()!.schedule.departureUtc) }}
+                <span class="mx-1.5 text-gray-300">�</span>{{ draft()!.schedule.routeCode }}
+                <span class="mx-1.5 text-gray-300">�</span>{{ formatTime(draft()!.schedule.departureUtc) }}
               </p>
             }
           </div>
@@ -51,7 +51,7 @@ import { Location } from '@angular/common';
     }
 
     @if (!loading() && availability()) {
-      <div class="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           <!-- Seat Map -->
@@ -93,7 +93,7 @@ import { Location } from '@angular/common';
 
             <!-- Visual Bus Layout -->
             <div class="p-5">
-              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Bus Layout · Maximum 6 seats per booking</p>
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Bus Layout � Maximum 6 seats per booking</p>
               <!-- Column headers with window/aisle labels -->
               <div class="grid grid-cols-[1fr_1fr_20px_1fr_1fr] gap-1.5 mb-2 px-1">
                 <div class="text-center">
@@ -145,7 +145,7 @@ import { Location } from '@angular/common';
               <div class="p-5">
                 @if (selectedSeats().length === 0) {
                   <div class="text-center py-6 text-gray-400">
-                    <div class="w-14 h-14 bg-gray-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">💺</div>
+                    <div class="w-14 h-14 bg-gray-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl">??</div>
                     <p class="text-sm font-medium text-gray-500 dark:text-slate-400">No seats selected</p>
                     <p class="text-xs text-gray-400 mt-1">Click a seat to select it</p>
                   </div>
@@ -153,7 +153,7 @@ import { Location } from '@angular/common';
                   <div class="flex flex-wrap gap-2 mb-4">
                     @for (seat of selectedSeats(); track seat) {
                       <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-bold">
-                        💺 {{ seat }}
+                        ?? {{ seat }}
                         <span class="text-[9px] font-normal text-red-400">{{ seatTypeLabel(seat) }}</span>
                         <button (click)="toggleSeat(seat)" class="text-red-400 hover:text-red-600 transition-colors ml-0.5 text-base leading-none">x</button>
                       </span>
@@ -187,7 +187,7 @@ import { Location } from '@angular/common';
 
             <button (click)="proceed()" [disabled]="selectedSeats().length === 0 || holdExpired()"
               class="w-full py-4 rounded-2xl font-bold text-white bg-red-600 hover:bg-red-700 active:scale-95 transition-all shadow-lg shadow-red-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none text-base">
-              @if (holdExpired()) { Hold expired — please reselect seats }
+              @if (holdExpired()) { Hold expired � please reselect seats }
               @else if (selectedSeats().length === 0) { Select seats to continue }
               @else { Continue with {{ selectedSeats().length }} seat{{ selectedSeats().length !== 1 ? 's' : '' }} }
             </button>

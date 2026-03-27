@@ -1,4 +1,4 @@
-﻿import { Component, inject, signal, OnInit, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { BookingService } from '../../../services/booking.service';
@@ -14,7 +14,7 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
 
     <!-- Header -->
     <div class="bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700 shadow-sm">
-      <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-between flex-wrap gap-3">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">My Bookings</h1>
           <p class="text-sm text-gray-500 dark:text-slate-400 mt-0.5">Your upcoming and past trips</p>
@@ -38,7 +38,7 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
       </div>
     </div>
 
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
 
       <!-- Filter tabs -->
       <div class="flex gap-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-1.5 mb-6 w-fit shadow-sm">
@@ -77,7 +77,7 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
       <!-- Empty state -->
       @if (!loading() && filtered().length === 0) {
         <div class="flex flex-col items-center justify-center py-24 text-center">
-          <div class="w-24 h-24 bg-gray-100 dark:bg-slate-700 rounded-3xl flex items-center justify-center text-5xl mb-5 shadow-inner">🎫</div>
+          <div class="w-24 h-24 bg-gray-100 dark:bg-slate-700 rounded-3xl flex items-center justify-center text-5xl mb-5 shadow-inner">??</div>
           <h3 class="text-xl font-bold text-gray-800 dark:text-white">No bookings found</h3>
           <p class="text-gray-500 dark:text-slate-400 mt-2 text-sm">
             {{ activeFilter() === 'all' ? 'You have not made any bookings yet.' : 'No ' + activeFilter() + ' bookings.' }}
@@ -94,7 +94,7 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div class="flex items-start gap-4 flex-1 min-w-0">
                   <div class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 text-2xl shadow-sm"
-                    [class]="statusBg(b.status)">🎫</div>
+                    [class]="statusBg(b.status)">??</div>
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2 flex-wrap mb-1.5">
                       <span class="font-extrabold text-gray-900 dark:text-white text-base">{{ b.busCode }}</span>
@@ -112,9 +112,9 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
                         <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
                         {{ b.passengers.length }} passenger{{ b.passengers.length !== 1 ? 's' : '' }}
                       </span>
-                      <span class="text-gray-200 dark:text-slate-600">·</span>
+                      <span class="text-gray-200 dark:text-slate-600">�</span>
                       <span class="font-bold text-gray-700 dark:text-slate-200 text-sm">Rs{{ b.totalAmount | number:'1.0-0' }}</span>
-                      <span class="text-gray-200 dark:text-slate-600">·</span>
+                      <span class="text-gray-200 dark:text-slate-600">�</span>
                       <span>Seats: {{ b.passengers.map(p => p.seatNo).join(', ') }}</span>
                     </div>
                   </div>

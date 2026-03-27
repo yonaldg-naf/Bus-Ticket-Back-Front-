@@ -47,7 +47,17 @@ import { AnalyticsService, OperatorAnalytics, DailyRevenue } from '../../../serv
     }
 
     @if (!loading() && data()) {
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      @if (data()!.totalBookings === 0 && data()!.totalRevenue === 0 && data()!.topRoutes.length === 0) {
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-16 text-center">
+          <div class="w-16 h-16 bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">📊</div>
+          <p class="font-semibold text-slate-700 dark:text-slate-300">No analytics data available.</p>
+          <p class="text-sm text-slate-400 mt-1">This view shows analytics for your operator fleet. Admins can view all operators under the Admin panel.</p>
+          <a routerLink="/admin/operator-performance" class="inline-block mt-4 px-5 py-2.5 bg-red-600 text-white text-sm font-semibold rounded-xl hover:bg-red-700 transition-colors">
+            View All Operators →
+          </a>
+        </div>
+      } @else {
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
         <!-- KPI Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -179,6 +189,7 @@ import { AnalyticsService, OperatorAnalytics, DailyRevenue } from '../../../serv
 
         </div>
       </div>
+      }
     }
   </div>
   `,

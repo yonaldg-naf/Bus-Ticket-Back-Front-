@@ -1,4 +1,4 @@
-﻿import { Component, inject, signal, OnInit } from "@angular/core";
+import { Component, inject, signal, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { RouterLink } from "@angular/router";
 import { FormsModule } from "@angular/forms";
@@ -13,7 +13,7 @@ import { ToastService } from "../../../services/toast.service";
   template: `
   <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
     <div class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
-      <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div class="flex items-center gap-3">
           <a routerLink="/operator" class="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-600 hover:border-red-300 hover:bg-red-50 transition-colors text-slate-500 hover:text-red-600">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
@@ -29,7 +29,7 @@ import { ToastService } from "../../../services/toast.service";
         </button>
       </div>
     </div>
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
       @if (showForm()) {
         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
           <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
@@ -87,7 +87,7 @@ import { ToastService } from "../../../services/toast.service";
           </div>
         } @else if (announcements().length === 0) {
           <div class="text-center py-16 text-slate-400">
-            <p class="text-4xl mb-3">📢</p>
+            <p class="text-4xl mb-3">??</p>
             <p class="font-medium text-slate-500 dark:text-slate-400">No announcements yet</p>
             <p class="text-sm mt-1">Post your first announcement above</p>
           </div>
@@ -154,7 +154,7 @@ export class AnnouncementsComponent implements OnInit {
   }
 
   typeBg(t: string) { return t === "Warning" ? "bg-amber-50" : t === "Delay" ? "bg-blue-50" : t === "Cancelled" ? "bg-red-50" : "bg-green-50"; }
-  typeIcon(t: string) { return t === "Warning" ? "⚠️" : t === "Delay" ? "🕐" : t === "Cancelled" ? "❌" : "ℹ️"; }
+  typeIcon(t: string) { return t === "Warning" ? "??" : t === "Delay" ? "??" : t === "Cancelled" ? "?" : "??"; }
   typeBadge(t: string) { return t === "Warning" ? "bg-amber-100 text-amber-700" : t === "Delay" ? "bg-blue-100 text-blue-700" : t === "Cancelled" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"; }
   formatDate(utc: string) { return utc ? new Date(utc).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""; }
   formatRelative(iso: string) { const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000); return m < 1 ? "just now" : m < 60 ? m + "m ago" : Math.floor(m/60) + "h ago"; }
