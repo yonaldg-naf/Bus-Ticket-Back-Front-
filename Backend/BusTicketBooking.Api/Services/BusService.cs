@@ -23,9 +23,13 @@ namespace BusTicketBooking.Services
             _users = users;
         }
 
-        // ------------------------------------------------------------------------------------
-        // SECURED: GetAll — admin sees all, operator sees only own buses
-        // ------------------------------------------------------------------------------------
+        // ===========================
+        // GET ALL BUSES (ROLE-AWARE)
+        // ===========================
+        // Admin → returns every bus in the system.
+        // Operator → finds their BusOperator profile first, then returns only buses they own.
+        // If an operator has no profile yet, returns an empty list.
+        // ===========================
         public async Task<IEnumerable<BusResponseDto>> GetAllSecuredAsync(Guid userId, string role, CancellationToken ct)
         {
             if (role == Roles.Admin)
@@ -41,9 +45,12 @@ namespace BusTicketBooking.Services
             return list.Select(Map);
         }
 
-        // ------------------------------------------------------------------------------------
-        // SECURED: GetById — operator allowed ONLY if owns it
-        // ------------------------------------------------------------------------------------
+        // ===========================
+        // GET ONE BUS BY ID (ROLE-AWARE)
+        // ===========================
+        // Admin → can fetch any bus.
+        // Operator → can only fetch a bus they own. Returns null if they try to access someone else's bus.
+        // ===========================
         public async Task<BusResponseDto?> GetByIdSecuredAsync(Guid id, Guid userId, string role, CancellationToken ct)
         {
             var bus = await _buses.GetByIdAsync(id, ct);
@@ -57,9 +64,13 @@ namespace BusTicketBooking.Services
             return Map(bus);
         }
 
-        // ------------------------------------------------------------------------------------
-        // SECURED UPDATE
-        // ------------------------------------------------------------------------------------
+        // ===========================
+        // UPDATE BUS DETAILS (ROLE-AWARE)
+        // ===========================
+        // Updates registration number, bus type, seat count, status, and amenities.
+        // Admin → can update any bus.
+        // Operator → can only update their own buses. Returns null if they try to update someone else's.
+        // ===========================
         public async Task<BusResponseDto?> UpdateSecuredAsync(Guid id, UpdateBusRequestDto dto, Guid userId, string role, CancellationToken ct)
         {
             var bus = await _buses.GetByIdAsync(id, ct);
@@ -84,9 +95,13 @@ namespace BusTicketBooking.Services
             return Map(bus);
         }
 
-        // ------------------------------------------------------------------------------------
-        // SECURED UPDATE STATUS
-        // ------------------------------------------------------------------------------------
+        // ===========================
+        // UPDATE BUS STATUS ONLY (ROLE-AWARE)
+        // ===========================
+        // Quick update for just the bus status (Available / UnderRepair / NotAvailable).
+        // Useful when an operator wants to temporarily take a bus offline without changing other details.
+        // Same ownership rules as UpdateSecuredAsync.
+        // ===========================
         public async Task<BusResponseDto?> UpdateStatusSecuredAsync(Guid id, BusStatus status, Guid userId, string role, CancellationToken ct)
         {
             var bus = await _buses.GetByIdAsync(id, ct);
@@ -105,9 +120,14 @@ namespace BusTicketBooking.Services
             return Map(bus);
         }
 
-        // ------------------------------------------------------------------------------------
-        // SECURED DELETE
-        // ------------------------------------------------------------------------------------
+        // ===========================
+        // DELETE A BUS (ROLE-AWARE)
+        // ===========================
+        // Permanently removes a bus from the database.
+        // Admin → can delete any bus.
+        // Operator → can only delete their own buses.
+        // Note: deleting a bus will cascade-delete its schedules (configured in AppDbContext).
+        // ===========================
         public async Task<bool> DeleteSecuredAsync(Guid id, Guid userId, string role, CancellationToken ct)
         {
             var bus = await _buses.GetByIdAsync(id, ct);
@@ -124,9 +144,13 @@ namespace BusTicketBooking.Services
             return true;
         }
 
-        // ============================================================
-        // Existing ORIGINAL ID-based methods (unchanged internal use)
-        // ============================================================
+        // ===========================
+        // SIMPLE GET ALL / GET BY ID / UPDATE / DELETE / UPDATE STATUS
+        // ===========================
+        // These are the original ID-based methods used internally (e.g. by admin endpoints
+        // that don't need ownership checks). They don't enforce any role restrictions —
+        // the controller is responsible for ensuring only the right roles can call them.
+        // ===========================
 
         public async Task<IEnumerable<BusResponseDto>> GetAllAsync(CancellationToken ct = default)
         {

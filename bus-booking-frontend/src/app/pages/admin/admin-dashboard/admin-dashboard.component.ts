@@ -228,6 +228,7 @@ export class AdminDashboardComponent implements OnInit {
     { title: 'Manage Stops',         desc: 'Add and edit bus stops & cities',          icon: '📍', bg: 'bg-orange-50', link: '/admin/stops',                  badge: '' },
     { title: 'Audit Logs',           desc: 'Full system activity & error trail',       icon: '📋', bg: 'bg-slate-100', link: '/admin/audit-logs',             badge: '' },
     { title: 'Operator Performance', desc: 'Metrics and leaderboard for all operators',icon: '📊', bg: 'bg-yellow-50', link: '/admin/operator-performance',   badge: '' },
+    { title: 'All Complaints',       desc: 'View and reply to all customer complaints', icon: '💬', bg: 'bg-orange-50', link: '/admin/complaints',             badge: '' },
     { title: 'All Buses',            desc: 'View all registered buses',                icon: '🚌', bg: 'bg-red-50',    link: '/operator/buses',               badge: '' },
     { title: 'All Schedules',        desc: 'Manage all departure schedules',           icon: '🗓️', bg: 'bg-indigo-50', link: '/operator/schedules',           badge: '' },
     { title: 'All Routes',           desc: 'View routes across all operators',         icon: '🗺️', bg: 'bg-teal-50',   link: '/operator/routes',              badge: '' },

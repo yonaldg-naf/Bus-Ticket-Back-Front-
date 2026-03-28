@@ -73,6 +73,7 @@ export const routes: Routes = [
       { path: 'operator-approvals',  loadComponent: () => import('./pages/admin/operator-approvals/operator-approvals.component').then(m => m.OperatorApprovalsComponent) },
       { path: 'manage-users',        loadComponent: () => import('./pages/admin/manage-users/manage-users.component').then(m => m.ManageUsersComponent) },
       { path: 'operator-performance',loadComponent: () => import('./pages/admin/operator-performance/operator-performance.component').then(m => m.OperatorPerformanceComponent) },
+      { path: 'complaints',          loadComponent: () => import('./pages/admin/complaints/complaints.component').then(m => m.AdminComplaintsComponent) },
     ],
   },
   {
