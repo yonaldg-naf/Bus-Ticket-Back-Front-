@@ -200,22 +200,68 @@ namespace BusTicketBooking.Services
         // GET ALL BOOKINGS FOR A USER
         // ===========================
         // Returns every booking that belongs to the given user, ordered newest first.
-        // Loads the passengers, payment, bus, and route details in a single query
-        // so the response has everything the frontend needs without extra round trips.
+        // Uses a projection (Select into DTO directly) instead of loading full entities
+        // so EF Core only fetches the columns the frontend actually needs — much faster.
         // ===========================
         public async Task<IEnumerable<BookingResponseDto>> GetMyAsync(Guid userId, CancellationToken ct = default)
         {
+            var now = DateTime.UtcNow; // capture once, not per-row
+
             var data = await _db.Bookings
-                .Include(b => b.Passengers)
-                .Include(b => b.Payment)
-                .Include(b => b.Schedule)!.ThenInclude(s => s!.Bus)
-                .Include(b => b.Schedule)!.ThenInclude(s => s!.Route)
                 .AsNoTracking()
                 .Where(b => b.UserId == userId)
                 .OrderByDescending(b => b.CreatedAtUtc)
+                .Select(b => new BookingResponseDto
+                {
+                    Id               = b.Id,
+                    UserId           = b.UserId,
+                    ScheduleId       = b.ScheduleId,
+                    Status           = b.Status,
+                    TotalAmount      = b.TotalAmount,
+                    DiscountAmount   = b.DiscountAmount,
+                    PromoCode        = b.PromoCode,
+                    CreatedAtUtc     = b.CreatedAtUtc,
+                    UpdatedAtUtc     = b.UpdatedAtUtc,
+
+                    BusCode              = b.Schedule!.Bus!.Code,
+                    RegistrationNumber   = b.Schedule.Bus.RegistrationNumber,
+                    RouteCode            = b.Schedule.Route!.RouteCode,
+                    DepartureUtc         = b.Schedule.DepartureUtc,
+                    BusStatus            = b.Schedule.Bus.Status,
+
+                    IsScheduleCancelledByOperator = b.Schedule.IsCancelledByOperator,
+                    ScheduleCancelReason          = b.Schedule.CancelReason,
+
+                    Passengers = b.Passengers.Select(p => new BookingPassengerDto
+                    {
+                        Name   = p.Name,
+                        Age    = p.Age,
+                        SeatNo = p.SeatNo
+                    }).ToList()
+                })
                 .ToListAsync(ct);
 
-            return data.Select(Map);
+            // Calculate refund policy in memory (only for Confirmed bookings)
+            foreach (var dto in data)
+            {
+                if (dto.Status != BookingStatus.Confirmed) continue;
+
+                var hours = (dto.DepartureUtc - now).TotalHours;
+                int pct;
+                string policy;
+
+                if      (hours >= 48) { pct = 100; policy = "Full refund (48h+ before departure)"; }
+                else if (hours >= 24) { pct = 75;  policy = "75% refund (24–48h before departure)"; }
+                else if (hours >= 6)  { pct = 50;  policy = "50% refund (6–24h before departure)"; }
+                else if (hours >= 0)  { pct = 25;  policy = "25% refund (0–6h before departure)"; }
+                else                  { pct = 0;   policy = "No refund (trip already departed)"; }
+
+                dto.RefundPercent = pct;
+                dto.RefundAmount  = Math.Round(dto.TotalAmount * pct / 100, 2);
+                dto.RefundPolicy  = policy;
+            }
+
+            return data;
         }
 
         // ===========================

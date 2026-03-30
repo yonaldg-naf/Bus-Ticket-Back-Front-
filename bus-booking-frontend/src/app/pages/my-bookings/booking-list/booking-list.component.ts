@@ -112,17 +112,17 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
                         <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
                         {{ b.passengers.length }} passenger{{ b.passengers.length !== 1 ? 's' : '' }}
                       </span>
-                      <span class="text-gray-200 dark:text-slate-600">·</span>
+                      <span class="text-gray-200 dark:text-slate-600">ï¿½</span>
                       <span class="font-bold text-gray-700 dark:text-slate-200 text-sm">Rs{{ b.totalAmount | number:'1.0-0' }}</span>
-                      <span class="text-gray-200 dark:text-slate-600">·</span>
+                      <span class="text-gray-200 dark:text-slate-600">ï¿½</span>
                       <span>Seats: {{ b.passengers.map(p => p.seatNo).join(', ') }}</span>
                     </div>
                   </div>
                 </div>
-                <a [routerLink]="['/my-bookings', b.id]"
+                <a [routerLink]="b.status === 1 ? ['/booking/confirm', b.id] : ['/my-bookings', b.id]"
                   class="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border border-gray-200 dark:border-slate-600 text-gray-700 dark:text-slate-200
                          hover:border-red-300 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all self-start sm:self-center flex-shrink-0">
-                  View Details
+                  {{ b.status === 1 ? 'Complete Payment' : 'View Details' }}
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                   </svg>

@@ -154,6 +154,11 @@ namespace BusTicketBooking.Contexts
                 e.Property(b => b.DiscountAmount).HasPrecision(10, 2);
                 e.Property(b => b.PromoCode).HasMaxLength(50);
 
+                // Index on UserId so "get my bookings" doesn't do a full table scan
+                e.HasIndex(b => b.UserId);
+                // Index on ScheduleId for operator/admin queries by schedule
+                e.HasIndex(b => b.ScheduleId);
+
                 e.HasOne(b => b.User)
                  .WithMany(u => u.Bookings)
                  .HasForeignKey(b => b.UserId)
