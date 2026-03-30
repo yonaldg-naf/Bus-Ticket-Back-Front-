@@ -1,18 +1,25 @@
 using BusTicketBooking.Contexts;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 
-namespace BusTicketBooking.Tests.Helpers;
-
-public static class DbHelper
+namespace BusTicketBooking.Tests.Helpers
 {
-    public static AppDbContext CreateInMemory(string? dbName = null)
+    /// <summary>
+    /// Creates a fresh in-memory database for each test so tests never share state.
+    /// ConfigureWarnings suppresses the transaction warning because EF InMemory
+    /// doesn't support real transactions — it silently ignores them, which is fine
+    /// for unit tests since we're testing business logic, not transaction isolation.
+    /// </summary>
+    public static class DbHelper
     {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(dbName ?? Guid.NewGuid().ToString())
-            // InMemory doesn't support transactions — ignore the warning so tests work
-            .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
-            .Options;
-        return new AppDbContext(options);
+        public static AppDbContext CreateDb(string? name = null)
+        {
+            var options = new DbContextOptionsBuilder<AppDbContext>()
+                .UseInMemoryDatabase(name ?? Guid.NewGuid().ToString())
+                .ConfigureWarnings(w =>
+                    w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
+                .Options;
+
+            return new AppDbContext(options);
+        }
     }
 }

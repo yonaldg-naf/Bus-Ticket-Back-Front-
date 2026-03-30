@@ -66,16 +66,31 @@ namespace BusTicketBooking.Controllers
         [HttpGet("my")]
         public async Task<IActionResult> GetMy(CancellationToken ct)
         {
-            var complaints = await _db.Complaints
-                .Include(c => c.Booking).ThenInclude(b => b!.Schedule).ThenInclude(s => s!.Bus)
-                .Include(c => c.Booking).ThenInclude(b => b!.Schedule).ThenInclude(s => s!.Route)
-                .Include(c => c.User)
+            var result = await _db.Complaints
                 .AsNoTracking()
                 .Where(c => c.UserId == UserId)
                 .OrderByDescending(c => c.CreatedAtUtc)
+                .Select(c => new ComplaintResponseDto
+                {
+                    Id           = c.Id,
+                    BookingId    = c.BookingId,
+                    UserId       = c.UserId,
+                    CustomerName = c.User != null ? (c.User.FullName ?? c.User.Username) : string.Empty,
+                    Message      = c.Message,
+                    Reply        = c.Reply,
+                    Status       = c.Status,
+                    BusCode      = c.Booking != null && c.Booking.Schedule != null && c.Booking.Schedule.Bus != null
+                        ? c.Booking.Schedule.Bus.Code : string.Empty,
+                    RouteCode    = c.Booking != null && c.Booking.Schedule != null && c.Booking.Schedule.Route != null
+                        ? c.Booking.Schedule.Route.RouteCode : string.Empty,
+                    DepartureUtc = c.Booking != null && c.Booking.Schedule != null
+                        ? c.Booking.Schedule.DepartureUtc : default,
+                    CreatedAtUtc = c.CreatedAtUtc,
+                    UpdatedAtUtc = c.UpdatedAtUtc
+                })
                 .ToListAsync(ct);
 
-            return Ok(complaints.Select(Map));
+            return Ok(result);
         }
 
         /// <summary>
@@ -86,12 +101,10 @@ namespace BusTicketBooking.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll(CancellationToken ct)
         {
-            IQueryable<Complaint> query = _db.Complaints
-                .Include(c => c.Booking).ThenInclude(b => b!.Schedule).ThenInclude(s => s!.Bus)
-                .Include(c => c.Booking).ThenInclude(b => b!.Schedule).ThenInclude(s => s!.Route)
-                .Include(c => c.User)
-                .AsNoTracking();
+            // Start with the entity query so we can filter before projecting
+            IQueryable<Complaint> entityQuery = _db.Complaints.AsNoTracking();
 
+            // Operator: filter to only complaints on their own buses
             if (User.IsInRole(Roles.Operator))
             {
                 var op = await _db.BusOperators.AsNoTracking()
@@ -99,24 +112,34 @@ namespace BusTicketBooking.Controllers
 
                 if (op is null) return Ok(Array.Empty<ComplaintResponseDto>());
 
-                var busIds = await _db.Buses.AsNoTracking()
-                    .Where(b => b.OperatorId == op.Id)
-                    .Select(b => b.Id)
-                    .ToListAsync(ct);
-
-                var scheduleIds = await _db.BusSchedules.AsNoTracking()
-                    .Where(s => busIds.Contains(s.BusId))
-                    .Select(s => s.Id)
-                    .ToListAsync(ct);
-
-                query = query.Where(c => scheduleIds.Contains(c.Booking!.ScheduleId));
+                entityQuery = entityQuery
+                    .Where(c => c.Booking!.Schedule!.Bus!.OperatorId == op.Id);
             }
 
-            var result = await query
+            // Project after filtering — only fetch columns we need
+            var result = await entityQuery
                 .OrderByDescending(c => c.CreatedAtUtc)
+                .Select(c => new ComplaintResponseDto
+                {
+                    Id           = c.Id,
+                    BookingId    = c.BookingId,
+                    UserId       = c.UserId,
+                    CustomerName = c.User != null ? (c.User.FullName ?? c.User.Username) : string.Empty,
+                    Message      = c.Message,
+                    Reply        = c.Reply,
+                    Status       = c.Status,
+                    BusCode      = c.Booking != null && c.Booking.Schedule != null && c.Booking.Schedule.Bus != null
+                        ? c.Booking.Schedule.Bus.Code : string.Empty,
+                    RouteCode    = c.Booking != null && c.Booking.Schedule != null && c.Booking.Schedule.Route != null
+                        ? c.Booking.Schedule.Route.RouteCode : string.Empty,
+                    DepartureUtc = c.Booking != null && c.Booking.Schedule != null
+                        ? c.Booking.Schedule.DepartureUtc : default,
+                    CreatedAtUtc = c.CreatedAtUtc,
+                    UpdatedAtUtc = c.UpdatedAtUtc
+                })
                 .ToListAsync(ct);
 
-            return Ok(result.Select(Map));
+            return Ok(result);
         }
 
         /// <summary>Operator or Admin: reply to a complaint and mark it resolved.</summary>

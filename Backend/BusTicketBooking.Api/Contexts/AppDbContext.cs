@@ -248,6 +248,8 @@ namespace BusTicketBooking.Contexts
                 e.Property(c => c.Message).HasMaxLength(1000).IsRequired();
                 e.Property(c => c.Reply).HasMaxLength(1000);
                 e.Property(c => c.Status).HasMaxLength(20).IsRequired();
+                // Index so customer "get my complaints" and operator filter don't full-scan
+                e.HasIndex(c => c.UserId);
                 e.HasOne(c => c.Booking).WithMany().HasForeignKey(c => c.BookingId).OnDelete(DeleteBehavior.Cascade);
                 e.HasOne(c => c.User).WithMany().HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Restrict);
             });

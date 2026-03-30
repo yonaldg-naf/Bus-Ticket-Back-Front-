@@ -106,7 +106,9 @@ namespace BusTicketBooking.Controllers
                 ConfirmedBookings = confirmedBookings.Count,
                 CancelledBookings = cancelledBookings.Count,
                 AverageOccupancyRate = schedules.Count > 0
-                    ? Math.Round(confirmedBookings.Count / (double)Math.Max(schedules.Count, 1) * 10, 1)
+                    ? Math.Round(
+                        (double)confirmedBookings.Count /
+                        Math.Max(schedules.Sum(s => s.Bus?.TotalSeats ?? 40), 1) * 100, 1)
                     : 0,
                 AverageRating = reviews.Count > 0 ? Math.Round(reviews.Average(r => r.Rating), 1) : 0,
                 TotalReviews = reviews.Count,
