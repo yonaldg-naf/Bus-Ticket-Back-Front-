@@ -287,80 +287,6 @@ namespace BusTicketBooking.Services
         }
 
         /// <summary>
-        /// Searches for available schedules between two stops on a given date.
-        /// Only returns schedules that:
-        ///   - Depart within the requested date window (adjusted for the caller's UTC offset).
-        ///   - Have not yet departed (departure > now).
-        ///   - Are not cancelled by the operator.
-        ///   - Have the fromStop before the toStop in the route's ordered stop list.
-        ///
-        /// Results are paginated and can be sorted by departure, price, bus code, or route code.
-        /// </summary>
-        /// <param name="fromStopId">The ID of the departure stop.</param>
-        /// <param name="toStopId">The ID of the destination stop.</param>
-        /// <param name="date">The travel date in the customer's local timezone.</param>
-        /// <param name="request">Pagination and sort parameters.</param>
-        /// <param name="utcOffsetMinutes">The customer's UTC offset in minutes (e.g. +330 for IST). Used to convert the local date to a UTC window.</param>
-        public async Task<PagedResult<ScheduleResponseDto>> SearchAsync(
-            Guid fromStopId,
-            Guid toStopId,
-            DateOnly date,
-            PagedRequestDto request,
-            CancellationToken ct = default,
-            int utcOffsetMinutes = 0)
-        {
-            var offsetSpan  = TimeSpan.FromMinutes(utcOffsetMinutes);
-            var dayStartUtc = date.ToDateTime(TimeOnly.MinValue) - offsetSpan;
-            var dayEndUtc   = dayStartUtc.AddDays(1);
-            var now         = DateTime.UtcNow;
-
-            var baseQuery = _db.BusSchedules
-                .Include(s => s.Bus)
-                .Include(s => s.Route)!.ThenInclude(r => r.RouteStops)
-                .AsNoTracking()
-                .Where(s => s.DepartureUtc >= dayStartUtc
-                         && s.DepartureUtc < dayEndUtc
-                         && s.DepartureUtc > now               // exclude departed
-                         && !s.IsCancelledByOperator);          // exclude cancelled
-
-            var list = await baseQuery.ToListAsync(ct);
-
-            var filtered = list.Where(s =>
-            {
-                var stops = s.Route!.RouteStops.OrderBy(rs => rs.Order).ToList();
-                var fromIdx = stops.FindIndex(rs => rs.StopId == fromStopId);
-                var toIdx = stops.FindIndex(rs => rs.StopId == toStopId);
-
-                return fromIdx >= 0 && toIdx >= 0 && fromIdx < toIdx;
-            })
-            .Select(s => Map(s, s.Bus!, s.Route!));
-
-            var sortBy = (request.SortBy ?? "departure").Trim().ToLowerInvariant();
-            var desc = request.IsDescending();
-
-            filtered = sortBy switch
-            {
-                "price" => (desc ? filtered.OrderByDescending(x => x.BasePrice) : filtered.OrderBy(x => x.BasePrice)),
-                "buscode" => (desc ? filtered.OrderByDescending(x => x.BusCode) : filtered.OrderBy(x => x.BusCode)),
-                "routecode" => (desc ? filtered.OrderByDescending(x => x.RouteCode) : filtered.OrderBy(x => x.RouteCode)),
-                _ => (desc ? filtered.OrderByDescending(x => x.DepartureUtc) : filtered.OrderBy(x => x.DepartureUtc)),
-            };
-
-            var total = filtered.LongCount();
-            var (skip, take) = request.GetSkipTake();
-
-            var pageItems = filtered.Skip(skip).Take(take).ToList();
-
-            return new PagedResult<ScheduleResponseDto>
-            {
-                Page = request.Page,
-                PageSize = request.PageSize,
-                TotalCount = total,
-                Items = pageItems
-            };
-        }
-
-        /// <summary>
         /// Returns the seat availability for a schedule — which seats are booked and which are free.
         /// Cancelled, OperatorCancelled, and BusMissed bookings do NOT count as booked
         /// (those seats are freed back to available).
@@ -554,52 +480,6 @@ namespace BusTicketBooking.Services
             };
         }
 
-        /// <summary>
-        /// Deletes a schedule identified by bus code and departure UTC time.
-        /// Same soft-delete behaviour as DeleteAsync — if bookings exist, marks as cancelled
-        /// instead of deleting. Returns false if no matching schedule is found.
-        /// </summary>
-        public async Task<bool> DeleteByKeysAsync(string busCode, DateTime departureUtc, CancellationToken ct = default)
-        {
-            var sched = (await _schedules.FindAsync(
-                s => s.DepartureUtc == EnsureUtc(departureUtc) &&
-                     s.Bus!.Code == busCode,
-                ct)).FirstOrDefault();
-
-            if (sched is null) return false;
-
-            bool hasBookings = await _db.Bookings
-                .AnyAsync(b => b.ScheduleId == sched.Id, ct);
-
-            if (hasBookings)
-            {
-                sched.IsCancelledByOperator = true;
-                sched.CancelReason = "Cancelled by operator";
-                sched.UpdatedAtUtc = DateTime.UtcNow;
-
-                await _schedules.UpdateAsync(sched, ct);
-
-                var bookings = await _db.Bookings
-                    .Where(b => b.ScheduleId == sched.Id)
-                    .ToListAsync(ct);
-
-                foreach (var b in bookings)
-                {
-                    if (b.Status != BookingStatus.OperatorCancelled)
-                    {
-                        b.Status = BookingStatus.OperatorCancelled;
-                        b.UpdatedAtUtc = DateTime.UtcNow;
-                    }
-                }
-
-                await _db.SaveChangesAsync(ct);
-                return true;
-            }
-
-            await _schedules.RemoveAsync(sched, ct);
-            return true;
-        }
-
         // ── Private helpers ───────────────────────────────────────────────────
 
         /// <summary>
@@ -687,26 +567,6 @@ namespace BusTicketBooking.Services
                                    .Where(a => a.Length > 0)
                                    .ToList()
             };
-
-        /// <summary>
-        /// Returns seat availability by bus code and departure time (with ±30 second tolerance).
-        /// Throws InvalidOperationException if no matching schedule is found.
-        /// </summary>
-        public async Task<SeatAvailabilityResponseDto> GetAvailabilityByKeysAsync(string busCode, DateTime departureUtc, CancellationToken ct = default)
-        {
-            var depUtc = EnsureUtc(departureUtc);
-            var schedule = await _db.BusSchedules
-                .Include(s => s.Bus)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(s =>
-                    s.Bus!.Code == busCode &&
-                    s.DepartureUtc >= depUtc.AddSeconds(-30) &&
-                    s.DepartureUtc <= depUtc.AddSeconds(30),
-                    ct)
-                ?? throw new InvalidOperationException("Schedule not found for given busCode and departure time.");
-
-            return await GetAvailabilityAsync(schedule.Id, ct);
-        }
 
     }
 }

@@ -49,41 +49,6 @@ namespace BusTicketBooking.Services
         // ── ID-based methods ──────────────────────────────────────────────────
 
         /// <summary>
-        /// Creates a new route using stop GUIDs.
-        /// Validates that:
-        ///   - At least 2 stops are provided.
-        ///   - Stop orders are continuous starting at 1 (no gaps, no duplicates).
-        ///   - All provided StopIds exist in the database.
-        ///   - The route code is unique for this operator.
-        /// Throws InvalidOperationException if any validation fails.
-        /// </summary>
-        public async Task<RouteResponseDto> CreateAsync(CreateRouteRequestDto dto, CancellationToken ct = default)
-        {
-            ValidateStopsOrdering(dto.Stops.Select((s, i) => new { s.StopId, Order = i + 1 }).Select(x => new RouteStopItemDto { StopId = x.StopId, Order = x.Order }));
-            await EnsureStopsExistAsync(dto.Stops.Select(s => s.StopId).Distinct(), ct);
-
-            var duplicate = (await _routes.FindAsync(r => r.OperatorId == dto.OperatorId && r.RouteCode == dto.RouteCode, ct)).Any();
-            if (duplicate) throw new InvalidOperationException("RouteCode already exists for this operator.");
-
-            var route = new BusRoute { OperatorId = dto.OperatorId, RouteCode = dto.RouteCode.Trim() };
-            route = await _routes.AddAsync(route, ct);
-
-            var rsEntities = dto.Stops
-                .OrderBy(s => s.Order)
-                .Select(s => new RouteStop
-                {
-                    RouteId            = route.Id,
-                    StopId             = s.StopId,
-                    Order              = s.Order,
-                    ArrivalOffsetMin   = s.ArrivalOffsetMin,
-                    DepartureOffsetMin = s.DepartureOffsetMin
-                }).ToList();
-
-            await _routeStops.AddRangeAsync(rsEntities, ct);
-            return await GetByIdAsync(route.Id, ct) ?? throw new InvalidOperationException("Route creation failed to load.");
-        }
-
-        /// <summary>
         /// Returns all routes in the system with their full ordered stop lists.
         /// </summary>
         public async Task<IEnumerable<RouteResponseDto>> GetAllAsync(CancellationToken ct = default)
@@ -98,10 +63,10 @@ namespace BusTicketBooking.Services
         }
 
         /// <summary>
-        /// Returns a single route by its ID with its full ordered stop list.
-        /// Returns null if no route with that ID exists.
+        /// Internal helper — fetches a route by ID with full stop details.
+        /// Used by CreateByKeysAsync and UpdateByKeysAsync to return the saved result.
         /// </summary>
-        public async Task<RouteResponseDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        private async Task<RouteResponseDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
         {
             var route = await _db.BusRoutes
                 .Include(r => r.RouteStops)
@@ -110,63 +75,6 @@ namespace BusTicketBooking.Services
                 .FirstOrDefaultAsync(r => r.Id == id, ct);
 
             return route is null ? null : MapRoute(route);
-        }
-
-        /// <summary>
-        /// Replaces a route's code and its entire stop list.
-        /// The old stops are deleted and replaced with the new ones from the DTO.
-        /// Validates stop ordering and uniqueness of the new route code.
-        /// Returns null if the route does not exist.
-        /// </summary>
-        public async Task<RouteResponseDto?> UpdateAsync(Guid id, UpdateRouteRequestDto dto, CancellationToken ct = default)
-        {
-            ValidateStopsOrdering(dto.Stops);
-            await EnsureStopsExistAsync(dto.Stops.Select(s => s.StopId).Distinct(), ct);
-
-            var route = await _routes.GetByIdAsync(id, ct);
-            if (route is null) return null;
-
-            var dup = (await _routes.FindAsync(r => r.OperatorId == route.OperatorId && r.RouteCode == dto.RouteCode && r.Id != id, ct)).Any();
-            if (dup) throw new InvalidOperationException("RouteCode already exists for this operator.");
-
-            route.RouteCode    = dto.RouteCode.Trim();
-            route.UpdatedAtUtc = DateTime.UtcNow;
-            await _routes.UpdateAsync(route, ct);
-
-            var existing = await _routeStops.FindAsync(rs => rs.RouteId == id, ct);
-            if (existing.Any()) await _routeStops.RemoveRangeAsync(existing, ct);
-
-            var newStops = dto.Stops
-                .OrderBy(s => s.Order)
-                .Select(s => new RouteStop
-                {
-                    RouteId            = id,
-                    StopId             = s.StopId,
-                    Order              = s.Order,
-                    ArrivalOffsetMin   = s.ArrivalOffsetMin,
-                    DepartureOffsetMin = s.DepartureOffsetMin
-                }).ToList();
-
-            await _routeStops.AddRangeAsync(newStops, ct);
-            return await GetByIdAsync(id, ct);
-        }
-
-        /// <summary>
-        /// Permanently deletes a route and all its associated route stops.
-        /// Returns false if the route does not exist.
-        /// Note: if any schedules reference this route, the database will throw
-        /// a foreign key constraint error (routes are restricted from deletion when in use).
-        /// </summary>
-        public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
-        {
-            var route = await _routes.GetByIdAsync(id, ct);
-            if (route is null) return false;
-
-            var rs = await _routeStops.FindAsync(s => s.RouteId == id, ct);
-            if (rs.Any()) await _routeStops.RemoveRangeAsync(rs, ct);
-
-            await _routes.RemoveAsync(route, ct);
-            return true;
         }
 
         // ── Key-based methods ─────────────────────────────────────────────────

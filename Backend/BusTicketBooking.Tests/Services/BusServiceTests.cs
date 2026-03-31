@@ -14,7 +14,6 @@ public class BusServiceTests
             new Repository<BusOperator>(db),
             new Repository<User>(db));
 
-    // Seeds operator + user so BusService can resolve ownership
     private static (User user, BusOperator op) SeedOperator(BusTicketBooking.Contexts.AppDbContext db)
     {
         var user = SeedHelper.MakeUser(Roles.Operator);
@@ -61,7 +60,6 @@ public class BusServiceTests
         var svc = Build(db);
         var (_, op) = SeedOperator(db);
 
-        // Save a bus first
         var bus = SeedHelper.MakeBus(op.Id);
         db.Buses.Add(bus);
         await db.SaveChangesAsync();
@@ -92,7 +90,7 @@ public class BusServiceTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateAsync(dto));
     }
 
-    // ── GetAllAsync ───────────────────────────────────────────────────────────
+    // ── GetAllSecuredAsync ────────────────────────────────────────────────────
 
     [Fact]
     public async Task GetAll_ReturnsAllBuses()
@@ -104,7 +102,8 @@ public class BusServiceTests
         db.Buses.AddRange(SeedHelper.MakeBus(op.Id), SeedHelper.MakeBus(op.Id));
         await db.SaveChangesAsync();
 
-        var result = (await svc.GetAllAsync()).ToList();
+        // Admin sees all buses
+        var result = (await svc.GetAllSecuredAsync(Guid.NewGuid(), Roles.Admin, default)).ToList();
         Assert.Equal(2, result.Count);
     }
 
@@ -113,11 +112,11 @@ public class BusServiceTests
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
-        var result = await svc.GetAllAsync();
+        var result = await svc.GetAllSecuredAsync(Guid.NewGuid(), Roles.Admin, default);
         Assert.Empty(result);
     }
 
-    // ── GetByIdAsync ──────────────────────────────────────────────────────────
+    // ── GetByIdSecuredAsync ───────────────────────────────────────────────────
 
     [Fact]
     public async Task GetById_ReturnsBus_WhenExists()
@@ -129,7 +128,7 @@ public class BusServiceTests
         db.Buses.Add(bus);
         await db.SaveChangesAsync();
 
-        var result = await svc.GetByIdAsync(bus.Id);
+        var result = await svc.GetByIdSecuredAsync(bus.Id, Guid.NewGuid(), Roles.Admin, default);
         Assert.NotNull(result);
         Assert.Equal(bus.Id, result!.Id);
     }
@@ -139,11 +138,11 @@ public class BusServiceTests
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
-        var result = await svc.GetByIdAsync(Guid.NewGuid());
+        var result = await svc.GetByIdSecuredAsync(Guid.NewGuid(), Guid.NewGuid(), Roles.Admin, default);
         Assert.Null(result);
     }
 
-    // ── UpdateAsync ───────────────────────────────────────────────────────────
+    // ── UpdateSecuredAsync ────────────────────────────────────────────────────
 
     [Fact]
     public async Task Update_ChangesFields_AndReturnsDto()
@@ -164,7 +163,7 @@ public class BusServiceTests
             Amenities          = new List<string> { "Blanket" }
         };
 
-        var result = await svc.UpdateAsync(bus.Id, dto);
+        var result = await svc.UpdateSecuredAsync(bus.Id, dto, Guid.NewGuid(), Roles.Admin, default);
 
         Assert.NotNull(result);
         Assert.Equal("NEW-REG", result!.RegistrationNumber);
@@ -179,15 +178,15 @@ public class BusServiceTests
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
-        var result = await svc.UpdateAsync(Guid.NewGuid(), new UpdateBusRequestDto
+        var result = await svc.UpdateSecuredAsync(Guid.NewGuid(), new UpdateBusRequestDto
         {
             RegistrationNumber = "X", BusType = BusType.Seater,
             TotalSeats = 10, Status = BusStatus.Available, Amenities = new()
-        });
+        }, Guid.NewGuid(), Roles.Admin, default);
         Assert.Null(result);
     }
 
-    // ── UpdateStatusAsync ─────────────────────────────────────────────────────
+    // ── UpdateStatusSecuredAsync ──────────────────────────────────────────────
 
     [Fact]
     public async Task UpdateStatus_ChangesStatus()
@@ -199,7 +198,7 @@ public class BusServiceTests
         db.Buses.Add(bus);
         await db.SaveChangesAsync();
 
-        var result = await svc.UpdateStatusAsync(bus.Id, BusStatus.UnderRepair);
+        var result = await svc.UpdateStatusSecuredAsync(bus.Id, BusStatus.UnderRepair, Guid.NewGuid(), Roles.Admin, default);
 
         Assert.NotNull(result);
         Assert.Equal(BusStatus.UnderRepair, result!.Status);
@@ -210,11 +209,11 @@ public class BusServiceTests
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
-        var result = await svc.UpdateStatusAsync(Guid.NewGuid(), BusStatus.Available);
+        var result = await svc.UpdateStatusSecuredAsync(Guid.NewGuid(), BusStatus.Available, Guid.NewGuid(), Roles.Admin, default);
         Assert.Null(result);
     }
 
-    // ── DeleteAsync ───────────────────────────────────────────────────────────
+    // ── DeleteSecuredAsync ────────────────────────────────────────────────────
 
     [Fact]
     public async Task Delete_RemovesBus_AndReturnsTrue()
@@ -226,7 +225,7 @@ public class BusServiceTests
         db.Buses.Add(bus);
         await db.SaveChangesAsync();
 
-        var result = await svc.DeleteAsync(bus.Id);
+        var result = await svc.DeleteSecuredAsync(bus.Id, Guid.NewGuid(), Roles.Admin, default);
 
         Assert.True(result);
         Assert.Empty(db.Buses);
@@ -237,11 +236,11 @@ public class BusServiceTests
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
-        var result = await svc.DeleteAsync(Guid.NewGuid());
+        var result = await svc.DeleteSecuredAsync(Guid.NewGuid(), Guid.NewGuid(), Roles.Admin, default);
         Assert.False(result);
     }
 
-    // ── GetAllSecuredAsync ────────────────────────────────────────────────────
+    // ── GetAllSecuredAsync (role filtering) ───────────────────────────────────
 
     [Fact]
     public async Task GetAllSecured_Admin_ReturnsAllBuses()
@@ -254,9 +253,7 @@ public class BusServiceTests
         db.Buses.AddRange(SeedHelper.MakeBus(op1.Id), SeedHelper.MakeBus(op2.Id));
         await db.SaveChangesAsync();
 
-        var adminId = Guid.NewGuid();
-        var result  = (await svc.GetAllSecuredAsync(adminId, Roles.Admin, default)).ToList();
-
+        var result = (await svc.GetAllSecuredAsync(Guid.NewGuid(), Roles.Admin, default)).ToList();
         Assert.Equal(2, result.Count);
     }
 
@@ -296,11 +293,8 @@ public class BusServiceTests
 
         var result = await svc.CreateAsync(dto);
 
-        // Verify stored as comma-separated in DB
         var stored = db.Buses.First(b => b.Code == "AMN-01");
         Assert.Equal("AC,WiFi,ChargingPort", stored.Amenities);
-
-        // Verify returned as list in DTO
         Assert.Equal(3, result.Amenities.Count);
         Assert.Contains("WiFi", result.Amenities);
     }
