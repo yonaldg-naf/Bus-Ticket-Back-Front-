@@ -481,7 +481,6 @@ export class BookingDetailComponent implements OnInit {
   }
 
   cancelBooking() {
-    if (!confirm('Cancel this booking?')) return;
     this.cancelling.set(true);
     this.bookingSvc.cancelPost(this.booking()!.id).subscribe({
       next: () => { this.toast.success('Booking cancelled.'); this.router.navigate(['/my-bookings']); },

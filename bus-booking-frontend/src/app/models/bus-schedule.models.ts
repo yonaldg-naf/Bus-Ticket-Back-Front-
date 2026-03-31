@@ -26,10 +26,15 @@ export interface ScheduleResponse {
   busCode: string;
   registrationNumber: string;
   routeCode: string;
+  busType: number;
+  totalSeats: number;
   departureUtc: string;
   basePrice: number;
+  amenities: string[];
   createdAtUtc: string;
   updatedAtUtc?: string;
+  isCancelledByOperator?: boolean;
+  cancelReason?: string;
 }
 
 // These two interfaces are duplicated in services/schedule.service.ts which has

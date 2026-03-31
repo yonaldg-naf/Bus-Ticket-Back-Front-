@@ -316,6 +316,7 @@ namespace BusTicketBooking.Services
                 throw new UnauthorizedAccessException("You cannot cancel a booking you don't own.");
 
             if (booking.Status == BookingStatus.Cancelled) return true;
+            if (booking.Status == BookingStatus.OperatorCancelled) return true;
 
             // Calculate refund based on policy (only for confirmed bookings that were paid)
             if (booking.Status == BookingStatus.Confirmed && booking.Payment?.Status == PaymentStatus.Success)

@@ -164,8 +164,11 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseMiddleware<BusTicketBooking.Middlewares.GlobalExceptionMiddleware>();
+// AuditMiddleware must wrap GlobalExceptionMiddleware so it can catch
+// exceptions that GlobalExceptionMiddleware handles (otherwise audit error
+// logs are never written for 500 responses).
 app.UseMiddleware<BusTicketBooking.Middlewares.AuditMiddleware>();
+app.UseMiddleware<BusTicketBooking.Middlewares.GlobalExceptionMiddleware>();
 
 app.MapControllers();
 

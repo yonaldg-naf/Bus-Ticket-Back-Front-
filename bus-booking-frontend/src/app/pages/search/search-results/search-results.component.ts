@@ -503,7 +503,7 @@ export class SearchResultsComponent implements OnInit {
   }
 
   selectBus(s: ScheduleResponse) {
-    this.bookingState.setSchedule(s as any);
+    this.bookingState.setSchedule(s);
     this.router.navigate(['/booking/seats', s.id]);
   }
 
