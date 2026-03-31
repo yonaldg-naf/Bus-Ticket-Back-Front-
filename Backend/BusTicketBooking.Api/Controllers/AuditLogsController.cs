@@ -23,5 +23,29 @@ namespace BusTicketBooking.Controllers
             var result = await _logs.GetLogsAsync(query, ct);
             return Ok(result);
         }
+
+        /// <summary>GET /api/auditlogs — Admin only, same as search with no filters</summary>
+        [HttpGet]
+        public async Task<IActionResult> GetLogsGet(
+            [FromQuery] string? logType,
+            [FromQuery] string? username,
+            [FromQuery] string? entityType,
+            [FromQuery] bool? isSuccess,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 25,
+            CancellationToken ct = default)
+        {
+            var query = new AuditLogQueryDto
+            {
+                LogType = logType,
+                Username = username,
+                EntityType = entityType,
+                IsSuccess = isSuccess,
+                Page = page,
+                PageSize = pageSize
+            };
+            var result = await _logs.GetLogsAsync(query, ct);
+            return Ok(result);
+        }
     }
 }

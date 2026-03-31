@@ -161,11 +161,11 @@ app.UseHttpsRedirection();
 // Keep your existing default CORS usage
 app.UseCors();
 
-app.UseMiddleware<BusTicketBooking.Middlewares.AuditMiddleware>();
-app.UseMiddleware<BusTicketBooking.Middlewares.GlobalExceptionMiddleware>();
-
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseMiddleware<BusTicketBooking.Middlewares.GlobalExceptionMiddleware>();
+app.UseMiddleware<BusTicketBooking.Middlewares.AuditMiddleware>();
 
 app.MapControllers();
 

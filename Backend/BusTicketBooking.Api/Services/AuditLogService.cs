@@ -32,25 +32,29 @@ namespace BusTicketBooking.Services
         {
             try
             {
+                // Truncate to column limits to prevent silent DB failures
                 _db.AuditLogs.Add(new AuditLog
                 {
-                    LogType = "Audit",
-                    Action = action,
-                    Description = description,
-                    UserId = userId,
-                    Username = username,
-                    UserRole = userRole,
-                    EntityType = entityType,
-                    EntityId = entityId,
-                    HttpMethod = httpMethod,
-                    Endpoint = endpoint,
-                    StatusCode = statusCode,
-                    DurationMs = durationMs,
-                    IsSuccess = isSuccess,
+                    LogType     = Truncate("Audit", 10),
+                    Action      = Truncate(action, 50),
+                    Description = Truncate(description, 500),
+                    UserId      = userId,
+                    Username    = TruncateNullable(username, 100),
+                    UserRole    = TruncateNullable(userRole, 30),
+                    EntityType  = TruncateNullable(entityType, 50),
+                    EntityId    = TruncateNullable(entityId, 100),
+                    HttpMethod  = TruncateNullable(httpMethod, 10),
+                    Endpoint    = TruncateNullable(endpoint, 250),
+                    StatusCode  = statusCode,
+                    DurationMs  = durationMs,
+                    IsSuccess   = isSuccess,
                 });
                 await _db.SaveChangesAsync(ct);
             }
-            catch (Exception ex) { _logger.LogWarning(ex, "Failed to persist audit log."); }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to persist audit log. Action={Action} Endpoint={Endpoint}", action, endpoint);
+            }
         }
 
         public async Task LogErrorAsync(
@@ -63,20 +67,29 @@ namespace BusTicketBooking.Services
             {
                 _db.AuditLogs.Add(new AuditLog
                 {
-                    LogType = "Error",
-                    Action = "ERROR",
-                    Description = description,
-                    Detail = detail,
-                    UserId = userId,
-                    Username = username,
-                    Endpoint = endpoint,
-                    StatusCode = statusCode,
-                    IsSuccess = false,
+                    LogType     = "Error",
+                    Action      = "ERROR",
+                    Description = Truncate(description, 500),
+                    Detail      = TruncateNullable(detail, 4000),
+                    UserId      = userId,
+                    Username    = TruncateNullable(username, 100),
+                    Endpoint    = TruncateNullable(endpoint, 250),
+                    StatusCode  = statusCode,
+                    IsSuccess   = false,
                 });
                 await _db.SaveChangesAsync(ct);
             }
-            catch (Exception ex) { _logger.LogWarning(ex, "Failed to persist error log."); }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to persist error log. Endpoint={Endpoint}", endpoint);
+            }
         }
+
+        private static string Truncate(string? value, int maxLength)
+            => value is null ? string.Empty : value.Length <= maxLength ? value : value[..maxLength];
+
+        private static string? TruncateNullable(string? value, int maxLength)
+            => value is null ? null : value.Length <= maxLength ? value : value[..maxLength];
 
         public async Task<PagedAuditLogResult> GetLogsAsync(AuditLogQueryDto q, CancellationToken ct = default)
         {

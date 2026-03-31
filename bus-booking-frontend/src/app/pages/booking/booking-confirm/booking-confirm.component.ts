@@ -326,9 +326,10 @@ export class BookingConfirmComponent implements OnInit {
     }).subscribe({
       next: b => {
         this.booking.set(b);
-        this.walletBalance.update(bal => bal - this.finalAmount());
         this.payLoading.set(false);
         this.toast.success('Paid with wallet! 🎉');
+        // Re-fetch wallet balance from server instead of decrementing locally
+        this.walletSvc.get().subscribe({ next: w => this.walletBalance.set(w.balance), error: () => {} });
       },
       error: (err: any) => { this.payLoading.set(false); this.toast.error(err.error?.message ?? 'Wallet payment failed.'); },
     });

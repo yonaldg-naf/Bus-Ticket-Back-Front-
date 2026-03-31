@@ -26,6 +26,10 @@ export class BookingStateService {
     this._draft.update(d => d ? { ...d, passengers } : null);
   }
 
+  setPromoCode(promoCode: string | undefined): void {
+    this._draft.update(d => d ? { ...d, promoCode } : null);
+  }
+
   clear(): void {
     this._draft.set(null);
   }

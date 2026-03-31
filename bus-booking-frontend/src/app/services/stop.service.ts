@@ -2,15 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { CityResponse, StopResponse } from '../models/stop-route.models';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class StopService {
   private http = inject(HttpClient);
-
-  // ✔ Correct backend base URL (HTTP + port + correct route casing)
-  private baseUrl = 'http://localhost:5299/api/Stops';
+  private baseUrl = `${environment.apiUrl}/Stops`;
 
   // --------------------------
   // PUBLIC READ OPERATIONS

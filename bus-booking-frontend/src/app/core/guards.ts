@@ -29,7 +29,7 @@ export const noAuthGuard: CanActivateFn = () => {
 
   if (role === 'Admin') return router.createUrlTree(['/admin']);
   if (role === 'Operator') return router.createUrlTree(['/operator']);
-  if (role === 'PendingOperator') return router.createUrlTree(['/home']);
+  if (role === 'PendingOperator') return router.createUrlTree(['/auth/pending-approval']);
 
   return router.createUrlTree(['/home']);
 };

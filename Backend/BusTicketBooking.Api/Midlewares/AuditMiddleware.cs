@@ -10,102 +10,127 @@ using Microsoft.Extensions.Logging;
 namespace BusTicketBooking.Middlewares
 {
     /// <summary>
-    /// Logs every POST/PUT/PATCH/DELETE to AuditLogs table.
-    /// Captures unhandled exceptions as Error logs.
-    /// Must be registered AFTER UseCors, BEFORE UseAuthentication.
+    /// Logs every API request to AuditLogs table.
+    /// Uses a fresh DI scope so the audit write never conflicts with the
+    /// request's own DbContext scope (which may already be disposed/dirty).
+    /// Registered AFTER UseAuthentication so ctx.User is populated.
     /// </summary>
     public class AuditMiddleware
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<AuditMiddleware> _logger;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public AuditMiddleware(RequestDelegate next, ILogger<AuditMiddleware> logger)
+        public AuditMiddleware(RequestDelegate next,
+                               ILogger<AuditMiddleware> logger,
+                               IServiceScopeFactory scopeFactory)
         {
             _next = next;
             _logger = logger;
+            _scopeFactory = scopeFactory;
         }
 
         public async Task InvokeAsync(HttpContext ctx)
         {
             var sw = Stopwatch.StartNew();
+            Exception? caught = null;
+
             try
             {
                 await _next(ctx);
-                sw.Stop();
-
-                var method = ctx.Request.Method;
-                if (ctx.Request.Path.StartsWithSegments("/api") &&
-                    method is "POST" or "PUT" or "PATCH" or "DELETE")
-                {
-                    await WriteAuditAsync(ctx, sw.ElapsedMilliseconds);
-                }
             }
             catch (Exception ex)
             {
+                caught = ex;
                 sw.Stop();
-                _logger.LogError(ex, "Unhandled exception on {Method} {Path}", ctx.Request.Method, ctx.Request.Path);
-                await WriteErrorAsync(ctx, ex, sw.ElapsedMilliseconds);
+                _logger.LogError(ex, "Unhandled exception on {Method} {Path}",
+                    ctx.Request.Method, ctx.Request.Path);
+                await WriteAsync(ctx, sw.ElapsedMilliseconds, ex);
                 throw;
             }
+
+            sw.Stop();
+
+            if (ctx.Request.Path.StartsWithSegments("/api"))
+                await WriteAsync(ctx, sw.ElapsedMilliseconds, null);
         }
 
-        private static async Task WriteAuditAsync(HttpContext ctx, long ms)
+        private async Task WriteAsync(HttpContext ctx, long ms, Exception? ex)
         {
-            var svc = ctx.RequestServices.GetService<IAuditLogService>();
-            if (svc is null) return;
+            try
+            {
+                // Fresh scope — completely independent from the request's scope
+                await using var scope = _scopeFactory.CreateAsyncScope();
+                var svc = scope.ServiceProvider.GetRequiredService<IAuditLogService>();
 
-            var userId = GetUserId(ctx);
-            var username = ctx.User.Identity?.Name;
-            var role = ctx.User.FindFirstValue(ClaimTypes.Role) ?? ctx.User.FindFirstValue("role");
-            var path = ctx.Request.Path.Value ?? string.Empty;
-            var method = ctx.Request.Method;
-            var status = ctx.Response.StatusCode;
+                var userId   = GetUserId(ctx);
+                var username = ctx.User.Identity?.Name
+                               ?? ctx.User.FindFirstValue("unique_name")
+                               ?? ctx.User.FindFirstValue(ClaimTypes.Name);
+                var role     = ctx.User.FindFirstValue(ClaimTypes.Role)
+                               ?? ctx.User.FindFirstValue("role");
+                var path     = ctx.Request.Path.Value ?? string.Empty;
+                var method   = ctx.Request.Method;
+                var status   = ex is null ? ctx.Response.StatusCode : 500;
 
-            await svc.LogAuditAsync(
-                action: method,
-                description: $"{VerbLabel(method)} → {path} [{status}]",
-                userId: userId, username: username, userRole: role,
-                entityType: InferEntity(path), entityId: InferId(path),
-                httpMethod: method, endpoint: path,
-                statusCode: status, durationMs: ms, isSuccess: status < 400);
-        }
-
-        private static async Task WriteErrorAsync(HttpContext ctx, Exception ex, long ms)
-        {
-            var svc = ctx.RequestServices.GetService<IAuditLogService>();
-            if (svc is null) return;
-            await svc.LogErrorAsync(
-                description: $"{ex.GetType().Name}: {ex.Message}",
-                detail: ex.ToString(),
-                userId: GetUserId(ctx),
-                username: ctx.User.Identity?.Name,
-                endpoint: ctx.Request.Path.Value,
-                statusCode: 500);
+                if (ex is not null)
+                {
+                    await svc.LogErrorAsync(
+                        description: $"{ex.GetType().Name}: {ex.Message}",
+                        detail: ex.ToString(),
+                        userId: userId,
+                        username: username,
+                        endpoint: path,
+                        statusCode: status);
+                }
+                else
+                {
+                    await svc.LogAuditAsync(
+                        action: method,
+                        description: $"{VerbLabel(method)} → {path} [{status}]",
+                        userId: userId, username: username, userRole: role,
+                        entityType: InferEntity(path), entityId: InferId(path),
+                        httpMethod: method, endpoint: path,
+                        statusCode: status, durationMs: ms,
+                        isSuccess: status < 400);
+                }
+            }
+            catch (Exception logEx)
+            {
+                _logger.LogWarning(logEx, "AuditMiddleware failed to write log entry.");
+            }
         }
 
         private static Guid? GetUserId(HttpContext ctx)
         {
-            var raw = ctx.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? ctx.User.FindFirstValue("sub");
+            var raw = ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                   ?? ctx.User.FindFirstValue("sub");
             return Guid.TryParse(raw, out var id) ? id : null;
         }
 
         private static string VerbLabel(string m) => m switch
         {
-            "POST" => "Created",
-            "PUT" => "Updated",
-            "PATCH" => "Patched",
+            "POST"   => "Created",
+            "PUT"    => "Updated",
+            "PATCH"  => "Patched",
             "DELETE" => "Deleted",
-            _ => m
+            "GET"    => "Read",
+            _        => m
         };
 
         private static string? InferEntity(string path)
         {
-            if (path.Contains("/buses")) return "Bus";
-            if (path.Contains("/routes")) return "Route";
-            if (path.Contains("/schedules")) return "Schedule";
-            if (path.Contains("/bookings")) return "Booking";
-            if (path.Contains("/stops")) return "Stop";
-            if (path.Contains("/auth")) return "Auth";
+            if (path.Contains("/buses"))      return "Bus";
+            if (path.Contains("/routes"))     return "Route";
+            if (path.Contains("/schedules"))  return "Schedule";
+            if (path.Contains("/bookings"))   return "Booking";
+            if (path.Contains("/stops"))      return "Stop";
+            if (path.Contains("/auth"))       return "Auth";
+            if (path.Contains("/auditlogs"))  return "AuditLog";
+            if (path.Contains("/wallet"))     return "Wallet";
+            if (path.Contains("/complaints")) return "Complaint";
+            if (path.Contains("/reviews"))    return "Review";
+            if (path.Contains("/promocodes")) return "PromoCode";
             return null;
         }
 

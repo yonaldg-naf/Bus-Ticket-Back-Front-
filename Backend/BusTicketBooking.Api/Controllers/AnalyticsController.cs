@@ -170,5 +170,51 @@ namespace BusTicketBooking.Controllers
 
             return Ok(result.OrderByDescending(o => o.TotalRevenue));
         }
+
+        /// <summary>
+        /// Admin dashboard summary — replaces 5 parallel calls with 1.
+        /// Returns counts for buses, operators, bookings, revenue, pending approvals, recent audit logs.
+        /// </summary>
+        [Authorize(Roles = Roles.Admin)]
+        [HttpGet("admin-summary")]
+        public async Task<IActionResult> GetAdminSummary(CancellationToken ct)
+        {
+            // Run all queries in parallel using Task.WhenAll
+            var totalBusesTask        = _db.Buses.AsNoTracking().CountAsync(ct);
+            var totalOperatorsTask    = _db.BusOperators.AsNoTracking().CountAsync(ct);
+            var totalRoutesTask       = _db.BusRoutes.AsNoTracking().CountAsync(ct);
+            var totalSchedulesTask    = _db.BusSchedules.AsNoTracking().CountAsync(ct);
+            var pendingApprovalsTask  = _db.Users.AsNoTracking().CountAsync(u => u.Role == Roles.PendingOperator, ct);
+            var totalUsersTask        = _db.Users.AsNoTracking().CountAsync(ct);
+            var totalBookingsTask     = _db.Bookings.AsNoTracking().CountAsync(ct);
+            var confirmedBookingsTask = _db.Bookings.AsNoTracking().CountAsync(b => b.Status == BookingStatus.Confirmed, ct);
+            var revenueTask           = _db.Bookings.AsNoTracking()
+                                           .Where(b => b.Status == BookingStatus.Confirmed)
+                                           .SumAsync(b => (decimal?)b.TotalAmount, ct);
+            var recentLogsTask        = _db.AuditLogs.AsNoTracking()
+                                           .OrderByDescending(l => l.CreatedAtUtc)
+                                           .Take(5)
+                                           .Select(l => new { l.Action, l.Description, l.Username, l.CreatedAtUtc, l.IsSuccess })
+                                           .ToListAsync(ct);
+
+            await Task.WhenAll(
+                totalBusesTask, totalOperatorsTask, totalRoutesTask,
+                totalSchedulesTask, pendingApprovalsTask, totalUsersTask,
+                totalBookingsTask, confirmedBookingsTask, revenueTask, recentLogsTask);
+
+            return Ok(new
+            {
+                totalBuses        = totalBusesTask.Result,
+                totalOperators    = totalOperatorsTask.Result,
+                totalRoutes       = totalRoutesTask.Result,
+                totalSchedules    = totalSchedulesTask.Result,
+                pendingApprovals  = pendingApprovalsTask.Result,
+                totalUsers        = totalUsersTask.Result,
+                totalBookings     = totalBookingsTask.Result,
+                confirmedBookings = confirmedBookingsTask.Result,
+                totalRevenue      = revenueTask.Result ?? 0m,
+                recentActivity    = recentLogsTask.Result
+            });
+        }
     }
 }
