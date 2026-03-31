@@ -13,6 +13,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BusTicketBooking.Services
 {
+    /// <summary>
+    /// Manages bus schedules — the specific departure times when a bus runs a route.
+    /// Handles creation, search, seat availability, cancellation, and deletion.
+    ///
+    /// Key behaviours:
+    ///   - All departure times are stored and compared in UTC.
+    ///   - Search filters out departed and operator-cancelled schedules automatically.
+    ///   - Cancelling a schedule issues full wallet refunds to all confirmed bookings.
+    ///   - Supports both GUID-based and key-based (busCode + routeCode) operations.
+    /// </summary>
     public class ScheduleService : IScheduleService
     {
         private readonly IRepository<BusSchedule> _schedules;
@@ -35,7 +45,15 @@ namespace BusTicketBooking.Services
             _wallet = wallet;
         }
 
-        // ========================= CREATE =========================
+        // ── CRUD methods ──────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Creates a new schedule using bus and route GUIDs.
+        /// Validates that the departure time is in the future and that no duplicate
+        /// schedule exists for the same bus at the same time.
+        /// Throws InvalidOperationException if the bus or route is not found,
+        /// the departure is in the past, or a duplicate schedule exists.
+        /// </summary>
         public async Task<ScheduleResponseDto> CreateAsync(CreateScheduleRequestDto dto, CancellationToken ct = default)
         {
             var depUtc = EnsureUtc(dto.DepartureUtc);
@@ -69,7 +87,10 @@ namespace BusTicketBooking.Services
             return Map(entity, bus, route);
         }
 
-        // ========================= GET ALL =========================
+        /// <summary>
+        /// Returns all schedules in the system ordered by departure time (earliest first).
+        /// Includes bus and route details. No filtering applied — admin use only.
+        /// </summary>
         public async Task<IEnumerable<ScheduleResponseDto>> GetAllAsync(CancellationToken ct = default)
         {
             var list = await _db.BusSchedules
@@ -82,7 +103,12 @@ namespace BusTicketBooking.Services
             return list.Select(e => Map(e, e.Bus!, e.Route!));
         }
 
-        // ========================= GET ALL SECURED (operator-scoped) =========================
+        /// <summary>
+        /// Returns schedules filtered by the caller's role:
+        ///   - Admin    → returns all schedules (same as GetAllAsync).
+        ///   - Operator → returns only schedules for buses owned by that operator.
+        ///                Returns empty if the operator has no profile or no buses.
+        /// </summary>
         public async Task<IEnumerable<ScheduleResponseDto>> GetAllSecuredAsync(Guid userId, string role, CancellationToken ct = default)
         {
             if (role == Roles.Admin)
@@ -107,7 +133,10 @@ namespace BusTicketBooking.Services
             return list.Select(e => Map(e, e.Bus!, e.Route!));
         }
 
-        // ========================= GET BY ID =========================
+        /// <summary>
+        /// Returns a single schedule by its ID with bus and route details.
+        /// Returns null if not found.
+        /// </summary>
         public async Task<ScheduleResponseDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
         {
             var e = await _db.BusSchedules
@@ -119,7 +148,12 @@ namespace BusTicketBooking.Services
             return e is null ? null : Map(e, e.Bus!, e.Route!);
         }
 
-        // ========================= UPDATE =========================
+        /// <summary>
+        /// Updates a schedule's departure time and base price.
+        /// The new departure time is converted from local time + timezone ID to UTC.
+        /// Validates that the new time is in the future and not a duplicate for the same bus.
+        /// Returns null if the schedule does not exist.
+        /// </summary>
         public async Task<ScheduleResponseDto?> UpdateAsync(Guid id, UpdateScheduleRequestDto dto, CancellationToken ct = default)
         {
             var entity = await _db.BusSchedules
@@ -153,7 +187,19 @@ namespace BusTicketBooking.Services
             return Map(entity, entity.Bus!, entity.Route!);
         }
 
-        // ========================= CANCEL (with reason) =========================
+        /// <summary>
+        /// Cancels a schedule with a reason and issues full wallet refunds to all
+        /// confirmed bookings on that schedule.
+        ///
+        /// Steps:
+        ///   1. Marks the schedule as IsCancelledByOperator = true with the given reason.
+        ///   2. Finds all active bookings (not already cancelled).
+        ///   3. Sets each booking's status to OperatorCancelled.
+        ///   4. For each booking that was paid (PaymentStatus.Success), credits the full
+        ///      booking amount back to the customer's wallet.
+        ///
+        /// Returns null if the schedule does not exist.
+        /// </summary>
         public async Task<ScheduleResponseDto?> CancelAsync(Guid id, string reason, CancellationToken ct = default)
         {
             var sched = await _db.BusSchedules
@@ -195,7 +241,14 @@ namespace BusTicketBooking.Services
             return Map(sched, sched.Bus!, sched.Route!);
         }
 
-        // ========================= DELETE (SOFT CANCEL) =========================
+        /// <summary>
+        /// Deletes a schedule. Behaviour depends on whether bookings exist:
+        ///   - No bookings → permanently deletes the schedule record.
+        ///   - Has bookings → soft-deletes by marking IsCancelledByOperator = true
+        ///                    and setting all non-cancelled bookings to OperatorCancelled.
+        ///                    The schedule record is kept for historical reference.
+        /// Returns false if the schedule does not exist.
+        /// </summary>
         public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
         {
             var sched = await _schedules.GetByIdAsync(id, ct);
@@ -233,7 +286,21 @@ namespace BusTicketBooking.Services
             return true;
         }
 
-        // ========================= SEARCH =========================
+        /// <summary>
+        /// Searches for available schedules between two stops on a given date.
+        /// Only returns schedules that:
+        ///   - Depart within the requested date window (adjusted for the caller's UTC offset).
+        ///   - Have not yet departed (departure > now).
+        ///   - Are not cancelled by the operator.
+        ///   - Have the fromStop before the toStop in the route's ordered stop list.
+        ///
+        /// Results are paginated and can be sorted by departure, price, bus code, or route code.
+        /// </summary>
+        /// <param name="fromStopId">The ID of the departure stop.</param>
+        /// <param name="toStopId">The ID of the destination stop.</param>
+        /// <param name="date">The travel date in the customer's local timezone.</param>
+        /// <param name="request">Pagination and sort parameters.</param>
+        /// <param name="utcOffsetMinutes">The customer's UTC offset in minutes (e.g. +330 for IST). Used to convert the local date to a UTC window.</param>
         public async Task<PagedResult<ScheduleResponseDto>> SearchAsync(
             Guid fromStopId,
             Guid toStopId,
@@ -293,7 +360,12 @@ namespace BusTicketBooking.Services
             };
         }
 
-        // ========================= AVAILABILITY =========================
+        /// <summary>
+        /// Returns the seat availability for a schedule — which seats are booked and which are free.
+        /// Cancelled, OperatorCancelled, and BusMissed bookings do NOT count as booked
+        /// (those seats are freed back to available).
+        /// Throws InvalidOperationException if the schedule does not exist.
+        /// </summary>
         public async Task<SeatAvailabilityResponseDto> GetAvailabilityAsync(Guid scheduleId, CancellationToken ct = default)
         {
             var schedule = await _db.BusSchedules
@@ -330,7 +402,12 @@ namespace BusTicketBooking.Services
             };
         }
 
-        // ========================= CREATE BY KEYS =========================
+        /// <summary>
+        /// Creates a schedule using operator username/company name, bus code, and route code
+        /// instead of GUIDs. Supports both UTC departure time and local time + timezone ID.
+        /// Throws InvalidOperationException if the bus or route is not found for the operator,
+        /// the departure is in the past, or a duplicate schedule exists.
+        /// </summary>
         public async Task<ScheduleResponseDto> CreateByKeysAsync(CreateScheduleByKeysRequestDto dto, CancellationToken ct = default)
         {
             var operatorId = await ResolveOperatorIdAsync(dto.OperatorUsername, dto.CompanyName, ct);
@@ -374,7 +451,12 @@ namespace BusTicketBooking.Services
             return Map(entity, bus, route);
         }
 
-        // ========================= SEARCH BY KEYS =========================
+        /// <summary>
+        /// Searches for schedules using city/stop names instead of GUIDs.
+        /// Supports additional filters: bus type, price range, amenities.
+        /// Applies the same departure/cancellation filters as SearchAsync.
+        /// Returns an empty result if no stops are found for the given city names.
+        /// </summary>
         public async Task<PagedResult<ScheduleResponseDto>> SearchByKeysAsync(SearchSchedulesByKeysRequestDto dto, CancellationToken ct = default)
         {
             var fromStopIds = await _db.Stops.AsNoTracking()
@@ -472,7 +554,11 @@ namespace BusTicketBooking.Services
             };
         }
 
-        // ========================= DELETE BY KEYS =========================
+        /// <summary>
+        /// Deletes a schedule identified by bus code and departure UTC time.
+        /// Same soft-delete behaviour as DeleteAsync — if bookings exist, marks as cancelled
+        /// instead of deleting. Returns false if no matching schedule is found.
+        /// </summary>
         public async Task<bool> DeleteByKeysAsync(string busCode, DateTime departureUtc, CancellationToken ct = default)
         {
             var sched = (await _schedules.FindAsync(
@@ -514,7 +600,12 @@ namespace BusTicketBooking.Services
             return true;
         }
 
-        // ========================= HELPERS =========================
+        // ── Private helpers ───────────────────────────────────────────────────
+
+        /// <summary>
+        /// Resolves an operator's GUID from either their username or company name.
+        /// Throws InvalidOperationException if neither resolves to a valid operator.
+        /// </summary>
         private async Task<Guid> ResolveOperatorIdAsync(string? username, string? companyName, CancellationToken ct)
         {
             if (!string.IsNullOrWhiteSpace(username))
@@ -542,6 +633,12 @@ namespace BusTicketBooking.Services
             throw new InvalidOperationException("Provide OperatorUsername or CompanyName.");
         }
 
+        /// <summary>
+        /// Ensures a DateTime value is in UTC.
+        /// - Already UTC → returned as-is.
+        /// - Local kind  → converted to UTC.
+        /// - Unspecified → treated as UTC directly (all API fields named "...Utc" are expected to be UTC).
+        /// </summary>
         private static DateTime EnsureUtc(DateTime dt) =>
             dt.Kind switch
             {
@@ -551,6 +648,10 @@ namespace BusTicketBooking.Services
                 _ => DateTime.SpecifyKind(dt, DateTimeKind.Utc)
             };
 
+        /// <summary>
+        /// Converts a local DateTime to UTC using the given IANA or Windows timezone ID.
+        /// Throws if the timezone ID is not recognized by the system.
+        /// </summary>
         private static DateTime ConvertToUtc(DateTime local, string timeZoneId)
         {
             var tz = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
@@ -587,6 +688,10 @@ namespace BusTicketBooking.Services
                                    .ToList()
             };
 
+        /// <summary>
+        /// Returns seat availability by bus code and departure time (with ±30 second tolerance).
+        /// Throws InvalidOperationException if no matching schedule is found.
+        /// </summary>
         public async Task<SeatAvailabilityResponseDto> GetAvailabilityByKeysAsync(string busCode, DateTime departureUtc, CancellationToken ct = default)
         {
             var depUtc = EnsureUtc(departureUtc);
