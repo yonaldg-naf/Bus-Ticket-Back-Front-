@@ -76,27 +76,6 @@ namespace BusTicketBooking.Controllers
         }
 
         [Authorize]
-        [HttpDelete("{id:guid}")]
-        [ProducesResponseType(204)]
-        public async Task<ActionResult> Cancel([FromRoute] Guid id, CancellationToken ct)
-        {
-            var allowPriv = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.Operator);
-            try
-            {
-                var ok = await _bookings.CancelAsync(GetUserId(), id, allowPriv, ct);
-                return ok ? NoContent() : NotFound();
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Forbid(ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(new { message = ex.Message });
-            }
-        }
-
-        [Authorize]
         [HttpPost("{id:guid}/pay")]
         [ProducesResponseType(typeof(BookingResponseDto), 200)]
         public async Task<ActionResult<BookingResponseDto>> Pay([FromRoute] Guid id, [FromBody] PayBookingRequestDto dto, CancellationToken ct)

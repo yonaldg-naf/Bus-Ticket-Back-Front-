@@ -55,15 +55,6 @@ namespace BusTicketBooking.Controllers
             return Ok(list);
         }
 
-        // ===== GET BY ID (must own bus unless admin) =====
-
-        [HttpGet("{id:guid}")]
-        public async Task<ActionResult<BusResponseDto>> GetById([FromRoute] Guid id, CancellationToken ct)
-        {
-            var bus = await _busService.GetByIdSecuredAsync(id, CurrentUserId, CurrentRole, ct);
-            return bus is null ? NotFound() : Ok(bus);
-        }
-
         // ===== UPDATE (must own unless admin) =====
 
         [HttpPut("{id:guid}")]

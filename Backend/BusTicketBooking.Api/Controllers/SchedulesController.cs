@@ -1,11 +1,9 @@
-﻿using BusTicketBooking.Contexts;
-using BusTicketBooking.Dtos.Common;
+﻿using BusTicketBooking.Dtos.Common;
 using BusTicketBooking.Dtos.Schedules;
 using BusTicketBooking.Interfaces;
 using BusTicketBooking.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,12 +18,10 @@ namespace BusTicketBooking.Controllers
     public class SchedulesController : ControllerBase
     {
         private readonly IScheduleService _schedules;
-        private readonly AppDbContext _db;
 
-        public SchedulesController(IScheduleService schedules, AppDbContext db)
+        public SchedulesController(IScheduleService schedules)
         {
             _schedules = schedules;
-            _db = db;
         }
 
         private Guid CurrentUserId =>
@@ -108,76 +104,6 @@ namespace BusTicketBooking.Controllers
             return result is null ? NotFound() : Ok(result);
         }
 
-        // ===== Search endpoints (POST with body) =====
-
-        [AllowAnonymous]
-        [HttpPost("search")]
-        [ProducesResponseType(typeof(PagedResult<ScheduleResponseDto>), 200)]
-        public async Task<ActionResult<PagedResult<ScheduleResponseDto>>> Search(
-            [FromBody] SearchSchedulesRequestDto dto,
-            CancellationToken ct)
-        {
-            if (dto.FromStopId == Guid.Empty || dto.ToStopId == Guid.Empty)
-                return BadRequest(new { message = "FromStopId and ToStopId are required." });
-
-            var req = new PagedRequestDto { Page = dto.Page, PageSize = dto.PageSize, SortBy = dto.SortBy, SortDir = dto.SortDir };
-            var res = await _schedules.SearchAsync(dto.FromStopId, dto.ToStopId, dto.Date, req, ct, dto.UtcOffsetMinutes);
-            return Ok(res);
-        }
-
-        [AllowAnonymous]
-        [HttpPost("search-by-city")]
-        [ProducesResponseType(typeof(PagedResult<ScheduleResponseDto>), 200)]
-        public async Task<ActionResult<PagedResult<ScheduleResponseDto>>> SearchByCity(
-            [FromBody] SearchSchedulesByCityRequestDto dto,
-            CancellationToken ct)
-        {
-            if (string.IsNullOrWhiteSpace(dto.FromCity) || string.IsNullOrWhiteSpace(dto.ToCity))
-                return BadRequest(new { message = "FromCity and ToCity are required." });
-
-            var fc = dto.FromCity.Trim();
-            var tc = dto.ToCity.Trim();
-
-            var fromStops = await _db.Stops.AsNoTracking().Where(s => s.City == fc).OrderBy(s => s.Name).ToListAsync(ct);
-            var toStops   = await _db.Stops.AsNoTracking().Where(s => s.City == tc).OrderBy(s => s.Name).ToListAsync(ct);
-
-            if (fromStops.Count == 0 || toStops.Count == 0)
-                return NotFound(new { message = "Could not find one or both cities. Check spelling or seed data." });
-
-            var req = new PagedRequestDto { Page = dto.Page, PageSize = dto.PageSize, SortBy = dto.SortBy, SortDir = dto.SortDir };
-
-            var unique = new Dictionary<Guid, ScheduleResponseDto>();
-            foreach (var fs in fromStops)
-                foreach (var ts in toStops)
-                {
-                    var pageResult = await _schedules.SearchAsync(fs.Id, ts.Id, dto.Date, req, ct, dto.UtcOffsetMinutes);
-                    foreach (var item in pageResult.Items)
-                        unique[item.Id] = item;
-                }
-
-            var filtered = unique.Values.AsEnumerable();
-            var desc = string.Equals(dto.SortDir, "desc", StringComparison.OrdinalIgnoreCase);
-            filtered = (dto.SortBy ?? "departure").Trim().ToLowerInvariant() switch
-            {
-                "price"     => desc ? filtered.OrderByDescending(x => x.BasePrice)    : filtered.OrderBy(x => x.BasePrice),
-                "buscode"   => desc ? filtered.OrderByDescending(x => x.BusCode)      : filtered.OrderBy(x => x.BusCode),
-                "routecode" => desc ? filtered.OrderByDescending(x => x.RouteCode)    : filtered.OrderBy(x => x.RouteCode),
-                _           => desc ? filtered.OrderByDescending(x => x.DepartureUtc) : filtered.OrderBy(x => x.DepartureUtc),
-            };
-
-            var total = filtered.LongCount();
-            var skip  = Math.Max(0, (dto.Page - 1) * dto.PageSize);
-            var take  = Math.Max(1, dto.PageSize);
-
-            return Ok(new PagedResult<ScheduleResponseDto>
-            {
-                Page      = dto.Page,
-                PageSize  = dto.PageSize,
-                TotalCount = total,
-                Items     = filtered.Skip(skip).Take(take).ToList()
-            });
-        }
-
         [AllowAnonymous]
         [HttpGet("{id:guid}/seats")]
         [ProducesResponseType(typeof(SeatAvailabilityResponseDto), 200)]
@@ -209,22 +135,5 @@ namespace BusTicketBooking.Controllers
         [ProducesResponseType(typeof(PagedResult<ScheduleResponseDto>), 200)]
         public async Task<IActionResult> SearchByKeys([FromBody] SearchSchedulesByKeysRequestDto dto, CancellationToken ct)
             => Ok(await _schedules.SearchByKeysAsync(dto, ct));
-
-        /// <summary>Seat availability by busCode + departureUtc (ISO UTC).</summary>
-        [HttpGet("{busCode}/{departureUtc}/availability")]
-        [AllowAnonymous]
-        [ProducesResponseType(typeof(SeatAvailabilityResponseDto), 200)]
-        public async Task<IActionResult> GetAvailabilityByKeys([FromRoute] string busCode, [FromRoute] DateTime departureUtc, CancellationToken ct)
-            => Ok(await _schedules.GetAvailabilityByKeysAsync(busCode, departureUtc, ct));
-
-        /// <summary>Delete a schedule by busCode + departureUtc.</summary>
-        [HttpDelete("{busCode}/{departureUtc}")]
-        [Authorize(Roles = Roles.Operator + "," + Roles.Admin)]
-        [ProducesResponseType(204)]
-        public async Task<IActionResult> DeleteByKeys([FromRoute] string busCode, [FromRoute] DateTime departureUtc, CancellationToken ct)
-        {
-            var ok = await _schedules.DeleteByKeysAsync(busCode, departureUtc, ct);
-            return ok ? NoContent() : NotFound();
-        }
     }
 }
