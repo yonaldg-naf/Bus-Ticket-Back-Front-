@@ -16,9 +16,9 @@ namespace BusTicketBooking.Controllers
         private readonly IAuditLogService _logs;
         public AuditLogsController(IAuditLogService logs) => _logs = logs;
 
-        /// <summary>GET /api/auditlogs — Admin only, paginated + filterable</summary>
-        [HttpGet]
-        public async Task<IActionResult> GetLogs([FromQuery] AuditLogQueryDto query, CancellationToken ct)
+        /// <summary>POST /api/auditlogs/search — Admin only, paginated + filterable</summary>
+        [HttpPost("search")]
+        public async Task<IActionResult> GetLogs([FromBody] AuditLogQueryDto query, CancellationToken ct)
         {
             var result = await _logs.GetLogsAsync(query, ct);
             return Ok(result);

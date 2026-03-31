@@ -1,5 +1,4 @@
-﻿// kept from your previous controller
-using BusTicketBooking.Contexts;
+﻿using BusTicketBooking.Contexts;
 using BusTicketBooking.Dtos.Common;
 using BusTicketBooking.Dtos.Schedules;
 using BusTicketBooking.Interfaces;
@@ -109,89 +108,73 @@ namespace BusTicketBooking.Controllers
             return result is null ? NotFound() : Ok(result);
         }
 
-        // ===== Your GET search endpoints (kept) =====
+        // ===== Search endpoints (POST with body) =====
 
         [AllowAnonymous]
-        [HttpGet("search")]
+        [HttpPost("search")]
         [ProducesResponseType(typeof(PagedResult<ScheduleResponseDto>), 200)]
         public async Task<ActionResult<PagedResult<ScheduleResponseDto>>> Search(
-            [FromQuery] Guid fromStopId,
-            [FromQuery] Guid toStopId,
-            [FromQuery] DateTime date,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10,
-            [FromQuery] string? sortBy = "departure",
-            [FromQuery] string? sortDir = "asc",
-            [FromQuery] int utcOffsetMinutes = 0,
-            CancellationToken ct = default)
+            [FromBody] SearchSchedulesRequestDto dto,
+            CancellationToken ct)
         {
-            if (fromStopId == Guid.Empty || toStopId == Guid.Empty)
-                return BadRequest(new { message = "fromStopId and toStopId are required." });
+            if (dto.FromStopId == Guid.Empty || dto.ToStopId == Guid.Empty)
+                return BadRequest(new { message = "FromStopId and ToStopId are required." });
 
-            var req = new PagedRequestDto { Page = page, PageSize = pageSize, SortBy = sortBy, SortDir = sortDir };
-            var dateOnly = DateOnly.FromDateTime(date);
-            var res = await _schedules.SearchAsync(fromStopId, toStopId, dateOnly, req, ct, utcOffsetMinutes);
+            var req = new PagedRequestDto { Page = dto.Page, PageSize = dto.PageSize, SortBy = dto.SortBy, SortDir = dto.SortDir };
+            var res = await _schedules.SearchAsync(dto.FromStopId, dto.ToStopId, dto.Date, req, ct, dto.UtcOffsetMinutes);
             return Ok(res);
         }
 
         [AllowAnonymous]
-        [HttpGet("search-by-city")]
+        [HttpPost("search-by-city")]
         [ProducesResponseType(typeof(PagedResult<ScheduleResponseDto>), 200)]
         public async Task<ActionResult<PagedResult<ScheduleResponseDto>>> SearchByCity(
-            [FromQuery] string fromCity,
-            [FromQuery] string toCity,
-            [FromQuery] DateTime date,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10,
-            [FromQuery] string? sortBy = "departure",
-            [FromQuery] string? sortDir = "asc",
-            [FromQuery] int utcOffsetMinutes = 0,
-            CancellationToken ct = default)
+            [FromBody] SearchSchedulesByCityRequestDto dto,
+            CancellationToken ct)
         {
-            if (string.IsNullOrWhiteSpace(fromCity) || string.IsNullOrWhiteSpace(toCity))
-                return BadRequest(new { message = "fromCity and toCity are required." });
+            if (string.IsNullOrWhiteSpace(dto.FromCity) || string.IsNullOrWhiteSpace(dto.ToCity))
+                return BadRequest(new { message = "FromCity and ToCity are required." });
 
-            var fc = fromCity.Trim();
-            var tc = toCity.Trim();
+            var fc = dto.FromCity.Trim();
+            var tc = dto.ToCity.Trim();
 
             var fromStops = await _db.Stops.AsNoTracking().Where(s => s.City == fc).OrderBy(s => s.Name).ToListAsync(ct);
-            var toStops = await _db.Stops.AsNoTracking().Where(s => s.City == tc).OrderBy(s => s.Name).ToListAsync(ct);
+            var toStops   = await _db.Stops.AsNoTracking().Where(s => s.City == tc).OrderBy(s => s.Name).ToListAsync(ct);
 
             if (fromStops.Count == 0 || toStops.Count == 0)
                 return NotFound(new { message = "Could not find one or both cities. Check spelling or seed data." });
 
-            var req = new PagedRequestDto { Page = page, PageSize = pageSize, SortBy = sortBy, SortDir = sortDir };
-            var dateOnly = DateOnly.FromDateTime(date);
+            var req = new PagedRequestDto { Page = dto.Page, PageSize = dto.PageSize, SortBy = dto.SortBy, SortDir = dto.SortDir };
 
             var unique = new Dictionary<Guid, ScheduleResponseDto>();
             foreach (var fs in fromStops)
                 foreach (var ts in toStops)
                 {
-                    var pageResult = await _schedules.SearchAsync(fs.Id, ts.Id, dateOnly, req, ct, utcOffsetMinutes);
+                    var pageResult = await _schedules.SearchAsync(fs.Id, ts.Id, dto.Date, req, ct, dto.UtcOffsetMinutes);
                     foreach (var item in pageResult.Items)
                         unique[item.Id] = item;
                 }
 
             var filtered = unique.Values.AsEnumerable();
-            var desc = string.Equals(sortDir, "desc", StringComparison.OrdinalIgnoreCase);
-            filtered = (sortBy ?? "departure").Trim().ToLowerInvariant() switch
+            var desc = string.Equals(dto.SortDir, "desc", StringComparison.OrdinalIgnoreCase);
+            filtered = (dto.SortBy ?? "departure").Trim().ToLowerInvariant() switch
             {
-                "price" => desc ? filtered.OrderByDescending(x => x.BasePrice) : filtered.OrderBy(x => x.BasePrice),
-                "buscode" => desc ? filtered.OrderByDescending(x => x.BusCode) : filtered.OrderBy(x => x.BusCode),
-                "routecode" => desc ? filtered.OrderByDescending(x => x.RouteCode) : filtered.OrderBy(x => x.RouteCode),
-                _ => desc ? filtered.OrderByDescending(x => x.DepartureUtc) : filtered.OrderBy(x => x.DepartureUtc),
+                "price"     => desc ? filtered.OrderByDescending(x => x.BasePrice)    : filtered.OrderBy(x => x.BasePrice),
+                "buscode"   => desc ? filtered.OrderByDescending(x => x.BusCode)      : filtered.OrderBy(x => x.BusCode),
+                "routecode" => desc ? filtered.OrderByDescending(x => x.RouteCode)    : filtered.OrderBy(x => x.RouteCode),
+                _           => desc ? filtered.OrderByDescending(x => x.DepartureUtc) : filtered.OrderBy(x => x.DepartureUtc),
             };
 
             var total = filtered.LongCount();
-            var skip = Math.Max(0, (page - 1) * pageSize);
-            var take = Math.Max(1, pageSize);
+            var skip  = Math.Max(0, (dto.Page - 1) * dto.PageSize);
+            var take  = Math.Max(1, dto.PageSize);
 
             return Ok(new PagedResult<ScheduleResponseDto>
             {
-                Page = page,
-                PageSize = pageSize,
+                Page      = dto.Page,
+                PageSize  = dto.PageSize,
                 TotalCount = total,
-                Items = filtered.Skip(skip).Take(take).ToList()
+                Items     = filtered.Skip(skip).Take(take).ToList()
             });
         }
 
