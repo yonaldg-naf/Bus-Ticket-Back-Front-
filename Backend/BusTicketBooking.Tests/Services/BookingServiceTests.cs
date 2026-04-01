@@ -18,7 +18,7 @@ namespace BusTicketBooking.Tests.Services
         private static (BookingService svc, BusTicketBooking.Contexts.AppDbContext db) Build()
         {
             var db      = DbHelper.CreateDb();
-            var wallet  = new WalletService(db);
+            var wallet  = new WalletService(new BusTicketBooking.Repositories.Repository<BusTicketBooking.Models.Wallet>(db), new BusTicketBooking.Repositories.Repository<BusTicketBooking.Models.WalletTransaction>(db));
             var svc     = new BookingService(
                 new Repository<Booking>(db),
                 new Repository<BookingPassenger>(db),

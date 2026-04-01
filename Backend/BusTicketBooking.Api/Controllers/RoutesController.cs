@@ -37,10 +37,11 @@ namespace BusTicketBooking.Controllers
 
         /// <summary>
         /// Create a route by operator identity + City/StopName list.
-        /// Accepts either operatorUsername or companyName inside the body.
+        /// Admin must provide OperatorUsername or CompanyName in the body.
+        /// Operator automatically uses their own identity.
         /// </summary>
         [HttpPost("by-keys")]
-        [Authorize(Roles = Roles.Operator)]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.Operator}")]
         [ProducesResponseType(typeof(RouteResponseDto), 200)]
         [ProducesResponseType(typeof(object), 409)]
         public async Task<IActionResult> CreateByKeys(
@@ -48,6 +49,10 @@ namespace BusTicketBooking.Controllers
             CancellationToken ct)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            // Operator can only create routes for themselves
+            if (User.IsInRole(Roles.Operator))
+                dto.OperatorUsername = User.Identity!.Name;
 
             try
             {
@@ -76,11 +81,12 @@ namespace BusTicketBooking.Controllers
         }
 
         /// <summary>
-        /// Update a route by operator identity + current routeCode (by-keys).
-        /// Provide NewRouteCode and full ordered stop list in body.
+        /// Update a route by operator identity + current routeCode.
+        /// Admin must provide operatorIdentity in the URL.
+        /// Operator can only update their own routes — operatorIdentity is ignored and forced to their username.
         /// </summary>
         [HttpPut("{operatorIdentity}/{routeCode}")]
-        [Authorize(Roles = Roles.Operator)]
+        [Authorize(Roles = $"{Roles.Admin},{Roles.Operator}")]
         [ProducesResponseType(typeof(RouteResponseDto), 200)]
         [ProducesResponseType(typeof(object), 409)]
         public async Task<IActionResult> UpdateByKeys(
@@ -90,6 +96,10 @@ namespace BusTicketBooking.Controllers
             CancellationToken ct)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            // Operator can only update their own routes
+            if (User.IsInRole(Roles.Operator))
+                operatorIdentity = User.Identity!.Name!;
 
             try
             {
@@ -110,6 +120,10 @@ namespace BusTicketBooking.Controllers
             [FromRoute] string routeCode,
             CancellationToken ct)
         {
+            // Operator can only delete their own routes
+            if (User.IsInRole(Roles.Operator))
+                operatorIdentity = User.Identity!.Name!;
+
             var ok = await _routes.DeleteByKeysAsync(operatorIdentity, routeCode, ct);
             return ok ? NoContent() : NotFound();
         }

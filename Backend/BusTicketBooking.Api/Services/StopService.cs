@@ -15,42 +15,44 @@ namespace BusTicketBooking.Services
     /// Manages bus stops and cities.
     /// Public read methods are used by the search page to populate city/stop dropdowns.
     /// Admin CRUD methods allow the admin to add, edit, or remove stops from the system.
+    ///
+    /// Note: GetCitiesAsync and GetStopsByCityAsync use AppDbContext directly because they
+    /// require GroupBy and Select projections that the generic IRepository cannot express.
+    /// All write operations (Create, Update, Delete) use IRepository.
     /// </summary>
     public class StopService : IStopService
     {
         private readonly AppDbContext _db;
-        public StopService(AppDbContext db) => _db = db;
+        private readonly IRepository<Stop> _stops;
 
-        // ── Public read operations ────────────────────────────────────────────
+        public StopService(AppDbContext db, IRepository<Stop> stops)
+        {
+            _db    = db;
+            _stops = stops;
+        }
+
+        // ── Public read operations (require projection — use _db) ─────────────
 
         /// <summary>
-        /// Returns a list of all unique cities that have at least one stop,
-        /// along with the number of stops in each city.
-        /// Results are sorted alphabetically by city name.
-        /// Used to populate the "From" and "To" city dropdowns on the search page.
+        /// Returns all unique cities with their stop counts, sorted A–Z.
+        /// Uses DbContext directly because GroupBy + Select projection cannot be
+        /// expressed through the generic repository.
         /// </summary>
-        /// <returns>List of cities with their stop counts, ordered A–Z.</returns>
         public async Task<IEnumerable<CityResponseDto>> GetCitiesAsync(CancellationToken ct = default)
         {
             return await _db.Stops
                 .AsNoTracking()
                 .GroupBy(s => s.City)
-                .Select(g => new CityResponseDto
-                {
-                    City      = g.Key,
-                    StopCount = g.Count()
-                })
+                .Select(g => new CityResponseDto { City = g.Key, StopCount = g.Count() })
                 .OrderBy(x => x.City)
                 .ToListAsync(ct);
         }
 
         /// <summary>
-        /// Returns all stops in a specific city, sorted alphabetically by stop name.
-        /// Used to populate the stop dropdown after the user selects a city.
+        /// Returns all stops in a specific city, sorted A–Z by name.
+        /// Uses DbContext directly because of the Select projection to DTO.
         /// Returns an empty list if the city name is blank or not found.
         /// </summary>
-        /// <param name="city">The city name to filter by (exact match, trimmed).</param>
-        /// <returns>List of stops in that city, ordered A–Z by name.</returns>
         public async Task<IEnumerable<StopResponseDto>> GetStopsByCityAsync(string city, CancellationToken ct = default)
         {
             city = (city ?? "").Trim();
@@ -72,15 +74,11 @@ namespace BusTicketBooking.Services
                 .ToListAsync(ct);
         }
 
-        // ── Admin CRUD operations ─────────────────────────────────────────────
+        // ── Admin CRUD operations (use repository) ────────────────────────────
 
         /// <summary>
-        /// Creates a new bus stop in the system.
-        /// City and Name are trimmed of whitespace before saving.
-        /// Latitude and Longitude are optional — used for map display.
+        /// Creates a new bus stop. City and Name are trimmed before saving.
         /// </summary>
-        /// <param name="dto">The stop details to create.</param>
-        /// <returns>The newly created stop with its generated ID.</returns>
         public async Task<StopResponseDto> CreateAsync(CreateStopRequestDto dto, CancellationToken ct = default)
         {
             var entity = new Stop
@@ -91,8 +89,7 @@ namespace BusTicketBooking.Services
                 Longitude = dto.Longitude
             };
 
-            _db.Stops.Add(entity);
-            await _db.SaveChangesAsync(ct);
+            entity = await _stops.AddAsync(entity, ct);
 
             return new StopResponseDto
             {
@@ -106,15 +103,11 @@ namespace BusTicketBooking.Services
 
         /// <summary>
         /// Updates an existing stop's city, name, and coordinates.
-        /// All fields are replaced with the values from the DTO.
         /// Returns null if no stop with the given ID exists.
         /// </summary>
-        /// <param name="id">The ID of the stop to update.</param>
-        /// <param name="dto">The new values to apply.</param>
-        /// <returns>The updated stop, or null if not found.</returns>
         public async Task<StopResponseDto?> UpdateAsync(Guid id, UpdateStopRequestDto dto, CancellationToken ct = default)
         {
-            var entity = await _db.Stops.FindAsync(new object[] { id }, ct);
+            var entity = await _stops.GetByIdAsync(id, ct);
             if (entity == null) return null;
 
             entity.City      = dto.City.Trim();
@@ -122,7 +115,7 @@ namespace BusTicketBooking.Services
             entity.Latitude  = dto.Latitude;
             entity.Longitude = dto.Longitude;
 
-            await _db.SaveChangesAsync(ct);
+            await _stops.UpdateAsync(entity, ct);
 
             return new StopResponseDto
             {
@@ -135,21 +128,44 @@ namespace BusTicketBooking.Services
         }
 
         /// <summary>
-        /// Permanently deletes a stop from the system.
-        /// Note: if the stop is referenced by any route, the database will throw
-        /// a foreign key constraint error (stops are restricted from deletion when in use).
-        /// Returns false if no stop with the given ID exists.
+        /// Permanently deletes a stop. Returns false if not found.
         /// </summary>
-        /// <param name="id">The ID of the stop to delete.</param>
-        /// <returns>True if deleted successfully; false if the stop was not found.</returns>
         public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
         {
-            var entity = await _db.Stops.FindAsync(new object[] { id }, ct);
+            var entity = await _stops.GetByIdAsync(id, ct);
             if (entity == null) return false;
 
-            _db.Stops.Remove(entity);
-            await _db.SaveChangesAsync(ct);
+            await _stops.RemoveAsync(entity, ct);
             return true;
+        }
+
+        /// <summary>
+        /// Renames all stops in a city to a new city name.
+        /// Updates every stop that has the current city name in a single batch.
+        /// Returns the number of stops updated.
+        /// Returns 0 if no stops exist with the given city name.
+        /// </summary>
+        public async Task<int> RenameCityAsync(string currentCity, string newCity, CancellationToken ct = default)
+        {
+            currentCity = (currentCity ?? "").Trim();
+            newCity     = (newCity     ?? "").Trim();
+
+            if (string.IsNullOrWhiteSpace(currentCity) || string.IsNullOrWhiteSpace(newCity))
+                throw new InvalidOperationException("City names cannot be blank.");
+
+            if (string.Equals(currentCity, newCity, StringComparison.Ordinal))
+                return 0;
+
+            var stops = (await _stops.FindAsync(s => s.City == currentCity, ct)).ToList();
+            if (!stops.Any()) return 0;
+
+            foreach (var stop in stops)
+            {
+                stop.City = newCity;
+                await _stops.UpdateAsync(stop, ct);
+            }
+
+            return stops.Count;
         }
     }
 }

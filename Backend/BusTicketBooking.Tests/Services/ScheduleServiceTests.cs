@@ -1,5 +1,4 @@
 using BusTicketBooking.Contexts;
-using BusTicketBooking.Dtos.Common;
 using BusTicketBooking.Dtos.Schedules;
 using BusTicketBooking.Models;
 using BusTicketBooking.Models.Enums;
@@ -17,7 +16,7 @@ public class ScheduleServiceTests
             new Repository<Bus>(db),
             new Repository<BusRoute>(db),
             db,
-            new WalletService(db));
+            new WalletService(new BusTicketBooking.Repositories.Repository<BusTicketBooking.Models.Wallet>(db), new BusTicketBooking.Repositories.Repository<BusTicketBooking.Models.WalletTransaction>(db)));
 
     // Seeds a full route with two stops so SearchAsync can find it
     private static (Stop from, Stop to, BusSchedule schedule) SeedSearchData(
@@ -59,18 +58,21 @@ public class ScheduleServiceTests
         return (fromStop, toStop, schedule);
     }
 
-    // ── SearchAsync ───────────────────────────────────────────────────────────
+    // ── SearchByKeysAsync (replaces removed SearchAsync) ─────────────────────
 
     [Fact]
     public async Task SearchAsync_FutureSchedule_IsReturned()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
-        var (from, to, _) = SeedSearchData(db, departure: DateTime.UtcNow.AddHours(2));
+        SeedSearchData(db, departure: DateTime.UtcNow.AddHours(2));
 
-        var result = await svc.SearchAsync(from.Id, to.Id,
-            DateOnly.FromDateTime(DateTime.UtcNow),
-            new PagedRequestDto { Page = 1, PageSize = 10 });
+        var result = await svc.SearchByKeysAsync(new SearchSchedulesByKeysRequestDto
+        {
+            FromCity = "Chennai", ToCity = "Bangalore",
+            Date = DateOnly.FromDateTime(DateTime.UtcNow),
+            UtcOffsetMinutes = 0, Page = 1, PageSize = 10
+        });
 
         Assert.Single(result.Items);
     }
@@ -80,11 +82,14 @@ public class ScheduleServiceTests
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
-        var (from, to, _) = SeedSearchData(db, departure: DateTime.UtcNow.AddHours(-1));
+        SeedSearchData(db, departure: DateTime.UtcNow.AddHours(-1));
 
-        var result = await svc.SearchAsync(from.Id, to.Id,
-            DateOnly.FromDateTime(DateTime.UtcNow),
-            new PagedRequestDto { Page = 1, PageSize = 10 });
+        var result = await svc.SearchByKeysAsync(new SearchSchedulesByKeysRequestDto
+        {
+            FromCity = "Chennai", ToCity = "Bangalore",
+            Date = DateOnly.FromDateTime(DateTime.UtcNow),
+            UtcOffsetMinutes = 0, Page = 1, PageSize = 10
+        });
 
         Assert.Empty(result.Items);
     }
@@ -94,11 +99,14 @@ public class ScheduleServiceTests
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
-        var (from, to, _) = SeedSearchData(db, cancelled: true);
+        SeedSearchData(db, cancelled: true);
 
-        var result = await svc.SearchAsync(from.Id, to.Id,
-            DateOnly.FromDateTime(DateTime.UtcNow),
-            new PagedRequestDto { Page = 1, PageSize = 10 });
+        var result = await svc.SearchByKeysAsync(new SearchSchedulesByKeysRequestDto
+        {
+            FromCity = "Chennai", ToCity = "Bangalore",
+            Date = DateOnly.FromDateTime(DateTime.UtcNow),
+            UtcOffsetMinutes = 0, Page = 1, PageSize = 10
+        });
 
         Assert.Empty(result.Items);
     }
@@ -108,12 +116,15 @@ public class ScheduleServiceTests
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
-        var (from, to, _) = SeedSearchData(db);
+        SeedSearchData(db);
 
         // Searching in reverse direction — should return nothing
-        var result = await svc.SearchAsync(to.Id, from.Id,
-            DateOnly.FromDateTime(DateTime.UtcNow),
-            new PagedRequestDto { Page = 1, PageSize = 10 });
+        var result = await svc.SearchByKeysAsync(new SearchSchedulesByKeysRequestDto
+        {
+            FromCity = "Bangalore", ToCity = "Chennai",
+            Date = DateOnly.FromDateTime(DateTime.UtcNow),
+            UtcOffsetMinutes = 0, Page = 1, PageSize = 10
+        });
 
         Assert.Empty(result.Items);
     }

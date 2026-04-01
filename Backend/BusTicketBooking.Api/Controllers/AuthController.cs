@@ -34,11 +34,12 @@ namespace BusTicketBooking.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            // If registering as Operator, set to PendingOperator until admin approves
+            // Only Customer and Operator registrations are allowed publicly.
+            // Admin accounts can only be created via database seeding.
             var requestedRole = dto.Role.Trim();
             var assignedRole = requestedRole == Roles.Operator
                                     ? Roles.PendingOperator
-                                    : requestedRole;
+                                    : Roles.Customer; // always default to Customer for safety
 
             var user = new User
             {

@@ -61,5 +61,27 @@ namespace BusTicketBooking.Controllers
             var ok = await _stopService.DeleteAsync(id, ct);
             return ok ? Ok() : NotFound();
         }
+
+        // PUT: api/Stops/cities/{city} — rename a city across all its stops
+        [HttpPut("cities/{city}")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<ActionResult> RenameCity(string city, [FromBody] UpdateCityRequestDto dto, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(dto.NewCityName))
+                return BadRequest(new { message = "NewCityName is required." });
+
+            try
+            {
+                var count = await _stopService.RenameCityAsync(city, dto.NewCityName.Trim(), ct);
+                if (count == 0)
+                    return NotFound(new { message = $"No stops found for city '{city}'." });
+
+                return Ok(new { message = $"Renamed '{city}' to '{dto.NewCityName}'. {count} stop(s) updated." });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

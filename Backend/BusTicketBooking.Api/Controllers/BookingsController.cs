@@ -234,8 +234,19 @@ namespace BusTicketBooking.Controllers
         public async Task<IActionResult> CancelPost([FromRoute] Guid bookingId, CancellationToken ct)
         {
             var allowPriv = User.IsInRole(Roles.Admin) || User.IsInRole(Roles.Operator);
-            var ok = await _bookings.CancelAsync(GetUserId(), bookingId, allowPriv, ct);
-            return ok ? Ok() : NotFound();
+            try
+            {
+                var ok = await _bookings.CancelAsync(GetUserId(), bookingId, allowPriv, ct);
+                return ok ? Ok() : NotFound();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
         }
 
         /// <summary>

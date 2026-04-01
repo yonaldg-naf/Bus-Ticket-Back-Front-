@@ -1,3 +1,5 @@
+using BusTicketBooking.Models;
+using BusTicketBooking.Repositories;
 using BusTicketBooking.Services;
 using BusTicketBooking.Tests.Helpers;
 
@@ -5,13 +7,16 @@ namespace BusTicketBooking.Tests.Services
 {
     public class WalletServiceTests
     {
+        private static WalletService Build(BusTicketBooking.Contexts.AppDbContext db)
+            => new(new Repository<BusTicketBooking.Models.Wallet>(db),
+                   new Repository<BusTicketBooking.Models.WalletTransaction>(db));
         // ── GetOrCreateAsync ──────────────────────────────────────────────────
 
         [Fact]
         public async Task GetOrCreate_CreatesWallet_WhenUserHasNone()
         {
             using var db = DbHelper.CreateDb();
-            var svc    = new WalletService(db);
+            var svc    = Build(db);
             var userId = Guid.NewGuid();
 
             var wallet = await svc.GetOrCreateAsync(userId);
@@ -25,7 +30,7 @@ namespace BusTicketBooking.Tests.Services
         public async Task GetOrCreate_ReturnsExisting_WhenWalletExists()
         {
             using var db = DbHelper.CreateDb();
-            var svc    = new WalletService(db);
+            var svc    = Build(db);
             var userId = Guid.NewGuid();
 
             // Seed an existing wallet with balance
@@ -46,7 +51,7 @@ namespace BusTicketBooking.Tests.Services
         public async Task Credit_IncreasesBalance_AndCreatesTransaction()
         {
             using var db = DbHelper.CreateDb();
-            var svc    = new WalletService(db);
+            var svc    = Build(db);
             var userId = Guid.NewGuid();
 
             await svc.CreditAsync(userId, 200m, "TopUp");
@@ -65,7 +70,7 @@ namespace BusTicketBooking.Tests.Services
         public async Task Credit_DoesNothing_WhenAmountIsZero()
         {
             using var db = DbHelper.CreateDb();
-            var svc    = new WalletService(db);
+            var svc    = Build(db);
             var userId = Guid.NewGuid();
 
             await svc.CreditAsync(userId, 0m, "TopUp");
@@ -79,7 +84,7 @@ namespace BusTicketBooking.Tests.Services
         public async Task Credit_DoesNothing_WhenAmountIsNegative()
         {
             using var db = DbHelper.CreateDb();
-            var svc    = new WalletService(db);
+            var svc    = Build(db);
             var userId = Guid.NewGuid();
 
             await svc.CreditAsync(userId, -50m, "Refund");
@@ -91,7 +96,7 @@ namespace BusTicketBooking.Tests.Services
         public async Task Credit_AccumulatesBalance_OnMultipleCredits()
         {
             using var db = DbHelper.CreateDb();
-            var svc    = new WalletService(db);
+            var svc    = Build(db);
             var userId = Guid.NewGuid();
 
             await svc.CreditAsync(userId, 100m, "TopUp");
@@ -108,7 +113,7 @@ namespace BusTicketBooking.Tests.Services
         public async Task Debit_DecreasesBalance_AndReturnsTrue_WhenSufficientFunds()
         {
             using var db = DbHelper.CreateDb();
-            var svc    = new WalletService(db);
+            var svc    = Build(db);
             var userId = Guid.NewGuid();
 
             db.Wallets.Add(SeedHelper.MakeWallet(userId, 1000m));
@@ -130,7 +135,7 @@ namespace BusTicketBooking.Tests.Services
         public async Task Debit_ReturnsFalse_WhenInsufficientFunds()
         {
             using var db = DbHelper.CreateDb();
-            var svc    = new WalletService(db);
+            var svc    = Build(db);
             var userId = Guid.NewGuid();
 
             db.Wallets.Add(SeedHelper.MakeWallet(userId, 100m));
@@ -150,7 +155,7 @@ namespace BusTicketBooking.Tests.Services
         public async Task Debit_ReturnsTrue_WhenAmountIsZero()
         {
             using var db = DbHelper.CreateDb();
-            var svc    = new WalletService(db);
+            var svc    = Build(db);
             var userId = Guid.NewGuid();
 
             var result = await svc.DebitAsync(userId, 0m, "BookingPayment");
@@ -164,7 +169,7 @@ namespace BusTicketBooking.Tests.Services
         public async Task Debit_LinksTransaction_ToBookingId_WhenProvided()
         {
             using var db = DbHelper.CreateDb();
-            var svc       = new WalletService(db);
+            var svc       = Build(db);
             var userId    = Guid.NewGuid();
             var bookingId = Guid.NewGuid();
 

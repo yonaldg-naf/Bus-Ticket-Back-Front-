@@ -9,49 +9,38 @@ using BusTicketBooking.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
+
 namespace BusTicketBooking.Services
 {
     /// <summary>
     /// Records system activity and errors to the AuditLogs table.
-    /// Called automatically by AuditMiddleware for every API request,
-    /// and can also be called directly from controllers for specific events.
+    /// Called automatically by AuditMiddleware for every API request.
     ///
-    /// All write methods silently catch exceptions and log them — a failure
-    /// to write an audit log should never crash the main request.
+    /// Write operations (LogAuditAsync, LogErrorAsync) use IRepository.
+    /// GetLogsAsync uses AppDbContext directly because it requires dynamic
+    /// LINQ filtering and pagination that the generic repository cannot express.
+    ///
+    /// All write methods silently catch exceptions — a failure to write an
+    /// audit log must never crash the main request.
     /// </summary>
     public class AuditLogService : IAuditLogService
     {
+        private readonly IRepository<AuditLog> _logs;
         private readonly AppDbContext _db;
         private readonly ILogger<AuditLogService> _logger;
 
-        public AuditLogService(AppDbContext db, ILogger<AuditLogService> logger)
+        public AuditLogService(IRepository<AuditLog> logs, AppDbContext db, ILogger<AuditLogService> logger)
         {
-            _db = db;
+            _logs   = logs;
+            _db     = db;
             _logger = logger;
         }
 
         /// <summary>
         /// Records a successful or failed API action to the audit log.
-        /// Automatically called by AuditMiddleware after every API request.
-        ///
-        /// All string values are truncated to their database column limits before
-        /// saving to prevent silent insert failures.
-        ///
-        /// If the database write fails for any reason, the error is logged
-        /// but NOT re-thrown — audit failures must never break the main request.
+        /// All string values are truncated to their database column limits.
+        /// If the write fails, the error is logged but NOT re-thrown.
         /// </summary>
-        /// <param name="action">The HTTP method or action name (e.g. "POST", "DELETE").</param>
-        /// <param name="description">Human-readable summary of what happened (e.g. "Created → /api/buses [201]").</param>
-        /// <param name="userId">ID of the user who made the request (null for anonymous).</param>
-        /// <param name="username">Username of the requester (null for anonymous).</param>
-        /// <param name="userRole">Role of the requester (Admin / Operator / Customer).</param>
-        /// <param name="entityType">The type of entity affected (e.g. "Bus", "Booking").</param>
-        /// <param name="entityId">The ID of the specific entity affected (extracted from the URL).</param>
-        /// <param name="httpMethod">The HTTP verb (GET, POST, PUT, PATCH, DELETE).</param>
-        /// <param name="endpoint">The request path (e.g. "/api/bookings/abc123").</param>
-        /// <param name="statusCode">The HTTP response status code (200, 201, 400, 500, etc.).</param>
-        /// <param name="durationMs">How long the request took to complete in milliseconds.</param>
-        /// <param name="isSuccess">True if the response was successful (status &lt; 400).</param>
         public async Task LogAuditAsync(
             string action, string description,
             Guid? userId = null, string? username = null, string? userRole = null,
@@ -62,23 +51,22 @@ namespace BusTicketBooking.Services
         {
             try
             {
-                _db.AuditLogs.Add(new AuditLog
+                await _logs.AddAsync(new AuditLog
                 {
-                    LogType     = Truncate("Audit", 10),
-                    Action      = Truncate(action, 50),
+                    LogType    = Truncate("Audit", 10),
+                    Action     = Truncate(action, 50),
                     Description = Truncate(description, 500),
-                    UserId      = userId,
-                    Username    = TruncateNullable(username, 100),
-                    UserRole    = TruncateNullable(userRole, 30),
-                    EntityType  = TruncateNullable(entityType, 50),
-                    EntityId    = TruncateNullable(entityId, 100),
-                    HttpMethod  = TruncateNullable(httpMethod, 10),
-                    Endpoint    = TruncateNullable(endpoint, 250),
-                    StatusCode  = statusCode,
-                    DurationMs  = durationMs,
-                    IsSuccess   = isSuccess,
-                });
-                await _db.SaveChangesAsync(ct);
+                    UserId     = userId,
+                    Username   = TruncateNullable(username, 100),
+                    UserRole   = TruncateNullable(userRole, 30),
+                    EntityType = TruncateNullable(entityType, 50),
+                    EntityId   = TruncateNullable(entityId, 100),
+                    HttpMethod = TruncateNullable(httpMethod, 10),
+                    Endpoint   = TruncateNullable(endpoint, 250),
+                    StatusCode = statusCode,
+                    DurationMs = durationMs,
+                    IsSuccess  = isSuccess,
+                }, ct);
             }
             catch (Exception ex)
             {
@@ -88,19 +76,8 @@ namespace BusTicketBooking.Services
 
         /// <summary>
         /// Records an unhandled exception or system error to the audit log.
-        /// Called by AuditMiddleware when a request throws an unhandled exception.
-        ///
-        /// The full exception stack trace can be stored in the Detail field
-        /// (up to 4000 characters) for debugging purposes.
-        ///
-        /// If the database write fails, the error is logged but NOT re-thrown.
+        /// If the write fails, the error is logged but NOT re-thrown.
         /// </summary>
-        /// <param name="description">Short description of the error (e.g. "NullReferenceException: ...").</param>
-        /// <param name="detail">Full exception stack trace or additional context (optional).</param>
-        /// <param name="userId">ID of the user who triggered the error (null if anonymous).</param>
-        /// <param name="username">Username of the requester (null if anonymous).</param>
-        /// <param name="endpoint">The request path where the error occurred.</param>
-        /// <param name="statusCode">The HTTP status code returned (typically 500).</param>
         public async Task LogErrorAsync(
             string description, string? detail = null,
             Guid? userId = null, string? username = null,
@@ -109,7 +86,7 @@ namespace BusTicketBooking.Services
         {
             try
             {
-                _db.AuditLogs.Add(new AuditLog
+                await _logs.AddAsync(new AuditLog
                 {
                     LogType     = "Error",
                     Action      = "ERROR",
@@ -120,8 +97,7 @@ namespace BusTicketBooking.Services
                     Endpoint    = TruncateNullable(endpoint, 250),
                     StatusCode  = statusCode,
                     IsSuccess   = false,
-                });
-                await _db.SaveChangesAsync(ct);
+                }, ct);
             }
             catch (Exception ex)
             {
@@ -130,29 +106,20 @@ namespace BusTicketBooking.Services
         }
 
         /// <summary>
-        /// Returns a paginated, filtered list of audit log entries for the admin dashboard.
-        ///
-        /// Supported filters (all optional):
-        ///   - LogType    : "Audit" or "Error"
-        ///   - Username   : partial match (contains search)
-        ///   - EntityType : exact match (e.g. "Bus", "Booking")
-        ///   - IsSuccess  : true for successful requests, false for failures
-        ///   - From / To  : date range filter on CreatedAtUtc
-        ///
-        /// Results are always ordered newest-first.
+        /// Returns a paginated, filtered list of audit log entries.
+        /// Uses AppDbContext directly because dynamic LINQ filtering and
+        /// pagination cannot be expressed through the generic repository.
         /// </summary>
-        /// <param name="q">Query parameters including filters, page number, and page size.</param>
-        /// <returns>A paged result containing matching log entries and the total count.</returns>
         public async Task<PagedAuditLogResult> GetLogsAsync(AuditLogQueryDto q, CancellationToken ct = default)
         {
             var query = _db.AuditLogs.AsNoTracking();
 
-            if (!string.IsNullOrWhiteSpace(q.LogType))   query = query.Where(l => l.LogType == q.LogType);
-            if (!string.IsNullOrWhiteSpace(q.Username))  query = query.Where(l => l.Username != null && l.Username.Contains(q.Username));
+            if (!string.IsNullOrWhiteSpace(q.LogType))    query = query.Where(l => l.LogType == q.LogType);
+            if (!string.IsNullOrWhiteSpace(q.Username))   query = query.Where(l => l.Username != null && l.Username.Contains(q.Username));
             if (!string.IsNullOrWhiteSpace(q.EntityType)) query = query.Where(l => l.EntityType == q.EntityType);
-            if (q.IsSuccess.HasValue)                     query = query.Where(l => l.IsSuccess == q.IsSuccess.Value);
-            if (q.From.HasValue)                          query = query.Where(l => l.CreatedAtUtc >= q.From.Value);
-            if (q.To.HasValue)                            query = query.Where(l => l.CreatedAtUtc <= q.To.Value);
+            if (q.IsSuccess.HasValue)                      query = query.Where(l => l.IsSuccess == q.IsSuccess.Value);
+            if (q.From.HasValue)                           query = query.Where(l => l.CreatedAtUtc >= q.From.Value);
+            if (q.To.HasValue)                             query = query.Where(l => l.CreatedAtUtc <= q.To.Value);
 
             var total = await query.CountAsync(ct);
             var items = await query
@@ -160,33 +127,29 @@ namespace BusTicketBooking.Services
                 .Skip((q.Page - 1) * q.PageSize).Take(q.PageSize)
                 .Select(l => new AuditLogResponseDto
                 {
-                    Id          = l.Id,
-                    LogType     = l.LogType,
-                    Action      = l.Action,
-                    Description = l.Description,
-                    Detail      = l.Detail,
-                    Username    = l.Username,
-                    UserRole    = l.UserRole,
-                    EntityType  = l.EntityType,
-                    EntityId    = l.EntityId,
-                    HttpMethod  = l.HttpMethod,
-                    Endpoint    = l.Endpoint,
-                    StatusCode  = l.StatusCode,
-                    DurationMs  = l.DurationMs,
-                    IsSuccess   = l.IsSuccess,
+                    Id           = l.Id,
+                    LogType      = l.LogType,
+                    Action       = l.Action,
+                    Description  = l.Description,
+                    Detail       = l.Detail,
+                    Username     = l.Username,
+                    UserRole     = l.UserRole,
+                    EntityType   = l.EntityType,
+                    EntityId     = l.EntityId,
+                    HttpMethod   = l.HttpMethod,
+                    Endpoint     = l.Endpoint,
+                    StatusCode   = l.StatusCode,
+                    DurationMs   = l.DurationMs,
+                    IsSuccess    = l.IsSuccess,
                     CreatedAtUtc = l.CreatedAtUtc,
                 }).ToListAsync(ct);
 
             return new PagedAuditLogResult { Items = items, TotalCount = total, Page = q.Page, PageSize = q.PageSize };
         }
 
-        // ── Private helpers ───────────────────────────────────────────────────
-
-        /// <summary>Truncates a required string to fit within a database column limit.</summary>
         private static string Truncate(string? value, int maxLength)
             => value is null ? string.Empty : value.Length <= maxLength ? value : value[..maxLength];
 
-        /// <summary>Truncates an optional string to fit within a database column limit. Returns null if input is null.</summary>
         private static string? TruncateNullable(string? value, int maxLength)
             => value is null ? null : value.Length <= maxLength ? value : value[..maxLength];
     }

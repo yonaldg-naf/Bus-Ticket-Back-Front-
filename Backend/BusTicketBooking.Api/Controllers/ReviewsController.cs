@@ -38,6 +38,10 @@ namespace BusTicketBooking.Controllers
             if (booking.Status != BookingStatus.Confirmed)
                 return Conflict(new { message = "You can only review confirmed bookings." });
 
+            // Review only allowed after the trip has departed
+            if (booking.Schedule != null && booking.Schedule.DepartureUtc > DateTime.UtcNow)
+                return Conflict(new { message = "You can only review a trip after it has departed." });
+
             var exists = await _db.Reviews.AnyAsync(r => r.BookingId == dto.BookingId, ct);
             if (exists) return Conflict(new { message = "You have already reviewed this booking." });
 

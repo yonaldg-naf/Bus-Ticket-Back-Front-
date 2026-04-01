@@ -19,7 +19,7 @@ public class PromoCodeTests
             new Repository<Payment>(db),
             new Repository<BusSchedule>(db),
             db,
-            new WalletService(db));
+            new WalletService(new BusTicketBooking.Repositories.Repository<BusTicketBooking.Models.Wallet>(db), new BusTicketBooking.Repositories.Repository<BusTicketBooking.Models.WalletTransaction>(db)));
 
     // Seeds a minimal operator + bus + schedule so we can create bookings
     private static (AppDbContext db, BookingService svc, Guid scheduleId, Guid operatorId) Setup(decimal basePrice = 1000)

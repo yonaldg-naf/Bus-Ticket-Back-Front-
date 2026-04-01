@@ -1,4 +1,6 @@
 using BusTicketBooking.Dtos.AuditLogs;
+using BusTicketBooking.Models;
+using BusTicketBooking.Repositories;
 using BusTicketBooking.Services;
 using BusTicketBooking.Tests.Helpers;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -8,7 +10,7 @@ namespace BusTicketBooking.Tests.Services;
 public class AuditLogServiceTests
 {
     private static AuditLogService Build(BusTicketBooking.Contexts.AppDbContext db)
-        => new(db, NullLogger<AuditLogService>.Instance);
+        => new(new Repository<AuditLog>(db), db, NullLogger<AuditLogService>.Instance);
 
     // ── LogAuditAsync ─────────────────────────────────────────────────────────
 

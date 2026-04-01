@@ -16,5 +16,8 @@ namespace BusTicketBooking.Interfaces
         Task<StopResponseDto> CreateAsync(CreateStopRequestDto dto, CancellationToken ct = default);
         Task<StopResponseDto?> UpdateAsync(Guid id, UpdateStopRequestDto dto, CancellationToken ct = default);
         Task<bool> DeleteAsync(Guid id, CancellationToken ct = default);
+
+        // Admin city management
+        Task<int> RenameCityAsync(string currentCity, string newCity, CancellationToken ct = default);
     }
 }

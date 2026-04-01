@@ -20,7 +20,7 @@ namespace BusTicketBooking.Tests.Services
             );
             await db.SaveChangesAsync();
 
-            var svc    = new StopService(db);
+            var svc    = new StopService(db, new BusTicketBooking.Repositories.Repository<BusTicketBooking.Models.Stop>(db));
             var cities = (await svc.GetCitiesAsync()).ToList();
 
             Assert.Equal(2, cities.Count);
@@ -32,7 +32,7 @@ namespace BusTicketBooking.Tests.Services
         public async Task GetCities_ReturnsEmpty_WhenNoStops()
         {
             using var db = DbHelper.CreateDb();
-            var svc    = new StopService(db);
+            var svc    = new StopService(db, new BusTicketBooking.Repositories.Repository<BusTicketBooking.Models.Stop>(db));
             var cities = await svc.GetCitiesAsync();
             Assert.Empty(cities);
         }
@@ -49,7 +49,7 @@ namespace BusTicketBooking.Tests.Services
             );
             await db.SaveChangesAsync();
 
-            var svc   = new StopService(db);
+            var svc   = new StopService(db, new BusTicketBooking.Repositories.Repository<BusTicketBooking.Models.Stop>(db));
             var stops = (await svc.GetStopsByCityAsync("Mumbai")).ToList();
 
             Assert.Single(stops);
@@ -60,7 +60,7 @@ namespace BusTicketBooking.Tests.Services
         public async Task GetStopsByCity_ReturnsEmpty_WhenCityNotFound()
         {
             using var db = DbHelper.CreateDb();
-            var svc   = new StopService(db);
+            var svc   = new StopService(db, new BusTicketBooking.Repositories.Repository<BusTicketBooking.Models.Stop>(db));
             var stops = await svc.GetStopsByCityAsync("NonExistentCity");
             Assert.Empty(stops);
         }
@@ -69,7 +69,7 @@ namespace BusTicketBooking.Tests.Services
         public async Task GetStopsByCity_ReturnsEmpty_WhenCityIsWhitespace()
         {
             using var db = DbHelper.CreateDb();
-            var svc   = new StopService(db);
+            var svc   = new StopService(db, new BusTicketBooking.Repositories.Repository<BusTicketBooking.Models.Stop>(db));
             var stops = await svc.GetStopsByCityAsync("   ");
             Assert.Empty(stops);
         }
@@ -80,7 +80,7 @@ namespace BusTicketBooking.Tests.Services
         public async Task Create_SavesStop_AndReturnsDto()
         {
             using var db = DbHelper.CreateDb();
-            var svc = new StopService(db);
+            var svc = new StopService(db, new BusTicketBooking.Repositories.Repository<BusTicketBooking.Models.Stop>(db));
 
             var dto = new CreateStopRequestDto
             {
@@ -108,7 +108,7 @@ namespace BusTicketBooking.Tests.Services
             db.Stops.Add(stop);
             await db.SaveChangesAsync();
 
-            var svc = new StopService(db);
+            var svc = new StopService(db, new BusTicketBooking.Repositories.Repository<BusTicketBooking.Models.Stop>(db));
             var dto = new UpdateStopRequestDto
             {
                 City      = "New City",
@@ -128,7 +128,7 @@ namespace BusTicketBooking.Tests.Services
         public async Task Update_ReturnsNull_WhenStopNotFound()
         {
             using var db = DbHelper.CreateDb();
-            var svc    = new StopService(db);
+            var svc    = new StopService(db, new BusTicketBooking.Repositories.Repository<BusTicketBooking.Models.Stop>(db));
             var result = await svc.UpdateAsync(Guid.NewGuid(), new UpdateStopRequestDto
             {
                 City = "X", Name = "Y", Latitude = 0, Longitude = 0
@@ -146,7 +146,7 @@ namespace BusTicketBooking.Tests.Services
             db.Stops.Add(stop);
             await db.SaveChangesAsync();
 
-            var svc    = new StopService(db);
+            var svc    = new StopService(db, new BusTicketBooking.Repositories.Repository<BusTicketBooking.Models.Stop>(db));
             var result = await svc.DeleteAsync(stop.Id);
 
             Assert.True(result);
@@ -157,7 +157,7 @@ namespace BusTicketBooking.Tests.Services
         public async Task Delete_ReturnsFalse_WhenStopNotFound()
         {
             using var db = DbHelper.CreateDb();
-            var svc    = new StopService(db);
+            var svc    = new StopService(db, new BusTicketBooking.Repositories.Repository<BusTicketBooking.Models.Stop>(db));
             var result = await svc.DeleteAsync(Guid.NewGuid());
             Assert.False(result);
         }
