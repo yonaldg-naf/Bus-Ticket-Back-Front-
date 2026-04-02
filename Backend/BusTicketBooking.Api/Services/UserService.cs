@@ -5,6 +5,10 @@ using BusTicketBooking.Contexts;
 
 namespace BusTicketBooking.Services
 {
+    /// <summary>
+    /// Handles user account operations: lookup, registration, and admin user management.
+    /// Used by the auth flow (login/register) and the admin user list page.
+    /// </summary>
     public class UserService : IUserService
     {
         private readonly IRepository<User> _users;
@@ -18,12 +22,33 @@ namespace BusTicketBooking.Services
             _db        = db;
         }
 
+        /// <summary>
+        /// Finds a user by their username (case-sensitive).
+        /// Returns null if no user with that username exists.
+        /// Used during login to look up the user before verifying their password.
+        /// </summary>
         public async Task<User?> FindByUsernameAsync(string username)
             => (await _users.FindAsync(u => u.Username == username)).FirstOrDefault();
 
+        /// <summary>
+        /// Finds a user by their email address.
+        /// Returns null if no user with that email exists.
+        /// Used during registration to check if the email is already taken.
+        /// </summary>
         public async Task<User?> FindByEmailAsync(string email)
             => (await _users.FindAsync(u => u.Email == email)).FirstOrDefault();
 
+        /// <summary>
+        /// Registers a new user account.
+        ///
+        /// Validates that:
+        ///   - The username is not already taken.
+        ///   - The email is not already registered.
+        ///
+        /// Hashes the plain-text password before saving (never stores raw passwords).
+        /// Throws InvalidOperationException if the username or email is already in use.
+        /// Returns the saved user entity with the hashed password set.
+        /// </summary>
         public async Task<User> CreateAsync(User user, string plainPassword)
         {
             if (await _users.ExistsAsync(u => u.Username == user.Username))
@@ -45,6 +70,17 @@ namespace BusTicketBooking.Services
         }
 
         /// <summary>Returns a paged, filterable list of all users (admin use).</summary>
+        /// <summary>
+        /// Returns a paged, filterable list of all users in the system.
+        /// Admin-only — used for the user management page.
+        ///
+        /// Supports filtering by:
+        ///   - role   : exact match (e.g. "Admin", "Operator", "Customer").
+        ///   - search : partial match on username, email, or full name (case-insensitive).
+        ///
+        /// Results are ordered newest first and paginated.
+        /// Returns total count, current page, page size, and the list of users.
+        /// </summary>
         public async Task<object> GetUsersPagedAsync(string? role, string? search, int page, int pageSize, CancellationToken ct = default)
         {
             var query = _db.Users.AsNoTracking().AsQueryable();

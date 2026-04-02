@@ -15,7 +15,7 @@ namespace BusTicketBooking.Tests.Services
             var pwdMock = new Mock<IPasswordService>();
             pwdMock.Setup(p => p.Hash(It.IsAny<User>(), It.IsAny<string>()))
                    .Returns("hashed_password");
-            return (new UserService(new Repository<User>(db), pwdMock.Object), pwdMock);
+            return (new UserService(new Repository<User>(db), pwdMock.Object, db), pwdMock);
         }
 
         // ── FindByUsernameAsync ───────────────────────────────────────────────

@@ -12,12 +12,33 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BusTicketBooking.Services
 {
+    /// <summary>
+    /// Provides analytics and reporting data for both operators and admins.
+    /// Operators can see how their own buses and routes are performing.
+    /// Admins can see a full system-wide summary and compare all operators.
+    /// </summary>
     public class AnalyticsService : IAnalyticsService
     {
         private readonly AppDbContext _db;
 
         public AnalyticsService(AppDbContext db) => _db = db;
 
+        /// <summary>
+        /// Returns detailed analytics for a specific operator covering the last N days.
+        ///
+        /// What it does:
+        ///   1. Finds the operator profile linked to the given user ID.
+        ///   2. Gets all buses owned by that operator.
+        ///   3. Gets all schedules for those buses.
+        ///   4. Loads all bookings made within the requested time window.
+        ///   5. Separates confirmed bookings (revenue) from cancelled ones.
+        ///   6. Builds a day-by-day revenue breakdown (date, total revenue, booking count).
+        ///   7. Calculates per-route performance: total bookings, revenue, and occupancy rate.
+        ///   8. Fetches all reviews for those schedules to compute the average rating.
+        ///   9. Returns everything as a single response object.
+        ///
+        /// Returns an empty response if the operator profile is not found.
+        /// </summary>
         public async Task<OperatorAnalyticsResponseDto> GetOperatorAnalyticsAsync(Guid operatorUserId, int days, CancellationToken ct = default)
         {
             var op = await _db.BusOperators.AsNoTracking().FirstOrDefaultAsync(o => o.UserId == operatorUserId, ct);
@@ -103,6 +124,17 @@ namespace BusTicketBooking.Services
             };
         }
 
+        /// <summary>
+        /// Returns a performance summary for every operator in the system, ordered by total revenue (highest first).
+        ///
+        /// For each operator it calculates:
+        ///   - Total buses, routes, and schedules they manage.
+        ///   - Total bookings, confirmed bookings, and total revenue earned.
+        ///   - Average rating from customer reviews.
+        ///   - Cancellation rate as a percentage of total bookings.
+        ///
+        /// Used by the admin dashboard to compare operators side by side.
+        /// </summary>
         public async Task<IEnumerable<OperatorPerformanceDto>> GetAllOperatorPerformanceAsync(CancellationToken ct = default)
         {
             var operators = await _db.BusOperators
@@ -153,6 +185,17 @@ namespace BusTicketBooking.Services
             return result.OrderByDescending(o => o.TotalRevenue);
         }
 
+        /// <summary>
+        /// Returns a high-level system-wide summary for the admin dashboard.
+        ///
+        /// Includes:
+        ///   - Total counts: buses, operators, routes, schedules, users, bookings.
+        ///   - Number of operators waiting for approval (PendingOperator role).
+        ///   - Total confirmed bookings and total revenue from confirmed bookings.
+        ///   - The 9 most recent audit log entries (action, description, user, time, success flag).
+        ///
+        /// All counts are fetched sequentially from the database.
+        /// </summary>
         public async Task<object> GetAdminSummaryAsync(CancellationToken ct = default)
         {
             var totalBuses = await _db.Buses.AsNoTracking().CountAsync(ct);

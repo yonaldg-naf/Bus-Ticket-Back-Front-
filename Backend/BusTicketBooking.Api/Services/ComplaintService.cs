@@ -13,12 +13,29 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BusTicketBooking.Services
 {
+    /// <summary>
+    /// Manages customer complaints raised against confirmed bookings.
+    /// Customers can raise a complaint after their trip has departed.
+    /// Operators and admins can view and reply to complaints.
+    /// </summary>
     public class ComplaintService : IComplaintService
     {
         private readonly AppDbContext _db;
 
         public ComplaintService(AppDbContext db) => _db = db;
 
+        /// <summary>
+        /// Raises a new complaint for a specific booking.
+        ///
+        /// Rules enforced:
+        ///   - The booking must belong to the user raising the complaint.
+        ///   - The booking must be in Confirmed status (not pending or cancelled).
+        ///   - The trip must have already departed (complaints are post-travel only).
+        ///
+        /// Throws NotFoundException if the booking doesn't exist or doesn't belong to the user.
+        /// Throws ValidationException if the booking isn't confirmed or the trip hasn't departed yet.
+        /// Returns the created complaint with booking and schedule details.
+        /// </summary>
         public async Task<ComplaintResponseDto> RaiseAsync(Guid userId, Guid bookingId, CreateComplaintRequestDto dto, CancellationToken ct = default)
         {
             var booking = await _db.Bookings
@@ -46,6 +63,10 @@ namespace BusTicketBooking.Services
                 ?? throw new InvalidOperationException("Failed to load created complaint.");
         }
 
+        /// <summary>
+        /// Returns all complaints raised by the currently logged-in customer, ordered newest first.
+        /// Each complaint includes the bus code, route code, departure time, and any reply from the operator.
+        /// </summary>
         public async Task<IEnumerable<ComplaintResponseDto>> GetMyAsync(Guid userId, CancellationToken ct = default)
         {
             return await _db.Complaints
@@ -73,6 +94,14 @@ namespace BusTicketBooking.Services
                 .ToListAsync(ct);
         }
 
+        /// <summary>
+        /// Returns complaints based on the caller's role:
+        ///   - Admin    → returns all complaints in the system.
+        ///   - Operator → returns only complaints for bookings on their buses.
+        ///                Returns empty if the operator has no profile.
+        ///
+        /// Results are ordered newest first and include customer name, bus/route info, and reply status.
+        /// </summary>
         public async Task<IEnumerable<ComplaintResponseDto>> GetAllAsync(Guid callerUserId, string role, CancellationToken ct = default)
         {
             IQueryable<Complaint> query = _db.Complaints.AsNoTracking();
@@ -110,6 +139,17 @@ namespace BusTicketBooking.Services
                 .ToListAsync(ct);
         }
 
+        /// <summary>
+        /// Adds a reply to a complaint and marks it as "Resolved".
+        ///
+        /// Access rules:
+        ///   - Admin → can reply to any complaint.
+        ///   - Operator → can only reply to complaints for bookings on their own buses.
+        ///
+        /// Throws NotFoundException if the complaint doesn't exist.
+        /// Throws ForbiddenException if the operator doesn't own the related bus.
+        /// Returns the updated complaint with the reply included.
+        /// </summary>
         public async Task<ComplaintResponseDto?> ReplyAsync(Guid callerUserId, string role, Guid id, ReplyComplaintRequestDto dto, CancellationToken ct = default)
         {
             var complaint = await _db.Complaints
@@ -135,6 +175,12 @@ namespace BusTicketBooking.Services
             return await MapAsync(complaint.Id, ct);
         }
 
+        /// <summary>
+        /// Internal helper that re-fetches a complaint by ID with all related data
+        /// (booking, schedule, bus, route, user) and maps it to a response DTO.
+        /// Used after creating or replying to a complaint to return the full populated response.
+        /// Returns null if the complaint is not found.
+        /// </summary>
         private async Task<ComplaintResponseDto?> MapAsync(Guid id, CancellationToken ct)
         {
             var c = await _db.Complaints
