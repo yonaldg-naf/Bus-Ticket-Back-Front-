@@ -91,6 +91,8 @@ builder.Services.AddScoped<IBookingService, BookingService>();
 // ? NEW: needed for From/To dropdowns (cities & stops)
 builder.Services.AddScoped<IStopService, StopService>();
 
+builder.Services.AddScoped<AnalyticsService, AnalyticsService>();
+
 // Wallet
 builder.Services.AddScoped<WalletService>();
 

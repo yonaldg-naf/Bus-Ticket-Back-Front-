@@ -11,15 +11,21 @@ using BusTicketBooking.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using BusTicketBooking.Services;
 
 namespace BusTicketBooking.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+
     public class AnalyticsController : ControllerBase
     {
         private readonly AppDbContext _db;
-        public AnalyticsController(AppDbContext db) => _db = db;
+        private readonly AnalyticsService _analyticsService;
+        public AnalyticsController(AppDbContext db, AnalyticsService analyticsService) {
+            _db = db;
+            _analyticsService = analyticsService;
+        }
 
         private Guid UserId => Guid.TryParse(
             User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub"), out var id) ? id : Guid.Empty;
@@ -115,6 +121,9 @@ namespace BusTicketBooking.Controllers
                 DailyRevenue = dailyRevenue,
                 TopRoutes = routePerf.OrderByDescending(r => r.TotalRevenue).Take(5).ToList()
             });
+
+            //var result = await _analyticsService;
+            //return Ok(result);
         }
 
         /// <summary>Admin: performance metrics for all operators.</summary>
