@@ -9,7 +9,7 @@ import { environment } from '../../environments/environment';
 })
 export class StopService {
   private http = inject(HttpClient);
-  private baseUrl = `${environment.apiUrl}/Stops`;
+  private baseUrl = `${environment.apiUrl}/stops`;
 
   // --------------------------
   // PUBLIC READ OPERATIONS

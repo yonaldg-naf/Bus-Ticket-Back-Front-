@@ -38,7 +38,7 @@ namespace BusTicketBooking.Services
         private readonly IRepository<Payment> _payments;
         private readonly IRepository<BusSchedule> _schedules;
         private readonly AppDbContext _db;
-        private readonly WalletService _wallet;
+        private readonly IWalletService _wallet;
 
         public BookingService(
             IRepository<Booking> bookings,
@@ -46,7 +46,7 @@ namespace BusTicketBooking.Services
             IRepository<Payment> payments,
             IRepository<BusSchedule> schedules,
             AppDbContext db,
-            WalletService wallet)
+            IWalletService wallet)
         {
             _bookings = bookings;
             _passengers = passengers;
@@ -673,5 +673,147 @@ namespace BusTicketBooking.Services
                 DateTimeKind.Local => dt.ToUniversalTime(),
                 _ => DateTime.SpecifyKind(dt, DateTimeKind.Utc)
             };
+
+        /// <summary>Returns booking totals for the operator's fleet.</summary>
+        public async Task<object> GetOperatorStatsAsync(Guid operatorUserId, CancellationToken ct = default)
+        {
+            var op = await _db.BusOperators.AsNoTracking()
+                .FirstOrDefaultAsync(o => o.UserId == operatorUserId, ct);
+
+            if (op is null) return new { totalBookings = 0, confirmedBookings = 0, revenue = 0m };
+
+            var busIds = await _db.Buses.AsNoTracking()
+                .Where(b => b.OperatorId == op.Id)
+                .Select(b => b.Id)
+                .ToListAsync(ct);
+
+            var scheduleIds = await _db.BusSchedules.AsNoTracking()
+                .Where(s => busIds.Contains(s.BusId))
+                .Select(s => s.Id)
+                .ToListAsync(ct);
+
+            var bookings = await _db.Bookings.AsNoTracking()
+                .Where(b => scheduleIds.Contains(b.ScheduleId))
+                .ToListAsync(ct);
+
+            return new
+            {
+                totalBookings     = bookings.Count,
+                confirmedBookings = bookings.Count(b => b.Status == BookingStatus.Confirmed),
+                revenue           = bookings.Where(b => b.Status == BookingStatus.Confirmed).Sum(b => b.TotalAmount)
+            };
+        }
+
+        /// <summary>
+        /// Returns all bookings for a schedule.
+        /// Operators are restricted to their own buses; admins see all.
+        /// </summary>
+        public async Task<IEnumerable<BookingResponseDto>> GetByScheduleAsync(Guid scheduleId, Guid callerUserId, string callerRole, CancellationToken ct = default)
+        {
+            if (callerRole == Roles.Operator)
+            {
+                var op = await _db.BusOperators.AsNoTracking()
+                    .FirstOrDefaultAsync(o => o.UserId == callerUserId, ct);
+
+                if (op is null) return Array.Empty<BookingResponseDto>();
+
+                var schedule = await _db.BusSchedules.AsNoTracking()
+                    .Include(s => s.Bus)
+                    .FirstOrDefaultAsync(s => s.Id == scheduleId, ct);
+
+                if (schedule is null || schedule.Bus?.OperatorId != op.Id)
+                    throw new BusTicketBooking.Exceptions.ForbiddenException("You do not own this schedule.");
+            }
+
+            var bookings = await _db.Bookings.AsNoTracking()
+                .Include(b => b.Passengers)
+                .Include(b => b.Schedule).ThenInclude(s => s!.Bus)
+                .Include(b => b.Schedule).ThenInclude(s => s!.Route)
+                .Where(b => b.ScheduleId == scheduleId)
+                .OrderBy(b => b.CreatedAtUtc)
+                .ToListAsync(ct);
+
+            return bookings.Select(b => new BookingResponseDto
+            {
+                Id                 = b.Id,
+                UserId             = b.UserId,
+                ScheduleId         = b.ScheduleId,
+                Status             = b.Status,
+                TotalAmount        = b.TotalAmount,
+                CreatedAtUtc       = b.CreatedAtUtc,
+                UpdatedAtUtc       = b.UpdatedAtUtc,
+                BusCode            = b.Schedule?.Bus?.Code ?? "",
+                RegistrationNumber = b.Schedule?.Bus?.RegistrationNumber ?? "",
+                RouteCode          = b.Schedule?.Route?.RouteCode ?? "",
+                DepartureUtc       = b.Schedule?.DepartureUtc ?? default,
+                BusStatus          = b.Schedule?.Bus?.Status ?? BusStatus.Available,
+                Passengers         = b.Passengers.Select(p => new BookingPassengerDto
+                {
+                    Name   = p.Name,
+                    Age    = p.Age,
+                    SeatNo = p.SeatNo
+                }).ToList()
+            });
+        }
+
+        /// <summary>
+        /// Marks a booking as BusMissed and credits a 75% refund to the user's wallet.
+        /// Window: 5 minutes before to 5 minutes after departure.
+        /// </summary>
+        public async Task<BusMissResultDto> BusMissAsync(Guid userId, Guid bookingId, CancellationToken ct = default)
+        {
+            var booking = await _db.Bookings
+                .Include(b => b.Schedule)
+                .Include(b => b.Payment)
+                .FirstOrDefaultAsync(b => b.Id == bookingId && b.UserId == userId, ct)
+                ?? throw new BusTicketBooking.Exceptions.NotFoundException("Booking not found.");
+
+            if (booking.Status != BookingStatus.Confirmed)
+                throw new BusTicketBooking.Exceptions.ValidationException("Only confirmed bookings can be marked as bus-missed.");
+
+            if (booking.Schedule is null)
+                throw new BusTicketBooking.Exceptions.ValidationException("Schedule information not available.");
+
+            var now         = DateTime.UtcNow;
+            var departure   = DateTime.SpecifyKind(booking.Schedule.DepartureUtc, DateTimeKind.Utc);
+            var windowOpen  = departure.AddMinutes(-5);
+            var windowClose = departure.AddMinutes(5);
+
+            if (now < windowOpen)
+                throw new BusTicketBooking.Exceptions.ValidationException("Bus miss can only be reported from 5 minutes before departure.");
+
+            if (now > windowClose)
+                throw new BusTicketBooking.Exceptions.ValidationException("Bus miss window has closed (5 minutes after departure).");
+
+            var refundAmount = Math.Round(booking.TotalAmount * 0.75m, 2);
+
+            booking.Status       = BookingStatus.BusMissed;
+            booking.UpdatedAtUtc = now;
+
+            if (booking.Payment != null)
+            {
+                booking.Payment.Amount            = refundAmount;
+                booking.Payment.Status            = PaymentStatus.Success;
+                booking.Payment.ProviderReference = "BUS-MISS-REFUND";
+                booking.Payment.UpdatedAtUtc      = now;
+            }
+
+            await _db.SaveChangesAsync(ct);
+
+            await _wallet.CreditAsync(
+                userId, refundAmount, "BusMissRefund",
+                bookingId: bookingId,
+                description: $"75% refund for missed bus — booking #{bookingId.ToString()[..8].ToUpper()}",
+                ct: ct);
+
+            return new BusMissResultDto
+            {
+                BookingId      = booking.Id,
+                Status         = booking.Status.ToString(),
+                OriginalAmount = booking.TotalAmount,
+                RefundAmount   = refundAmount,
+                Message        = $"Bus miss recorded. ₹{refundAmount} (75%) has been added to your wallet."
+            };
+        }
     }
 }

@@ -43,6 +43,19 @@ export interface OperatorPerformance {
   cancellationRate: number;
 }
 
+export interface AdminSummary {
+  totalBuses: number;
+  totalOperators: number;
+  totalRoutes: number;
+  totalSchedules: number;
+  pendingApprovals: number;
+  totalUsers: number;
+  totalBookings: number;
+  confirmedBookings: number;
+  totalRevenue: number;
+  recentActivity: { action: string; description: string; username?: string; createdAtUtc: string; isSuccess: boolean }[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class AnalyticsService {
   private http = inject(HttpClient);
@@ -55,5 +68,9 @@ export class AnalyticsService {
 
   getAllOperatorPerformance(): Observable<OperatorPerformance[]> {
     return this.http.get<OperatorPerformance[]>(`${this.base}/operators`);
+  }
+
+  getAdminSummary(): Observable<AdminSummary> {
+    return this.http.get<AdminSummary>(`${this.base}/admin-summary`);
   }
 }

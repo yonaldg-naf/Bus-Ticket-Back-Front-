@@ -29,14 +29,14 @@ namespace BusTicketBooking.Services
         private readonly IRepository<Bus> _buses;
         private readonly IRepository<BusRoute> _routes;
         private readonly AppDbContext _db;
-        private readonly WalletService _wallet;
+        private readonly IWalletService _wallet;
 
         public ScheduleService(
             IRepository<BusSchedule> schedules,
             IRepository<Bus> buses,
             IRepository<BusRoute> routes,
             AppDbContext db,
-            WalletService wallet)
+            IWalletService wallet)
         {
             _schedules = schedules;
             _buses = buses;

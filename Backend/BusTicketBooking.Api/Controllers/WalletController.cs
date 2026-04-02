@@ -1,12 +1,11 @@
 using System;
-using System.ComponentModel.DataAnnotations; // used by TopUpRequestDto [Range] attribute
-// using System.Linq; // not used in this controller
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using BusTicketBooking.Contexts;
-using BusTicketBooking.Models;
-using BusTicketBooking.Services;
+using BusTicketBooking.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,12 +18,12 @@ namespace BusTicketBooking.Controllers
     public class WalletController : ControllerBase
     {
         private readonly AppDbContext _db;
-        private readonly WalletService _walletSvc;
+        private readonly IWalletService _walletService;
 
-        public WalletController(AppDbContext db, WalletService walletSvc)
+        public WalletController(AppDbContext db, IWalletService walletService)
         {
-            _db = db;
-            _walletSvc = walletSvc;
+            _db            = db;
+            _walletService = walletService;
         }
 
         private Guid UserId => Guid.TryParse(
@@ -35,7 +34,7 @@ namespace BusTicketBooking.Controllers
         [HttpGet]
         public async Task<IActionResult> Get(CancellationToken ct)
         {
-            var wallet = await _walletSvc.GetOrCreateAsync(UserId, ct);
+            var wallet = await _walletService.GetOrCreateAsync(UserId, ct);
 
             var transactions = await _db.WalletTransactions
                 .AsNoTracking()
@@ -55,25 +54,21 @@ namespace BusTicketBooking.Controllers
                 })
                 .ToListAsync(ct);
 
-            return Ok(new
-            {
-                balance = wallet.Balance,
-                transactions
-            });
+            return Ok(new { balance = wallet.Balance, transactions });
         }
 
-        /// <summary>Add money to wallet (mock top-up — no real payment gateway).</summary>
+        /// <summary>Add money to wallet (mock top-up).</summary>
         [HttpPost("topup")]
         public async Task<IActionResult> TopUp([FromBody] TopUpRequestDto dto, CancellationToken ct)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            await _walletSvc.CreditAsync(
+            await _walletService.CreditAsync(
                 UserId, dto.Amount, "TopUp",
                 description: $"Wallet top-up of ₹{dto.Amount}",
                 ct: ct);
 
-            var wallet = await _walletSvc.GetOrCreateAsync(UserId, ct);
+            var wallet = await _walletService.GetOrCreateAsync(UserId, ct);
             return Ok(new { balance = wallet.Balance, message = $"₹{dto.Amount} added to your wallet." });
         }
     }

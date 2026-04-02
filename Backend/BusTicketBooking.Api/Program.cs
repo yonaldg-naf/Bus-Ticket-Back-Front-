@@ -91,10 +91,17 @@ builder.Services.AddScoped<IBookingService, BookingService>();
 // ? NEW: needed for From/To dropdowns (cities & stops)
 builder.Services.AddScoped<IStopService, StopService>();
 
-builder.Services.AddScoped<AnalyticsService, AnalyticsService>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 
 // Wallet
-builder.Services.AddScoped<WalletService>();
+builder.Services.AddScoped<IWalletService, WalletService>();
+
+// New services
+builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<IPromoCodeService, PromoCodeService>();
+builder.Services.AddScoped<IComplaintService, ComplaintService>();
+builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
+builder.Services.AddScoped<IOperatorApprovalService, OperatorApprovalService>();
 
 // Audit & error logging
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();

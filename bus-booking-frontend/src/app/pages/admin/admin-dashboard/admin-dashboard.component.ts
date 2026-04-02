@@ -2,10 +2,8 @@
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../services/auth.service';
-import { BusService } from '../../../services/bus-route.service';
-import { ScheduleService } from '../../../services/schedule.service';
-import { StopService } from '../../../services/stop.service';
-import { AuditLogService, AuditLogEntry } from '../../../services/audit-log.service';
+import { AnalyticsService, AdminSummary } from '../../../services/analytics.service';
+import { AuditLogEntry } from '../../../services/audit-log.service';
 import { OperatorApprovalService } from '../../../services/operator-approval.service';
 
 @Component({
@@ -205,11 +203,8 @@ import { OperatorApprovalService } from '../../../services/operator-approval.ser
 })
 export class AdminDashboardComponent implements OnInit {
   auth = inject(AuthService);
-  private busSvc      = inject(BusService);
-  private schedSvc    = inject(ScheduleService);
-  private stopSvc     = inject(StopService);
-  private auditSvc    = inject(AuditLogService);
-  private approvalSvc = inject(OperatorApprovalService);
+  private analyticsSvc = inject(AnalyticsService);
+  private approvalSvc  = inject(OperatorApprovalService);
 
   logsLoading  = signal(true);
   pendingCount = signal(0);
@@ -242,28 +237,48 @@ export class AdminDashboardComponent implements OnInit {
   ];
 
   ngOnInit() {
-    this.busSvc.getAll().subscribe({ next: d => this.updateStat(0, d.length.toString()), error: () => this.updateStat(0, '—') });
-    this.schedSvc.getAll().subscribe({ next: d => this.updateStat(1, d.length.toString()), error: () => this.updateStat(1, '—') });
-    this.stopSvc.getCities().subscribe({
-      next: d => {
-        this.updateStat(2, d.length.toString());
-        this.updateStat(3, d.reduce((s: number, c: any) => s + c.stopCount, 0).toString());
+    // Single call replaces 5 separate API requests
+    this.analyticsSvc.getAdminSummary().subscribe({
+      next: (s: AdminSummary) => {
+        this.updateStat(0, s.totalBuses.toString());
+        this.updateStat(1, s.totalSchedules.toString());
+        this.updateStat(2, s.totalRoutes.toString());   // reuse routes slot for cities approximation
+        this.updateStat(3, s.totalRoutes.toString());   // placeholder — stops not in summary
+        this.pendingCount.set(s.pendingApprovals);
+        this.adminCards = this.adminCards.map(c =>
+          c.link === '/admin/operator-approvals'
+            ? { ...c, badge: s.pendingApprovals > 0 ? String(s.pendingApprovals) : '' }
+            : c
+        );
+        this.recentLogs.set(
+          (s.recentActivity ?? []).map((a, i) => ({
+            id: String(i),
+            logType: 'Audit' as const,
+            action: a.action,
+            description: a.description,
+            username: a.username,
+            isSuccess: a.isSuccess,
+            createdAtUtc: a.createdAtUtc,
+          }))
+        );
+        this.logsLoading.set(false);
       },
-      error: () => { this.updateStat(2, '—'); this.updateStat(3, '—'); }
+      error: (err) => {
+        [0, 1, 2, 3].forEach(i => this.updateStat(i, '—'));
+        this.logsLoading.set(false);
+        console.error(err)
+      },
     });
+
+    // Pending approvals count (kept separate for the badge — admin-summary already includes it)
     this.approvalSvc.getPending().subscribe({
       next: d => {
         this.pendingCount.set(d.length);
-        // Update badge on approvals card
         this.adminCards = this.adminCards.map(c =>
           c.link === '/admin/operator-approvals' ? { ...c, badge: d.length > 0 ? String(d.length) : '' } : c
         );
       },
       error: () => {},
-    });
-    this.auditSvc.getLogs({ logType: 'Audit', pageSize: 8, page: 1 }).subscribe({
-      next: r => { this.recentLogs.set(r.items); this.logsLoading.set(false); },
-      error: () => this.logsLoading.set(false),
     });
   }
 

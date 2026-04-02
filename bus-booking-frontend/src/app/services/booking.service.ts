@@ -2,10 +2,10 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { BookingResponse, BookingStatus, BookingPassengerDto } from '../models/booking.models';
+import { BookingResponse, BookingStatus, BookingPassengerDto, PayBookingRequest } from '../models/booking.models';
 
 // Re-export so existing imports from this file still work
-export { BookingResponse, BookingStatus, BookingPassengerDto };
+export { BookingResponse, BookingStatus, BookingPassengerDto, PayBookingRequest };
 
 export interface CreateBookingRequest {
   scheduleId: string;
@@ -17,12 +17,6 @@ export interface CreateBookingByKeysRequest {
   busCode: string;
   departureUtc: string; // ISO UTC
   passengers: BookingPassengerDto[];
-}
-
-export interface PayBookingRequest {
-  amount: number;
-  providerReference?: string;
-  useWallet?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })

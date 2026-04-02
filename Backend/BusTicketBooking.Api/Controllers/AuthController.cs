@@ -1,10 +1,8 @@
-﻿using BusTicketBooking.Contexts;
-using BusTicketBooking.Dtos.Auth;
+﻿using BusTicketBooking.Dtos.Auth;
 using BusTicketBooking.Interfaces;
 using BusTicketBooking.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,36 +15,30 @@ namespace BusTicketBooking.Controllers
         private readonly IUserService _users;
         private readonly IPasswordService _passwords;
         private readonly ITokenService _tokens;
-        private readonly AppDbContext _db;
 
-        public AuthController(IUserService users, IPasswordService passwords, ITokenService tokens, AppDbContext db)
+        public AuthController(IUserService users, IPasswordService passwords, ITokenService tokens)
         {
-            _users = users;
+            _users     = users;
             _passwords = passwords;
-            _tokens = tokens;
-            _db = db;
+            _tokens    = tokens;
         }
 
-        // ---------------------- REGISTER ----------------------
         [AllowAnonymous]
         [HttpPost("register")]
         public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterRequestDto dto, CancellationToken ct)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            // Only Customer and Operator registrations are allowed publicly.
-            // Admin accounts can only be created via database seeding.
-            var requestedRole = dto.Role.Trim();
-            var assignedRole = requestedRole == Roles.Operator
-                                    ? Roles.PendingOperator
-                                    : Roles.Customer; // always default to Customer for safety
+            var assignedRole = dto.Role.Trim() == Roles.Operator
+                ? Roles.PendingOperator
+                : Roles.Customer;
 
             var user = new User
             {
                 Username = dto.Username.Trim(),
-                Email = dto.Email.Trim(),
+                Email    = dto.Email.Trim(),
                 FullName = dto.FullName.Trim(),
-                Role = assignedRole
+                Role     = assignedRole
             };
 
             try
@@ -56,23 +48,19 @@ namespace BusTicketBooking.Controllers
 
                 return Ok(new AuthResponseDto
                 {
-                    AccessToken = token,
+                    AccessToken  = token,
                     ExpiresAtUtc = expires,
-                    UserId = created.Id.ToString(),
-                    Username = created.Username,
-                    Email = created.Email,
-                    Role = created.Role,
-                    FullName = created.FullName,
-                    CompanyName = null
+                    UserId       = created.Id.ToString(),
+                    Username     = created.Username,
+                    Email        = created.Email,
+                    Role         = created.Role,
+                    FullName     = created.FullName,
+                    CompanyName  = string.Empty
                 });
             }
-            catch (System.Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            catch (System.Exception ex) { return BadRequest(ex.Message); }
         }
 
-        // ---------------------- LOGIN ----------------------
         [AllowAnonymous]
         [HttpPost("login")]
         public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginRequestDto dto, CancellationToken ct)
@@ -80,38 +68,28 @@ namespace BusTicketBooking.Controllers
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var user = await _users.FindByUsernameAsync(dto.Username.Trim());
-            if (user is null) return Unauthorized("Invalid username or password.");
-            if (!_passwords.Verify(user, dto.Password)) return Unauthorized("Invalid username or password.");
+            if (user is null || !_passwords.Verify(user, dto.Password))
+                return Unauthorized("Invalid username or password.");
 
             var (token, expires) = _tokens.GenerateAccessToken(user);
 
-            // LOAD OPERATOR PROFILE IF OPERATOR
-            string? companyName = null;
-
+            string? companyName = null; 
             if (user.Role == Roles.Operator)
-            {
-                var op = await _db.BusOperators
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(o => o.UserId == user.Id, ct);
-
-                companyName = op?.CompanyName;
-            }
+                companyName = await _users.GetOperatorCompanyNameAsync(user.Id, ct);
 
             return Ok(new AuthResponseDto
             {
-                AccessToken = token,
+                AccessToken  = token,
                 ExpiresAtUtc = expires,
-                UserId = user.Id.ToString(),
-                Username = user.Username,
-                Email = user.Email,
-                Role = user.Role,
-                FullName = user.FullName,
-                CompanyName = companyName
+                UserId       = user.Id.ToString(),
+                Username     = user.Username,
+                Email        = user.Email,
+                Role         = user.Role,
+                FullName     = user.FullName,
+                CompanyName  = companyName ?? string.Empty
             });
         }
-    
 
-        // ---------------------- ADMIN: LIST ALL USERS ----------------------
         [Authorize(Roles = Roles.Admin)]
         [HttpGet("users")]
         public async Task<IActionResult> GetAllUsers(
@@ -121,36 +99,8 @@ namespace BusTicketBooking.Controllers
             [FromQuery] int pageSize = 20,
             CancellationToken ct = default)
         {
-            var query = _db.Users.AsNoTracking().AsQueryable();
-
-            if (!string.IsNullOrWhiteSpace(role))
-                query = query.Where(u => u.Role == role.Trim());
-
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                var s = search.Trim().ToLower();
-                query = query.Where(u => u.Username.ToLower().Contains(s)
-                                      || u.Email.ToLower().Contains(s)
-                                      || u.FullName.ToLower().Contains(s));
-            }
-
-            var total = await query.LongCountAsync(ct);
-
-            var users = await query
-                .OrderByDescending(u => u.CreatedAtUtc)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(u => new {
-                    u.Id,
-                    u.Username,
-                    u.Email,
-                    u.FullName,
-                    u.Role,
-                    u.CreatedAtUtc
-                })
-                .ToListAsync(ct);
-
-            return Ok(new { total, page, pageSize, items = users });
+            var result = await _users.GetUsersPagedAsync(role, search, page, pageSize, ct);
+            return Ok(result);
         }
     }
 }

@@ -9,28 +9,48 @@ export interface BookingDraft {
   promoCode?: string;
 }
 
+const STORAGE_KEY = 'booking_draft';
+
 @Injectable({ providedIn: 'root' })
 export class BookingStateService {
-  private _draft = signal<BookingDraft | null>(null);
+  private _draft = signal<BookingDraft | null>(this.loadFromStorage());
   readonly draft = this._draft.asReadonly();
 
   setSchedule(schedule: ScheduleResponse): void {
-    this._draft.set({ schedule, selectedSeats: [], passengers: [] });
+    this.update({ schedule, selectedSeats: [], passengers: [] });
   }
 
   setSeats(seats: string[]): void {
-    this._draft.update(d => d ? { ...d, selectedSeats: seats } : null);
+    const d = this._draft();
+    if (d) this.update({ ...d, selectedSeats: seats });
   }
 
   setPassengers(passengers: BookingPassengerDto[]): void {
-    this._draft.update(d => d ? { ...d, passengers } : null);
+    const d = this._draft();
+    if (d) this.update({ ...d, passengers });
   }
 
   setPromoCode(promoCode: string | undefined): void {
-    this._draft.update(d => d ? { ...d, promoCode } : null);
+    const d = this._draft();
+    if (d) this.update({ ...d, promoCode });
   }
 
   clear(): void {
     this._draft.set(null);
+    try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
+  }
+
+  private update(draft: BookingDraft): void {
+    this._draft.set(draft);
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(draft)); } catch {}
+  }
+
+  private loadFromStorage(): BookingDraft | null {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      return raw ? (JSON.parse(raw) as BookingDraft) : null;
+    } catch {
+      return null;
+    }
   }
 }

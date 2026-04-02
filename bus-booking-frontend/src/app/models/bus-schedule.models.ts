@@ -61,10 +61,15 @@ export interface SearchSchedulesByKeysRequest {
   toCity: string;
   toStopName?: string;
   date: string;
+  utcOffsetMinutes?: number;
   page?: number;
   pageSize?: number;
   sortBy?: string;
   sortDir?: string;
+  busType?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  amenities?: string[];
 }
 
 export interface SeatAvailabilityResponse {

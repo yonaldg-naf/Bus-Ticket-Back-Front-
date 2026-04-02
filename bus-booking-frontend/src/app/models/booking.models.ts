@@ -51,6 +51,8 @@ export interface BookingResponse {
   passengers: BookingPassengerDto[];
 }
 
+// PayBookingRequest is defined here as the single source of truth.
+// booking.service.ts re-exports it for backwards compatibility.
 export interface PayBookingRequest {
   amount: number;
   providerReference?: string;

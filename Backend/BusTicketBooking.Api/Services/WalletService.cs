@@ -11,7 +11,7 @@ namespace BusTicketBooking.Services
     /// Handles balance top-ups, booking payments, and refunds.
     /// Every balance change is recorded as a WalletTransaction for a full audit trail.
     /// </summary>
-    public class WalletService
+    public class WalletService : IWalletService
     {
         private readonly IRepository<Wallet> _wallets;
         private readonly IRepository<WalletTransaction> _transactions;
