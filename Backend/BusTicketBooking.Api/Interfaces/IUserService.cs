@@ -7,5 +7,6 @@
         Task<BusTicketBooking.Models.User> CreateAsync(BusTicketBooking.Models.User user, string plainPassword);
         Task<string?> GetOperatorCompanyNameAsync(System.Guid userId, System.Threading.CancellationToken ct = default);
         Task<object> GetUsersPagedAsync(string? role, string? search, int page, int pageSize, System.Threading.CancellationToken ct = default);
+        Task<bool> ResetPasswordAsync(string email, string newPassword, System.Threading.CancellationToken ct = default);
     }
 }

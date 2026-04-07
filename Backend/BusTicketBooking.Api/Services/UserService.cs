@@ -107,5 +107,19 @@ namespace BusTicketBooking.Services
 
             return new { total, page, pageSize, items = users };
         }
+
+        /// <summary>
+        /// Resets a user's password by email.
+        /// Returns false if no user with that email exists.
+        /// </summary>
+        public async Task<bool> ResetPasswordAsync(string email, string newPassword, CancellationToken ct = default)
+        {
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email.Trim().ToLower(), ct);
+            if (user is null) return false;
+
+            user.PasswordHash = _passwords.Hash(user, newPassword);
+            await _db.SaveChangesAsync(ct);
+            return true;
+        }
     }
 }

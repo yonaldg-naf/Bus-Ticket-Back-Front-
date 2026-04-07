@@ -252,10 +252,13 @@ export class PassengerFormComponent implements OnInit {
     const defaults: ('self' | 'other')[] = d.selectedSeats.map((_, i) => i === 0 ? 'self' : 'other');
     this.bookingFor.set(defaults);
     d.selectedSeats.forEach((seat, i) => {
-      const name = i === 0 ? (this.auth.currentUser()?.fullName ?? '') : '';
+      // Use pre-filled passenger data from seat selection if available
+      const prefilled = d.passengers?.[i];
+      const name = prefilled?.name || (i === 0 ? (this.auth.currentUser()?.fullName ?? '') : '');
+      const age  = prefilled?.age ?? null;
       this.passengersArray.push(this.fb.group({
         name:   [name, [Validators.required, Validators.maxLength(150)]],
-        age:    [null, [Validators.min(0), Validators.max(120)]],
+        age:    [age,  [Validators.min(0), Validators.max(120)]],
         seatNo: [seat],
       }));
     });
@@ -266,7 +269,13 @@ export class PassengerFormComponent implements OnInit {
     const control = this.passengersArray.at(index)?.get('name');
     if (!control) return;
     if (value === 'self') { control.setValue(this.auth.currentUser()?.fullName ?? ''); control.disable(); }
-    else { control.setValue(''); control.enable(); }
+    else {
+      // Only clear if it was the user's own name
+      const currentVal = control.value;
+      const myName = this.auth.currentUser()?.fullName ?? '';
+      if (currentVal === myName) control.setValue('');
+      control.enable();
+    }
   }
 
   isFieldInvalid(i: number, f: string) {

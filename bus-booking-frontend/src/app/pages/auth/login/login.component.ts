@@ -148,10 +148,10 @@ import { ToastService } from '../../../services/toast.service';
             } @else { Log In to SwiftRoute }
           </button>
 
-          <p class="text-center text-sm text-slate-500 dark:text-slate-400">
-            New to SwiftRoute?
-            <a routerLink="/auth/register" class="text-red-600 font-bold hover:underline ml-1">Create an account</a>
-          </p>
+          <div class="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
+            <a routerLink="/auth/forgot-password" class="text-red-600 font-medium hover:underline">Forgot password?</a>
+            <span>New? <a routerLink="/auth/register" class="text-red-600 font-bold hover:underline ml-1">Create an account</a></span>
+          </div>
         </form>
       </div>
     </div>

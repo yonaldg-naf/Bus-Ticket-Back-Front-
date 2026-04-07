@@ -13,6 +13,7 @@ export const routes: Routes = [
     children: [
       { path: 'login',    canActivate: [noAuthGuard], loadComponent: () => import('./pages/auth/login/login.component').then(m => m.LoginComponent) },
       { path: 'register', canActivate: [noAuthGuard], loadComponent: () => import('./pages/auth/register/register.component').then(m => m.RegisterComponent) },
+      { path: 'forgot-password', canActivate: [noAuthGuard], loadComponent: () => import('./pages/auth/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent) },
       { path: 'pending-approval', canActivate: [authGuard], loadComponent: () => import('./pages/auth/pending-approval/pending-approval.component').then(m => m.PendingApprovalComponent) },
       { path: '', redirectTo: 'login', pathMatch: 'full' },
     ],
@@ -37,6 +38,11 @@ export const routes: Routes = [
       { path: '',    loadComponent: () => import('./pages/my-bookings/booking-list/booking-list.component').then(m => m.BookingListComponent) },
       { path: ':id', loadComponent: () => import('./pages/my-bookings/booking-detail/booking-detail.component').then(m => m.BookingDetailComponent) },
     ],
+  },
+  {
+    path: 'favorites',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/favorites/favorites.component').then(m => m.FavoritesComponent),
   },
   {
     path: 'profile',

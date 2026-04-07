@@ -1,6 +1,7 @@
 ﻿import { Component, inject, signal, OnInit, computed, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ScheduleService } from '../../../services/schedule.service';
 import { BookingStateService } from '../../../services/booking-state.service';
 import { ToastService } from '../../../services/toast.service';
@@ -185,6 +186,41 @@ import { Location } from '@angular/common';
               </div>
             }
 
+            <!-- Passenger quick-entry list -->
+            @if (selectedSeats().length > 0) {
+              <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                <div class="px-5 py-3.5 border-b border-gray-100 dark:border-slate-700 bg-gray-50/60 dark:bg-slate-700/40">
+                  <h3 class="font-bold text-gray-800 dark:text-white text-sm">Passenger Details</h3>
+                  <p class="text-xs text-gray-400 mt-0.5">Add name &amp; age for each seat</p>
+                </div>
+                <div class="divide-y divide-gray-100 dark:divide-slate-700">
+                  @for (seat of selectedSeats(); track seat; let i = $index) {
+                    <div class="p-4 space-y-2">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="w-6 h-6 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">{{ i + 1 }}</span>
+                        <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">Seat {{ seat }}</span>
+                        <span class="text-[10px] text-slate-400 ml-auto">{{ seatTypeLabel(seat) }}</span>
+                      </div>
+                      <input
+                        [value]="passengerNames()[i] ?? ''"
+                        (input)="setPassengerName(i, $any($event.target).value)"
+                        type="text" placeholder="Full name *" maxlength="150"
+                        class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-colors"
+                        [class.border-red-400]="nameErrors()[i]"/>
+                      @if (nameErrors()[i]) {
+                        <p class="text-xs text-red-500">Name is required</p>
+                      }
+                      <input
+                        [value]="passengerAges()[i] ?? ''"
+                        (input)="setPassengerAge(i, $any($event.target).value)"
+                        type="number" placeholder="Age (optional)" min="0" max="120"
+                        class="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-colors"/>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
             <button (click)="proceed()" [disabled]="selectedSeats().length === 0 || holdExpired()"
               class="w-full py-4 rounded-2xl font-bold text-white bg-red-600 hover:bg-red-700 active:scale-95 transition-all shadow-lg shadow-red-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none text-base">
               @if (holdExpired()) { Hold expired � please reselect seats }
@@ -217,8 +253,18 @@ export class SeatSelectionComponent implements OnInit, OnDestroy {
   holdSeconds = signal(600); // 10 min hold
   private holdTimer: any;
 
+  // Passenger quick-entry state
+  passengerNames = signal<string[]>([]);
+  passengerAges  = signal<(number | null)[]>([]);
+  nameErrors     = signal<boolean[]>([]);
+
   total = computed(() => this.selectedSeats().length * (this.draft()?.schedule?.basePrice ?? 0));
   holdExpired = computed(() => this.holdSeconds() === 0);
+  passengersValid = computed(() => {
+    const seats = this.selectedSeats();
+    const names = this.passengerNames();
+    return seats.every((_, i) => (names[i] ?? '').trim().length > 0);
+  });
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('scheduleId')!;
@@ -283,16 +329,48 @@ export class SeatSelectionComponent implements OnInit, OnDestroy {
   toggleSeat(seat: string) {
     if (!seat || this.isBooked(seat)) return;
     this.selectedSeats.update(s => {
-      if (s.includes(seat)) return s.filter(x => x !== seat);
+      if (s.includes(seat)) {
+        const idx = s.indexOf(seat);
+        // Remove passenger data for this seat
+        this.passengerNames.update(n => { const c = [...n]; c.splice(idx, 1); return c; });
+        this.passengerAges.update(a => { const c = [...a]; c.splice(idx, 1); return c; });
+        this.nameErrors.update(e => { const c = [...e]; c.splice(idx, 1); return c; });
+        return s.filter(x => x !== seat);
+      }
       if (s.length >= 6) { this.toast.error('Maximum 6 seats per booking.'); return s; }
+      // Add empty passenger slot
+      this.passengerNames.update(n => [...n, '']);
+      this.passengerAges.update(a => [...a, null]);
+      this.nameErrors.update(e => [...e, false]);
       return [...s, seat];
     });
   }
 
+  setPassengerName(index: number, value: string) {
+    this.passengerNames.update(n => { const c = [...n]; c[index] = value; return c; });
+    this.nameErrors.update(e => { const c = [...e]; c[index] = !value.trim(); return c; });
+  }
+
+  setPassengerAge(index: number, value: string) {
+    const num = value ? parseInt(value, 10) : null;
+    this.passengerAges.update(a => { const c = [...a]; c[index] = isNaN(num as number) ? null : num; return c; });
+  }
+
   proceed() {
     if (this.selectedSeats().length === 0 || this.holdExpired()) return;
+    // Validate names
+    const errors = this.passengerNames().map(n => !n.trim());
+    this.nameErrors.set(errors);
+    if (errors.some(Boolean)) { this.toast.error('Please fill in all passenger names.'); return; }
     if (this.holdTimer) clearInterval(this.holdTimer);
     this.bookingState.setSeats(this.selectedSeats());
+    // Pre-fill passenger data into booking state so passenger form is pre-populated
+    const passengers = this.selectedSeats().map((seat, i) => ({
+      name: this.passengerNames()[i] ?? '',
+      age: this.passengerAges()[i] ?? undefined,
+      seatNo: seat,
+    }));
+    this.bookingState.setPassengers(passengers);
     this.router.navigate(['/booking/passengers', this.route.snapshot.paramMap.get('scheduleId')!]);
   }
 

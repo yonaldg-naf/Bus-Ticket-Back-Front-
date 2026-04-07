@@ -90,6 +90,16 @@ namespace BusTicketBooking.Controllers
             });
         }
 
+        [AllowAnonymous]
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto dto, CancellationToken ct)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            var ok = await _users.ResetPasswordAsync(dto.Email, dto.NewPassword, ct);
+            // Always return 200 to avoid email enumeration
+            return Ok(new { message = ok ? "Password reset successfully." : "If that email exists, the password has been updated." });
+        }
+
         [Authorize(Roles = Roles.Admin)]
         [HttpGet("users")]
         public async Task<IActionResult> GetAllUsers(
