@@ -5,6 +5,8 @@ import { FormsModule } from '@angular/forms';
 import { ScheduleService, ScheduleResponse } from '../../../services/schedule.service';
 import { BookingStateService } from '../../../services/booking-state.service';
 import { ToastService } from '../../../services/toast.service';
+import { FavoritesService } from '../../../services/favorites.service';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-search-results',
@@ -56,6 +58,17 @@ import { ToastService } from '../../../services/toast.service';
             class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600 rounded-xl hover:border-red-300 hover:text-red-600 transition-colors">
             ← Edit Search
           </a>
+          @if (auth.isLoggedIn()) {
+            <button (click)="toggleFavorite()"
+              class="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-xl border transition-colors"
+              [class]="isFav() ? 'border-red-400 bg-red-50 text-red-600' : 'border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-red-300 hover:text-red-600'"
+              [title]="isFav() ? 'Remove from favourites' : 'Save to favourites'">
+              <svg class="w-4 h-4" [attr.fill]="isFav() ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+              {{ isFav() ? 'Saved' : 'Save Route' }}
+            </button>
+          }
         </div>
       </div>
     </div>
@@ -307,6 +320,8 @@ export class SearchResultsComponent implements OnInit {
   private scheduleSvc  = inject(ScheduleService);
   private bookingState = inject(BookingStateService);
   private toast        = inject(ToastService);
+  private favSvc       = inject(FavoritesService);
+  auth                 = inject(AuthService);
 
   loading    = signal(true);
   allItems   = signal<ScheduleResponse[]>([]);
@@ -513,6 +528,13 @@ export class SearchResultsComponent implements OnInit {
 
   formatDate(iso: string): string {
     return new Date(iso).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+
+  isFav = computed(() => this.favSvc.isFavorite(this.fromCity(), this.toCity()));
+
+  toggleFavorite() {
+    this.favSvc.toggle(this.fromCity(), this.toCity());
+    this.toast.success(this.isFav() ? 'Route saved to favourites!' : 'Removed from favourites.');
   }
 
   busTypeLabel(t: number): string {
