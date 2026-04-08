@@ -511,7 +511,6 @@ export class BookingDetailComponent implements OnInit {
       [BookingStatus.Confirmed]: 'badge badge-success',
       [BookingStatus.Cancelled]: 'badge badge-error',
       [BookingStatus.OperatorCancelled]: 'badge badge-error',
-      [BookingStatus.Refunded]: 'badge badge-gray',
       [BookingStatus.BusMissed]: 'badge badge-warning',
     };
     return map[s] ?? 'badge badge-gray';

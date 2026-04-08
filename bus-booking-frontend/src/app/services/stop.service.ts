@@ -53,4 +53,11 @@ export class StopService {
   deleteStop(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
+
+  renameCity(currentCity: string, newCityName: string): Observable<{ message: string }> {
+    return this.http.put<{ message: string }>(
+      `${this.baseUrl}/cities/${encodeURIComponent(currentCity)}`,
+      { newCityName }
+    );
+  }
 }

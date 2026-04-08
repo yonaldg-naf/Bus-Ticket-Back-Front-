@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -76,17 +75,8 @@ namespace BusTicketBooking.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            // Operator: verify they own the schedule's bus before allowing update
-            if (User.IsInRole(Roles.Operator))
-            {
-                var existing = await _schedules.GetByIdAsync(id, ct);
-                if (existing is null) return NotFound();
-
-                // GetAllSecuredAsync filters by operator ownership — use it to verify
-                var owned = await _schedules.GetAllSecuredAsync(CurrentUserId, CurrentRole, ct);
-                if (!owned.Any(s => s.Id == id))
-                    return Forbid();
-            }
+            if (User.IsInRole(Roles.Operator) && !await _schedules.IsOwnedByOperatorAsync(id, CurrentUserId, ct))
+                return NotFound();
 
             try
             {
@@ -104,11 +94,8 @@ namespace BusTicketBooking.Controllers
         [ProducesResponseType(204)]
         public async Task<ActionResult> Delete([FromRoute] Guid id, CancellationToken ct)
         {
-            if (User.IsInRole(Roles.Operator))
-            {
-                var owned = await _schedules.GetAllSecuredAsync(CurrentUserId, CurrentRole, ct);
-                if (!owned.Any(s => s.Id == id)) return Forbid();
-            }
+            if (User.IsInRole(Roles.Operator) && !await _schedules.IsOwnedByOperatorAsync(id, CurrentUserId, ct))
+                return NotFound();
 
             var ok = await _schedules.DeleteAsync(id, ct);
             return ok ? NoContent() : NotFound();
@@ -120,11 +107,8 @@ namespace BusTicketBooking.Controllers
         [ProducesResponseType(typeof(ScheduleResponseDto), 200)]
         public async Task<IActionResult> Cancel([FromRoute] Guid id, [FromBody] CancelScheduleRequestDto dto, CancellationToken ct)
         {
-            if (User.IsInRole(Roles.Operator))
-            {
-                var owned = await _schedules.GetAllSecuredAsync(CurrentUserId, CurrentRole, ct);
-                if (!owned.Any(s => s.Id == id)) return Forbid();
-            }
+            if (User.IsInRole(Roles.Operator) && !await _schedules.IsOwnedByOperatorAsync(id, CurrentUserId, ct))
+                return NotFound();
 
             var result = await _schedules.CancelAsync(id, dto.Reason, ct);
             return result is null ? NotFound() : Ok(result);

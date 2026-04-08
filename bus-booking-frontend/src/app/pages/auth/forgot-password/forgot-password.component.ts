@@ -1,10 +1,9 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
-import { RouterLink, Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../../environments/environment';
 import { ToastService } from '../../../services/toast.service';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-forgot-password',
@@ -117,7 +116,7 @@ import { ToastService } from '../../../services/toast.service';
 })
 export class ForgotPasswordComponent {
   private fb     = inject(FormBuilder);
-  private http   = inject(HttpClient);
+  private auth   = inject(AuthService);
   private toast  = inject(ToastService);
 
   loading  = signal(false);
@@ -147,7 +146,7 @@ export class ForgotPasswordComponent {
     this.errorMsg.set('');
     const { email } = this.form.value;
 
-    this.http.post(`${environment.apiUrl}/auth/forgot-password`, { email, newPassword }).subscribe({
+    this.auth.forgotPassword(email!, newPassword!).subscribe({
       next: () => { this.loading.set(false); this.success.set(true); this.toast.success('Password reset successfully!'); },
       error: (err) => { this.loading.set(false); this.errorMsg.set(err.error?.message ?? 'Reset failed. Please try again.'); },
     });

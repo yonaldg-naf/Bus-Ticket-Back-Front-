@@ -60,6 +60,14 @@ export class BusService {
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/${id}`);
   }
+
+  getByCode(operatorIdentity: string, busCode: string): Observable<BusResponse> {
+    return this.http.get<BusResponse>(`${this.base}/${operatorIdentity}/${busCode}`);
+  }
+
+  updateStatusByCode(operatorIdentity: string, busCode: string, status: BusStatus): Observable<BusResponse> {
+    return this.http.patch<BusResponse>(`${this.base}/${operatorIdentity}/${busCode}/status`, { status });
+  }
 }
 
 /* ---------- Routes ---------- */
@@ -106,5 +114,9 @@ export class RouteService {
 
   deleteByKeys(operatorIdentity: string, routeCode: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/${operatorIdentity}/${routeCode}`);
+  }
+
+  getByCode(operatorIdentity: string, routeCode: string): Observable<RouteResponse> {
+    return this.http.get<RouteResponse>(`${this.base}/${operatorIdentity}/${routeCode}`);
   }
 }

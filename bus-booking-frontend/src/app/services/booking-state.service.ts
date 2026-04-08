@@ -7,6 +7,7 @@ export interface BookingDraft {
   selectedSeats: string[];
   passengers: BookingPassengerDto[];
   promoCode?: string;
+  pendingBookingId?: string;
 }
 
 const STORAGE_KEY = 'booking_draft';
@@ -33,6 +34,11 @@ export class BookingStateService {
   setPromoCode(promoCode: string | undefined): void {
     const d = this._draft();
     if (d) this.update({ ...d, promoCode });
+  }
+
+  setPendingBookingId(bookingId: string): void {
+    const d = this._draft();
+    if (d) this.update({ ...d, pendingBookingId: bookingId });
   }
 
   clear(): void {

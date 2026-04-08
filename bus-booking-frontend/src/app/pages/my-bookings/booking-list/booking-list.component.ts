@@ -161,7 +161,6 @@ export class BookingListComponent implements OnInit {
       new Date(b.departureUtc) >= now
     );
     if (f === 'completed') return all.filter(b =>
-      b.status === BookingStatus.Refunded ||
       b.status === BookingStatus.BusMissed ||
       (b.status === BookingStatus.Confirmed && new Date(b.departureUtc) < now)
     );
@@ -216,7 +215,6 @@ export class BookingListComponent implements OnInit {
     const map: Record<number, string> = {
       [BookingStatus.Pending]:           'badge badge-warning',
       [BookingStatus.Confirmed]:         'badge badge-success',
-      [BookingStatus.Refunded]:          'badge badge-gray',
       [BookingStatus.Cancelled]:         'badge badge-error',
       [BookingStatus.OperatorCancelled]: 'badge badge-error',
       [BookingStatus.BusMissed]:         'badge badge-warning',
@@ -228,7 +226,6 @@ export class BookingListComponent implements OnInit {
     const map: Record<number, string> = {
       [BookingStatus.Pending]:           'bg-yellow-50',
       [BookingStatus.Confirmed]:         'bg-green-50',
-      [BookingStatus.Refunded]:          'bg-gray-100',
       [BookingStatus.Cancelled]:         'bg-red-50',
       [BookingStatus.OperatorCancelled]: 'bg-red-50',
       [BookingStatus.BusMissed]:         'bg-amber-50',

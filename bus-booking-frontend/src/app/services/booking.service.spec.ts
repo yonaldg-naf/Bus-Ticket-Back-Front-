@@ -126,6 +126,7 @@ describe('BookingService', () => {
     it('Pending = 1', () => expect(BookingStatus.Pending).toBe(1));
     it('Confirmed = 2', () => expect(BookingStatus.Confirmed).toBe(2));
     it('Cancelled = 3', () => expect(BookingStatus.Cancelled).toBe(3));
-    it('Refunded = 4', () => expect(BookingStatus.Refunded).toBe(4));
+    it('OperatorCancelled = 5', () => expect(BookingStatus.OperatorCancelled).toBe(5));
+    it('BusMissed = 6', () => expect(BookingStatus.BusMissed).toBe(6));
   });
 });

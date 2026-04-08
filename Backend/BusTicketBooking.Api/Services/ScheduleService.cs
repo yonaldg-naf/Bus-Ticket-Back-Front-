@@ -91,7 +91,7 @@ namespace BusTicketBooking.Services
         /// Returns all schedules in the system ordered by departure time (earliest first).
         /// Includes bus and route details. No filtering applied — admin use only.
         /// </summary>
-        public async Task<IEnumerable<ScheduleResponseDto>> GetAllAsync(CancellationToken ct = default)
+        private async Task<IEnumerable<ScheduleResponseDto>> GetAllAsync(CancellationToken ct = default)
         {
             var list = await _db.BusSchedules
                 .Include(s => s.Bus)
@@ -481,6 +481,24 @@ namespace BusTicketBooking.Services
         }
 
         // ── Private helpers ───────────────────────────────────────────────────
+
+        /// <summary>
+        /// Checks whether a schedule belongs to the given operator user.
+        /// Used by the controller for lightweight ownership verification
+        /// without loading all schedules.
+        /// </summary>
+        public async Task<bool> IsOwnedByOperatorAsync(Guid scheduleId, Guid userId, CancellationToken ct = default)
+        {
+            var operatorProfile = await _db.BusOperators
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.UserId == userId, ct);
+
+            if (operatorProfile == null) return false;
+
+            return await _db.BusSchedules
+                .AsNoTracking()
+                .AnyAsync(s => s.Id == scheduleId && s.Bus!.OperatorId == operatorProfile.Id, ct);
+        }
 
         /// <summary>
         /// Resolves an operator's GUID from either their username or company name.

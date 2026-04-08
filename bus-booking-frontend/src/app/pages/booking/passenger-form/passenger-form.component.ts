@@ -248,7 +248,14 @@ export class PassengerFormComponent implements OnInit {
 
   ngOnInit() {
     const d = this.draft();
-    if (!d || d.selectedSeats.length === 0) { this.router.navigate(['/home']); return; }
+    if (!d || d.selectedSeats.length === 0) {
+      if (d?.pendingBookingId) {
+        this.router.navigate(['/booking/confirm', d.pendingBookingId]);
+      } else {
+        this.router.navigate(['/my-bookings']);
+      }
+      return;
+    }
     const defaults: ('self' | 'other')[] = d.selectedSeats.map((_, i) => i === 0 ? 'self' : 'other');
     this.bookingFor.set(defaults);
     d.selectedSeats.forEach((seat, i) => {
@@ -332,6 +339,7 @@ export class PassengerFormComponent implements OnInit {
     this.bookingSvc.create({ scheduleId, passengers, promoCode: this.validatedPromo()?.code || undefined }).subscribe({
       next: booking => {
         this.bookingState.setPassengers(passengers);
+        this.bookingState.setPendingBookingId(booking.id);
         this.toast.success('Booking created! Complete payment to confirm.');
         this.router.navigate(['/booking/confirm', booking.id]);
       },

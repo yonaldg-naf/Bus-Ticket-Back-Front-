@@ -187,7 +187,7 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
                 </button>
               }
 
-              @if ((booking()!.status === BookingStatus.Pending || booking()!.status === BookingStatus.Confirmed) && booking()!.status !== BookingStatus.OperatorCancelled) {
+              @if (booking()!.status === BookingStatus.Pending || booking()!.status === BookingStatus.Confirmed) {
                 <button (click)="cancelBooking()" class="w-full py-2.5 text-sm font-medium rounded-xl border border-red-200 text-red-600 hover:bg-red-50 transition-colors">
                   Cancel Booking
                 </button>
@@ -286,7 +286,6 @@ export class BookingConfirmComponent implements OnInit {
       [BookingStatus.Confirmed]:         'badge badge-success',
       [BookingStatus.Cancelled]:         'badge badge-error',
       [BookingStatus.OperatorCancelled]: 'badge badge-error',
-      [BookingStatus.Refunded]:          'badge badge-gray',
     };
     return map[s] ?? 'badge badge-gray';
   }

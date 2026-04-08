@@ -86,6 +86,13 @@ export class AuthService {
   }
 
   // ============================
+  // FORGOT PASSWORD
+  // ============================
+  forgotPassword(email: string, newPassword: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/forgot-password`, { email, newPassword });
+  }
+
+  // ============================
   // LOGOUT
   // ============================
   logout(): void {
