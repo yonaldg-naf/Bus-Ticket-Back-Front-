@@ -2,23 +2,7 @@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { UserManagementService } from '../../../services/user-management.service';
-
-export interface AdminUser {
-  id: string;
-  username: string;
-  email: string;
-  fullName: string;
-  role: string;
-  createdAtUtc: string;
-}
-
-export interface UserListResult {
-  total: number;
-  page: number;
-  pageSize: number;
-  items: AdminUser[];
-}
+import { UserManagementService, AdminUser, UserListResult } from '../../../services/user-management.service';
 
 @Component({
   selector: 'app-manage-users',

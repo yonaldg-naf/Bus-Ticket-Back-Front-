@@ -23,6 +23,8 @@ namespace BusTicketBooking.Controllers
             [FromQuery] string? username,
             [FromQuery] string? entityType,
             [FromQuery] bool? isSuccess,
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 25,
             CancellationToken ct = default)
@@ -33,6 +35,8 @@ namespace BusTicketBooking.Controllers
                 Username = username,
                 EntityType = entityType,
                 IsSuccess = isSuccess,
+                From = from,
+                To = to,
                 Page = page,
                 PageSize = pageSize
             };

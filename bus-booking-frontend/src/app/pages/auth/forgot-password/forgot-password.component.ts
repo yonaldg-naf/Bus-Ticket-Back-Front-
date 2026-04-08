@@ -82,7 +82,7 @@ import { ToastService } from '../../../services/toast.service';
               <label class="form-label">Confirm New Password</label>
               <input formControlName="confirmPassword" [type]="showPwd() ? 'text' : 'password'" placeholder="Repeat new password"
                 class="form-input dark:bg-slate-700 dark:border-slate-600 dark:text-white"/>
-              @if (isInvalid('confirmPassword') || passwordMismatch()) {
+              @if (isInvalid('confirmPassword') || passwordMismatch) {
                 <p class="form-error">Passwords do not match</p>
               }
             </div>
