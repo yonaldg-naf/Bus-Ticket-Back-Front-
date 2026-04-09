@@ -65,32 +65,14 @@ import { AuthService } from '../../services/auth.service';
               </div>
             </div>
 
-            @if (user.role === 'PendingOperator') {
-              <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 flex items-start gap-3">
-                <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center flex-shrink-0">
-                  <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                  </svg>
-                </div>
-                <div>
-                  <p class="font-semibold text-slate-800 dark:text-white text-sm">Operator Approval Pending</p>
-                  <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Your registration is awaiting admin approval.</p>
-                </div>
-              </div>
-            }
 
             <div class="flex gap-3">
-              @if (user.role === 'Customer' || user.role === 'PendingOperator') {
+              @if (user.role === 'Customer') {
                 <a routerLink="/my-bookings" class="flex-1 py-3 text-center text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                   My Bookings
                 </a>
                 <a routerLink="/favorites" class="flex-1 py-3 text-center text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                   ❤️ Favourites
-                </a>
-              }
-              @if (user.role === 'Operator') {
-                <a routerLink="/operator" class="flex-1 py-3 text-center text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                  Operator Panel
                 </a>
               }
               @if (user.role === 'Admin') {
@@ -157,20 +139,16 @@ export class ProfileComponent {
 
   roleLabel(role: string): string {
     const map: Record<string, string> = {
-      Admin: '🛡️ Administrator',
-      Operator: '🚌 Bus Operator',
+      Admin:    '🛡️ Administrator',
       Customer: '🧳 Traveller',
-      PendingOperator: '⏳ Pending Operator',
     };
     return map[role] ?? role;
   }
 
   roleBadgeClass(role: string): string {
     const map: Record<string, string> = {
-      Admin:           'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
-      Operator:        'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-      Customer:        'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-      PendingOperator: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+      Admin:    'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+      Customer: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
     };
     return map[role] ?? 'bg-slate-100 text-slate-700';
   }

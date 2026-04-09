@@ -12,7 +12,6 @@ export enum BusStatus {
 }
 export interface BusResponse {
   id: string;
-  operatorId: string;
   code: string;
   registrationNumber: string;
   busType: BusType;
@@ -22,9 +21,7 @@ export interface BusResponse {
   createdAtUtc: string;
   updatedAtUtc?: string;
 }
-export interface CreateBusByOperatorRequest {
-  operatorUsername?: string;
-  companyName?: string;
+export interface CreateBusRequest {
   code: string;
   registrationNumber: string;
   busType: BusType;
@@ -46,27 +43,23 @@ export class BusService {
   private base = `${environment.apiUrl}/buses`;
 
   getAll(): Observable<BusResponse[]> {
-    return this.http.get<BusResponse[]>(`${this.base}`);
+    return this.http.get<BusResponse[]>(this.base);
   }
 
-  createByOperator(dto: CreateBusByOperatorRequest): Observable<BusResponse> {
-    return this.http.post<BusResponse>(`${this.base}/by-operator`, dto);
+  create(dto: CreateBusRequest): Observable<BusResponse> {
+    return this.http.post<BusResponse>(this.base, dto);
   }
 
   update(id: string, dto: UpdateBusRequest): Observable<BusResponse> {
     return this.http.put<BusResponse>(`${this.base}/${id}`, dto);
   }
 
+  updateStatus(id: string, status: BusStatus): Observable<BusResponse> {
+    return this.http.patch<BusResponse>(`${this.base}/${id}/status`, { status });
+  }
+
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/${id}`);
-  }
-
-  getByCode(operatorIdentity: string, busCode: string): Observable<BusResponse> {
-    return this.http.get<BusResponse>(`${this.base}/${operatorIdentity}/${busCode}`);
-  }
-
-  updateStatusByCode(operatorIdentity: string, busCode: string, status: BusStatus): Observable<BusResponse> {
-    return this.http.patch<BusResponse>(`${this.base}/${operatorIdentity}/${busCode}/status`, { status });
   }
 }
 
@@ -78,19 +71,16 @@ export interface RouteStopView {
 }
 export interface RouteResponse {
   id: string;
-  operatorId: string;
   routeCode: string;
   stops: RouteStopView[];
   createdAtUtc: string;
   updatedAtUtc?: string;
 }
-export interface CreateRouteByKeysRequest {
-  operatorUsername?: string;
-  companyName?: string;
+export interface CreateRouteRequest {
   routeCode: string;
   stops: StopRef[];
 }
-export interface UpdateRouteByKeysRequest {
+export interface UpdateRouteRequest {
   newRouteCode: string;
   stops: StopRef[];
 }
@@ -101,22 +91,22 @@ export class RouteService {
   private base = `${environment.apiUrl}/routes`;
 
   getAll(): Observable<RouteResponse[]> {
-    return this.http.get<RouteResponse[]>(`${this.base}`);
+    return this.http.get<RouteResponse[]>(this.base);
   }
 
-  createByKeys(dto: CreateRouteByKeysRequest): Observable<RouteResponse> {
-    return this.http.post<RouteResponse>(`${this.base}/by-keys`, dto);
+  create(dto: CreateRouteRequest): Observable<RouteResponse> {
+    return this.http.post<RouteResponse>(this.base, dto);
   }
 
-  updateByKeys(operatorIdentity: string, routeCode: string, dto: UpdateRouteByKeysRequest): Observable<RouteResponse> {
-    return this.http.put<RouteResponse>(`${this.base}/${operatorIdentity}/${routeCode}`, dto);
+  update(id: string, dto: UpdateRouteRequest): Observable<RouteResponse> {
+    return this.http.put<RouteResponse>(`${this.base}/${id}`, dto);
   }
 
-  deleteByKeys(operatorIdentity: string, routeCode: string): Observable<void> {
-    return this.http.delete<void>(`${this.base}/${operatorIdentity}/${routeCode}`);
+  delete(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${id}`);
   }
 
-  getByCode(operatorIdentity: string, routeCode: string): Observable<RouteResponse> {
-    return this.http.get<RouteResponse>(`${this.base}/${operatorIdentity}/${routeCode}`);
+  getById(id: string): Observable<RouteResponse> {
+    return this.http.get<RouteResponse>(`${this.base}/${id}`);
   }
 }

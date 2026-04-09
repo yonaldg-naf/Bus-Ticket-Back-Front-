@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,17 +21,10 @@ namespace BusTicketBooking.Controllers
         private Guid UserId => Guid.TryParse(
             User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub"), out var id) ? id : Guid.Empty;
 
-        private string CurrentRole =>
-            User.FindFirstValue(ClaimTypes.Role)
-            ?? User.Claims.FirstOrDefault(c => c.Type.Contains("role"))?.Value
-            ?? string.Empty;
-
         /// <summary>Customer raises a complaint on a booking.</summary>
         [Authorize(Roles = Roles.Customer)]
         [HttpPost("booking/{bookingId:guid}")]
-        public async Task<IActionResult> Raise([FromRoute] Guid bookingId,
-                                               [FromBody] CreateComplaintRequestDto dto,
-                                               CancellationToken ct)
+        public async Task<IActionResult> Raise([FromRoute] Guid bookingId, [FromBody] CreateComplaintRequestDto dto, CancellationToken ct)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             var result = await _complaintService.RaiseAsync(UserId, bookingId, dto, ct);
@@ -43,29 +35,21 @@ namespace BusTicketBooking.Controllers
         [Authorize(Roles = Roles.Customer)]
         [HttpGet("my")]
         public async Task<IActionResult> GetMy(CancellationToken ct)
-        {
-            var result = await _complaintService.GetMyAsync(UserId, ct);
-            return Ok(result);
-        }
+            => Ok(await _complaintService.GetMyAsync(UserId, ct));
 
-        /// <summary>Operator or Admin: view complaints.</summary>
-        [Authorize(Roles = $"{Roles.Operator},{Roles.Admin}")]
+        /// <summary>Admin: view all complaints.</summary>
+        [Authorize(Roles = Roles.Admin)]
         [HttpGet]
         public async Task<IActionResult> GetAll(CancellationToken ct)
-        {
-            var result = await _complaintService.GetAllAsync(UserId, CurrentRole, ct);
-            return Ok(result);
-        }
+            => Ok(await _complaintService.GetAllAsync(ct));
 
-        /// <summary>Operator or Admin: reply to a complaint and mark it resolved.</summary>
-        [Authorize(Roles = $"{Roles.Operator},{Roles.Admin}")]
+        /// <summary>Admin: reply to a complaint and mark it resolved.</summary>
+        [Authorize(Roles = Roles.Admin)]
         [HttpPatch("{id:guid}/reply")]
-        public async Task<IActionResult> Reply([FromRoute] Guid id,
-                                               [FromBody] ReplyComplaintRequestDto dto,
-                                               CancellationToken ct)
+        public async Task<IActionResult> Reply([FromRoute] Guid id, [FromBody] ReplyComplaintRequestDto dto, CancellationToken ct)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-            var result = await _complaintService.ReplyAsync(UserId, CurrentRole, id, dto, ct);
+            var result = await _complaintService.ReplyAsync(id, dto, ct);
             return result is null ? NotFound() : Ok(result);
         }
     }

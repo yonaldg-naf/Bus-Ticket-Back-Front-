@@ -4,7 +4,6 @@ using BusTicketBooking.Models;
 using BusTicketBooking.Repositories;
 using BusTicketBooking.Services;
 using BusTicketBooking.Tests.Helpers;
-using Microsoft.EntityFrameworkCore;
 
 namespace BusTicketBooking.Tests.Services;
 
@@ -14,19 +13,18 @@ public class RouteServiceTests
         new(new Repository<BusRoute>(db),
             new Repository<RouteStop>(db),
             new Repository<Stop>(db),
-            new Repository<BusOperator>(db),
-            new Repository<User>(db),
             db);
 
-    private static (User user, BusOperator op) SeedOperator(BusTicketBooking.Contexts.AppDbContext db)
-    {
-        var user = SeedHelper.MakeUser(Roles.Operator);
-        db.Users.Add(user);
-        var op = SeedHelper.MakeOperator(user.Id);
-        db.BusOperators.Add(op);
-        db.SaveChanges();
-        return (user, op);
-    }
+    private static CreateRouteByKeysRequestDto MakeDto(string code = "RT-1") =>
+        new()
+        {
+            RouteCode = code,
+            Stops = new List<StopRefDto>
+            {
+                new() { City = "Mumbai", Name = "Dadar" },
+                new() { City = "Pune",   Name = "Shivajinagar" }
+            }
+        };
 
     // ── GetAllAsync ───────────────────────────────────────────────────────────
 
@@ -35,38 +33,23 @@ public class RouteServiceTests
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
-        var (user, _) = SeedOperator(db);
 
-        await svc.CreateByKeysAsync(new CreateRouteByKeysRequestDto
-        {
-            OperatorUsername = user.Username, RouteCode = "RT-1",
-            Stops = new List<StopRefDto> { new() { City = "A", Name = "S1" }, new() { City = "B", Name = "S2" } }
-        });
+        await svc.CreateAsync(MakeDto("RT-1"));
 
         var result = (await svc.GetAllAsync()).ToList();
         Assert.Single(result);
         Assert.Equal("RT-1", result[0].RouteCode);
     }
 
-    // ── CreateByKeysAsync ─────────────────────────────────────────────────────
+    // ── CreateAsync ───────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task CreateByKeys_CreatesRoute_AndAutoCreatesStops()
+    public async Task Create_CreatesRoute_AndAutoCreatesStops()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
-        var (user, _) = SeedOperator(db);
 
-        var result = await svc.CreateByKeysAsync(new CreateRouteByKeysRequestDto
-        {
-            OperatorUsername = user.Username,
-            RouteCode        = "KEY-RT",
-            Stops = new List<StopRefDto>
-            {
-                new() { City = "Mumbai", Name = "Dadar" },
-                new() { City = "Pune",   Name = "Shivajinagar" }
-            }
-        });
+        var result = await svc.CreateAsync(MakeDto("KEY-RT"));
 
         Assert.Equal("KEY-RT", result.RouteCode);
         Assert.Equal(2, result.Stops.Count);
@@ -76,119 +59,116 @@ public class RouteServiceTests
     }
 
     [Fact]
-    public async Task CreateByKeys_Throws_WhenDuplicateRouteCode()
+    public async Task Create_Throws_WhenDuplicateRouteCode()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
-        var (user, _) = SeedOperator(db);
 
-        var dto = new CreateRouteByKeysRequestDto
+        await svc.CreateAsync(MakeDto("DUP-RT"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateAsync(MakeDto("DUP-RT")));
+    }
+
+    [Fact]
+    public async Task Create_Throws_WhenFewerThanTwoStops()
+    {
+        var db  = DbHelper.CreateDb();
+        var svc = Build(db);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateAsync(new CreateRouteByKeysRequestDto
         {
-            OperatorUsername = user.Username, RouteCode = "DUP-RT",
-            Stops = new List<StopRefDto> { new() { City = "A", Name = "S1" }, new() { City = "B", Name = "S2" } }
-        };
-        await svc.CreateByKeysAsync(dto);
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateByKeysAsync(dto));
+            RouteCode = "ONE",
+            Stops = new List<StopRefDto> { new() { City = "X", Name = "Y" } }
+        }));
     }
 
+    // ── UpdateAsync ───────────────────────────────────────────────────────────
+
     [Fact]
-    public async Task CreateByKeys_Throws_WhenFewerThanTwoStops()
+    public async Task Update_ChangesRouteCode()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
-        var (user, _) = SeedOperator(db);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateByKeysAsync(
-            new CreateRouteByKeysRequestDto
+        var created = await svc.CreateAsync(MakeDto("OLD-RT"));
+
+        var updated = await svc.UpdateAsync(created.Id, new UpdateRouteByKeysRequestDto
+        {
+            NewRouteCode = "NEW-RT",
+            Stops = new List<StopRefDto>
             {
-                OperatorUsername = user.Username, RouteCode = "ONE",
-                Stops = new List<StopRefDto> { new() { City = "X", Name = "Y" } }
-            }));
+                new() { City = "Delhi",   Name = "ISBT" },
+                new() { City = "Jaipur",  Name = "Sindhi Camp" }
+            }
+        });
+
+        Assert.NotNull(updated);
+        Assert.Equal("NEW-RT", updated!.RouteCode);
     }
 
     [Fact]
-    public async Task CreateByKeys_Throws_WhenOperatorNotFound()
+    public async Task Update_ReturnsNull_WhenRouteNotFound()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateByKeysAsync(
-            new CreateRouteByKeysRequestDto
-            {
-                OperatorUsername = "nobody", RouteCode = "RT-X",
-                Stops = new List<StopRefDto> { new() { City = "A", Name = "B" }, new() { City = "C", Name = "D" } }
-            }));
+        var result = await svc.UpdateAsync(Guid.NewGuid(), new UpdateRouteByKeysRequestDto
+        {
+            NewRouteCode = "X",
+            Stops = new List<StopRefDto> { new() { City = "A", Name = "B" }, new() { City = "C", Name = "D" } }
+        });
+
+        Assert.Null(result);
     }
 
-    // ── DeleteByKeysAsync ─────────────────────────────────────────────────────
+    // ── DeleteAsync ───────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task DeleteByKeys_RemovesRoute()
+    public async Task Delete_RemovesRoute()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
-        var (user, op) = SeedOperator(db);
 
-        var route = new BusRoute { OperatorId = op.Id, RouteCode = "DEL-KEY" };
-        db.BusRoutes.Add(route);
-        db.SaveChanges();
-        var s1 = new Stop { City = "A", Name = "Stop1" };
-        var s2 = new Stop { City = "B", Name = "Stop2" };
-        db.Stops.AddRange(s1, s2);
-        db.SaveChanges();
-        db.RouteStops.AddRange(
-            new RouteStop { RouteId = route.Id, StopId = s1.Id, Order = 1 },
-            new RouteStop { RouteId = route.Id, StopId = s2.Id, Order = 2 }
-        );
-        db.SaveChanges();
-        db.ChangeTracker.Clear();
+        var created = await svc.CreateAsync(MakeDto("DEL-RT"));
 
-        var result = await svc.DeleteByKeysAsync(user.Username, "DEL-KEY");
+        var result = await svc.DeleteAsync(created.Id);
 
         Assert.True(result);
-        Assert.Equal(0, db.BusRoutes.AsNoTracking().Count());
+        Assert.Equal(0, db.BusRoutes.Count());
     }
 
     [Fact]
-    public async Task DeleteByKeys_ReturnsFalse_WhenRouteNotFound()
+    public async Task Delete_ReturnsFalse_WhenRouteNotFound()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
-        var (user, _) = SeedOperator(db);
 
-        var result = await svc.DeleteByKeysAsync(user.Username, "NONEXISTENT");
+        var result = await svc.DeleteAsync(Guid.NewGuid());
         Assert.False(result);
     }
 
-    // ── GetByCodeAsync ────────────────────────────────────────────────────────
+    // ── GetByIdAsync ──────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task GetByCode_ReturnsRoute_WhenExists()
+    public async Task GetById_ReturnsRoute_WhenExists()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
-        var (user, _) = SeedOperator(db);
 
-        await svc.CreateByKeysAsync(new CreateRouteByKeysRequestDto
-        {
-            OperatorUsername = user.Username, RouteCode = "RT-CODE",
-            Stops = new List<StopRefDto> { new() { City = "X", Name = "S1" }, new() { City = "Y", Name = "S2" } }
-        });
+        var created = await svc.CreateAsync(MakeDto("RT-CODE"));
 
-        var result = await svc.GetByCodeAsync(user.Username, "RT-CODE");
+        var result = await svc.GetByIdAsync(created.Id);
         Assert.NotNull(result);
         Assert.Equal("RT-CODE", result!.RouteCode);
     }
 
     [Fact]
-    public async Task GetByCode_ReturnsNull_WhenNotFound()
+    public async Task GetById_ReturnsNull_WhenNotFound()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
-        var (user, _) = SeedOperator(db);
 
-        var result = await svc.GetByCodeAsync(user.Username, "NOPE");
+        var result = await svc.GetByIdAsync(Guid.NewGuid());
         Assert.Null(result);
     }
 }

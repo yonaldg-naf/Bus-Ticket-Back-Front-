@@ -13,8 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace BusTicketBooking.Services
 {
     /// <summary>
-    /// Manages promo codes that operators create to offer discounts on bookings.
-    /// Supports flat (fixed amount) and percentage-based discounts.
+    /// Manages promo codes. Supports flat and percentage-based discounts.
     /// Promo codes can be toggled active/inactive and have usage limits and expiry dates.
     /// </summary>
     public class PromoCodeService : IPromoCodeService
@@ -35,25 +34,20 @@ namespace BusTicketBooking.Services
         /// Throws ForbiddenException if the operator profile is not found.
         /// Throws ConflictException if the code already exists.
         /// </summary>
-        public async Task<PromoCodeResponseDto> CreateAsync(Guid operatorUserId, CreatePromoCodeRequestDto dto, CancellationToken ct = default)
+        public async Task<PromoCodeResponseDto> CreateAsync(CreatePromoCodeRequestDto dto, CancellationToken ct = default)
         {
-            var op = await _db.BusOperators.FirstOrDefaultAsync(o => o.UserId == operatorUserId, ct)
-                ?? throw new ForbiddenException("Operator profile not found.");
-
             var exists = await _db.PromoCodes.AnyAsync(p => p.Code == dto.Code.ToUpper(), ct);
             if (exists) throw new ConflictException("Promo code already exists.");
-
             var promo = new PromoCode
             {
-                OperatorId       = op.Id,
-                Code             = dto.Code.ToUpper().Trim(),
-                DiscountType     = dto.DiscountType,
-                DiscountValue    = dto.DiscountValue,
-                MinBookingAmount = dto.MinBookingAmount,
+                Code              = dto.Code.ToUpper().Trim(),
+                DiscountType      = dto.DiscountType,
+                DiscountValue     = dto.DiscountValue,
+                MinBookingAmount  = dto.MinBookingAmount,
                 MaxDiscountAmount = dto.MaxDiscountAmount,
-                ExpiresAtUtc     = dto.ExpiresAtUtc,
-                MaxUses          = dto.MaxUses,
-                IsActive         = true
+                ExpiresAtUtc      = dto.ExpiresAtUtc,
+                MaxUses           = dto.MaxUses,
+                IsActive          = true
             };
 
             _db.PromoCodes.Add(promo);
@@ -64,32 +58,11 @@ namespace BusTicketBooking.Services
         }
 
         /// <summary>
-        /// Returns all promo codes created by the currently logged-in operator, ordered newest first.
-        /// Returns an empty list if the operator has no profile or no promo codes.
-        /// </summary>
-        public async Task<IEnumerable<PromoCodeResponseDto>> GetMyAsync(Guid operatorUserId, CancellationToken ct = default)
-        {
-            var op = await _db.BusOperators.AsNoTracking().FirstOrDefaultAsync(o => o.UserId == operatorUserId, ct);
-            if (op is null) return Array.Empty<PromoCodeResponseDto>();
-
-            var promos = await _db.PromoCodes
-                .Include(p => p.Operator)
-                .AsNoTracking()
-                .Where(p => p.OperatorId == op.Id)
-                .OrderByDescending(p => p.CreatedAtUtc)
-                .ToListAsync(ct);
-
-            return promos.Select(Map);
-        }
-
-        /// <summary>
         /// Returns all promo codes in the system, ordered newest first.
-        /// Admin-only — gives a full view of every promo code across all operators.
         /// </summary>
         public async Task<IEnumerable<PromoCodeResponseDto>> GetAllAsync(CancellationToken ct = default)
         {
             var promos = await _db.PromoCodes
-                .Include(p => p.Operator)
                 .AsNoTracking()
                 .OrderByDescending(p => p.CreatedAtUtc)
                 .ToListAsync(ct);
@@ -104,12 +77,9 @@ namespace BusTicketBooking.Services
         /// Throws ForbiddenException if the operator profile is not found.
         /// Throws NotFoundException if the promo code doesn't exist or doesn't belong to the operator.
         /// </summary>
-        public async Task<PromoCodeResponseDto?> ToggleAsync(Guid operatorUserId, Guid id, CancellationToken ct = default)
+        public async Task<PromoCodeResponseDto?> ToggleAsync(Guid id, CancellationToken ct = default)
         {
-            var op = await _db.BusOperators.FirstOrDefaultAsync(o => o.UserId == operatorUserId, ct)
-                ?? throw new ForbiddenException("Operator profile not found.");
-
-            var promo = await _db.PromoCodes.FirstOrDefaultAsync(p => p.Id == id && p.OperatorId == op.Id, ct)
+            var promo = await _db.PromoCodes.FirstOrDefaultAsync(p => p.Id == id, ct)
                 ?? throw new NotFoundException("Promo code not found.");
 
             promo.IsActive     = !promo.IsActive;
@@ -119,19 +89,9 @@ namespace BusTicketBooking.Services
             return Map(promo);
         }
 
-        /// <summary>
-        /// Permanently deletes a promo code.
-        /// Only the operator who created it can delete it.
-        /// Throws ForbiddenException if the operator profile is not found.
-        /// Throws NotFoundException if the promo code doesn't exist or doesn't belong to the operator.
-        /// Returns true on successful deletion.
-        /// </summary>
-        public async Task<bool> DeleteAsync(Guid operatorUserId, Guid id, CancellationToken ct = default)
+        public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
         {
-            var op = await _db.BusOperators.FirstOrDefaultAsync(o => o.UserId == operatorUserId, ct)
-                ?? throw new ForbiddenException("Operator profile not found.");
-
-            var promo = await _db.PromoCodes.FirstOrDefaultAsync(p => p.Id == id && p.OperatorId == op.Id, ct)
+            var promo = await _db.PromoCodes.FirstOrDefaultAsync(p => p.Id == id, ct)
                 ?? throw new NotFoundException("Promo code not found.");
 
             _db.PromoCodes.Remove(promo);
@@ -194,34 +154,24 @@ namespace BusTicketBooking.Services
             };
         }
 
-        /// <summary>
-        /// Maps a PromoCode entity to a PromoCodeResponseDto.
-        /// Includes the operator's company name for display purposes.
-        /// </summary>
         private static PromoCodeResponseDto Map(PromoCode p) => new()
         {
-            Id               = p.Id,
-            Code             = p.Code,
-            DiscountType     = p.DiscountType,
-            DiscountValue    = p.DiscountValue,
-            MinBookingAmount = p.MinBookingAmount,
+            Id                = p.Id,
+            Code              = p.Code,
+            DiscountType      = p.DiscountType,
+            DiscountValue     = p.DiscountValue,
+            MinBookingAmount  = p.MinBookingAmount,
             MaxDiscountAmount = p.MaxDiscountAmount,
-            ExpiresAtUtc     = p.ExpiresAtUtc,
-            MaxUses          = p.MaxUses,
-            UsedCount        = p.UsedCount,
-            IsActive         = p.IsActive,
-            CompanyName      = p.Operator?.CompanyName ?? string.Empty,
-            CreatedAtUtc     = p.CreatedAtUtc
+            ExpiresAtUtc      = p.ExpiresAtUtc,
+            MaxUses           = p.MaxUses,
+            UsedCount         = p.UsedCount,
+            IsActive          = p.IsActive,
+            CreatedAtUtc      = p.CreatedAtUtc
         };
 
-        /// <summary>
-        /// Internal helper that re-fetches a promo code by ID with the operator included,
-        /// then maps it to a response DTO. Used after creating a promo code to return the full response.
-        /// Returns null if the promo code is not found.
-        /// </summary>
         private async Task<PromoCodeResponseDto?> MapAsync(Guid id, CancellationToken ct)
         {
-            var p = await _db.PromoCodes.Include(x => x.Operator).FirstOrDefaultAsync(x => x.Id == id, ct);
+            var p = await _db.PromoCodes.FirstOrDefaultAsync(x => x.Id == id, ct);
             return p is null ? null : Map(p);
         }
     }

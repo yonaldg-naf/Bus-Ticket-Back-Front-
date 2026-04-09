@@ -28,11 +28,8 @@ export const noAuthGuard: CanActivateFn = () => {
   const role = auth.role();
 
   if (role === 'Admin') return router.createUrlTree(['/admin']);
-  if (role === 'Operator') return router.createUrlTree(['/operator']);
-  if (role === 'PendingOperator') return router.createUrlTree(['/auth/pending-approval']);
 
-  return router.createUrlTree(['/home']);
-};
+  return router.createUrlTree(['/home']);};
 
 // ------------------ ROLE GUARD ------------------
 export function roleGuard(...allowedRoles: string[]): CanActivateFn {

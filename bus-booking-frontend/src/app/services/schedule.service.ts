@@ -72,20 +72,11 @@ export class ScheduleService {
   }
 
   searchByKeys(body: SearchSchedulesByKeysRequest): Observable<PagedResult<ScheduleResponse>> {
-    return this.http.post<PagedResult<ScheduleResponse>>(`${this.base}/search-by-keys`, body);
+    return this.http.post<PagedResult<ScheduleResponse>>(`${this.base}/search`, body);
   }
 
-  createByKeys(body: {
-    operatorUsername?: string;
-    companyName?: string;
-    busCode: string;
-    routeCode: string;
-    departureUtc?: string;
-    departureLocal?: string;
-    timeZoneId?: string;
-    basePrice: number;
-  }): Observable<ScheduleResponse> {
-    return this.http.post<ScheduleResponse>(`${this.base}/by-keys`, body);
+  createSchedule(body: { busId: string; routeId: string; departureUtc: string; basePrice: number }): Observable<ScheduleResponse> {
+    return this.http.post<ScheduleResponse>(this.base, body);
   }
 
   update(id: string, body: { departureLocal: string; timeZoneId: string; basePrice: number }): Observable<ScheduleResponse> {

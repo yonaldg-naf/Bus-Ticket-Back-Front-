@@ -79,10 +79,9 @@ import { ToastService } from '../../../services/toast.service';
 
           <div>
             <label class="form-label">Account Type</label>
-            <div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-1 gap-3">
               @for (r of roles; track r.value) {
-                <label class="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer transition-all"
-                  [class]="form.get('role')?.value === r.value ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-slate-700'">
+                <label class="flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer transition-all border-red-500 bg-red-50 dark:bg-red-900/20">
                   <input type="radio" formControlName="role" [value]="r.value" class="sr-only"/>
                   <span class="text-2xl">{{ r.icon }}</span>
                   <div>
@@ -93,18 +92,6 @@ import { ToastService } from '../../../services/toast.service';
               }
             </div>
           </div>
-
-          @if (form.get('role')?.value === 'Operator') {
-            <div class="p-4 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-2xl flex items-start gap-3">
-              <svg class="w-5 h-5 text-slate-500 dark:text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-              <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                Operator accounts require <strong class="text-slate-800 dark:text-white">admin approval</strong> before you can add buses or schedules.
-                You'll be registered as a <strong class="text-slate-800 dark:text-white">Pending Operator</strong> and can login, but full access is granted once approved.
-              </p>
-            </div>
-          }
 
           @if (errorMsg()) {
             <div class="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl">
@@ -146,8 +133,7 @@ export class RegisterComponent {
   showPwd  = signal(false);
 
   roles = [
-    { value: 'Customer', label: 'Traveller',    icon: '🧳', desc: 'Book bus tickets'  },
-    { value: 'Operator', label: 'Bus Operator', icon: '🚌', desc: 'Manage your fleet · Needs admin approval' },
+    { value: 'Customer', label: 'Traveller', icon: '🧳', desc: 'Book bus tickets' },
   ];
 
   form = this.fb.group({
@@ -155,7 +141,7 @@ export class RegisterComponent {
     username: ['', Validators.required],
     email:    ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]],
-    role:     ['Customer'],
+    role: ['Customer'],
   });
 
   isInvalid(f: string) { const c = this.form.get(f); return !!(c?.invalid && c?.touched); }
@@ -164,22 +150,11 @@ export class RegisterComponent {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     this.loading.set(true); this.errorMsg.set('');
     const v = this.form.value;
-    this.auth.register({ fullName: v.fullName!, username: v.username!, email: v.email!, password: v.password!, role: v.role as any }).subscribe({
-      next: (res) => {
+    this.auth.register({ fullName: v.fullName!, username: v.username!, email: v.email!, password: v.password! }).subscribe({
+      next: () => {
         this.loading.set(false);
-        if (res.role === 'PendingOperator') {
-          this.toast.success('Application submitted! Awaiting admin approval. 🕐');
-          this.router.navigate(['/auth/pending-approval']);
-        } else if (res.role === 'Admin') {
-          this.toast.success('Welcome, Admin!');
-          this.router.navigate(['/admin']);
-        } else if (res.role === 'Operator') {
-          this.toast.success('Welcome to SwiftRoute! 🎉');
-          this.router.navigate(['/operator']);
-        } else {
-          this.toast.success('Account created! Welcome to SwiftRoute 🎉');
-          this.router.navigate(['/home']);
-        }
+        this.toast.success('Account created! Welcome to SwiftRoute 🎉');
+        this.router.navigate(['/home']);
       },
       error: (err) => { this.loading.set(false); this.errorMsg.set(err.error?.message ?? 'Registration failed. Please try again.'); },
     });

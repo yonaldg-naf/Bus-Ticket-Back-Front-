@@ -22,38 +22,6 @@ namespace BusTicketBooking.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("BusTicketBooking.Models.Announcement", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<Guid>("OperatorId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("ScheduleId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ScheduleId");
-
-                    b.ToTable("Announcements");
-                });
-
             modelBuilder.Entity("BusTicketBooking.Models.AuditLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -246,9 +214,6 @@ namespace BusTicketBooking.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<Guid>("OperatorId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("RegistrationNumber")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -270,51 +235,10 @@ namespace BusTicketBooking.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OperatorId", "Code")
+                    b.HasIndex("Code")
                         .IsUnique();
 
                     b.ToTable("Buses");
-                });
-
-            modelBuilder.Entity("BusTicketBooking.Models.BusOperator", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CompanyName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
-
-                    b.Property<string>("SupportPhone")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("BusOperators");
                 });
 
             modelBuilder.Entity("BusTicketBooking.Models.BusRoute", b =>
@@ -328,9 +252,6 @@ namespace BusTicketBooking.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
-
-                    b.Property<Guid>("OperatorId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("RouteCode")
                         .IsRequired()
@@ -347,7 +268,7 @@ namespace BusTicketBooking.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OperatorId", "RouteCode")
+                    b.HasIndex("RouteCode")
                         .IsUnique();
 
                     b.ToTable("BusRoutes");
@@ -535,9 +456,6 @@ namespace BusTicketBooking.Migrations
                         .HasPrecision(10, 2)
                         .HasColumnType("decimal(10,2)");
 
-                    b.Property<Guid>("OperatorId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
@@ -554,57 +472,7 @@ namespace BusTicketBooking.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.HasIndex("OperatorId");
-
                     b.ToTable("PromoCodes");
-                });
-
-            modelBuilder.Entity("BusTicketBooking.Models.Review", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("BookingId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Comment")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("Rating")
-                        .HasColumnType("int");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
-
-                    b.Property<Guid>("ScheduleId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BookingId")
-                        .IsUnique();
-
-                    b.HasIndex("ScheduleId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Reviews");
                 });
 
             modelBuilder.Entity("BusTicketBooking.Models.RouteStop", b =>
@@ -847,17 +715,6 @@ namespace BusTicketBooking.Migrations
                     b.ToTable("WalletTransactions");
                 });
 
-            modelBuilder.Entity("BusTicketBooking.Models.Announcement", b =>
-                {
-                    b.HasOne("BusTicketBooking.Models.BusSchedule", "Schedule")
-                        .WithMany()
-                        .HasForeignKey("ScheduleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Schedule");
-                });
-
             modelBuilder.Entity("BusTicketBooking.Models.Booking", b =>
                 {
                     b.HasOne("BusTicketBooking.Models.BusSchedule", "Schedule")
@@ -886,39 +743,6 @@ namespace BusTicketBooking.Migrations
                         .IsRequired();
 
                     b.Navigation("Booking");
-                });
-
-            modelBuilder.Entity("BusTicketBooking.Models.Bus", b =>
-                {
-                    b.HasOne("BusTicketBooking.Models.BusOperator", "Operator")
-                        .WithMany("Buses")
-                        .HasForeignKey("OperatorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Operator");
-                });
-
-            modelBuilder.Entity("BusTicketBooking.Models.BusOperator", b =>
-                {
-                    b.HasOne("BusTicketBooking.Models.User", "User")
-                        .WithOne("OperatorProfile")
-                        .HasForeignKey("BusTicketBooking.Models.BusOperator", "UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("BusTicketBooking.Models.BusRoute", b =>
-                {
-                    b.HasOne("BusTicketBooking.Models.BusOperator", "Operator")
-                        .WithMany("Routes")
-                        .HasForeignKey("OperatorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Operator");
                 });
 
             modelBuilder.Entity("BusTicketBooking.Models.BusSchedule", b =>
@@ -968,44 +792,6 @@ namespace BusTicketBooking.Migrations
                         .IsRequired();
 
                     b.Navigation("Booking");
-                });
-
-            modelBuilder.Entity("BusTicketBooking.Models.PromoCode", b =>
-                {
-                    b.HasOne("BusTicketBooking.Models.BusOperator", "Operator")
-                        .WithMany()
-                        .HasForeignKey("OperatorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Operator");
-                });
-
-            modelBuilder.Entity("BusTicketBooking.Models.Review", b =>
-                {
-                    b.HasOne("BusTicketBooking.Models.Booking", "Booking")
-                        .WithMany()
-                        .HasForeignKey("BookingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("BusTicketBooking.Models.BusSchedule", "Schedule")
-                        .WithMany()
-                        .HasForeignKey("ScheduleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("BusTicketBooking.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Booking");
-
-                    b.Navigation("Schedule");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("BusTicketBooking.Models.RouteStop", b =>
@@ -1061,13 +847,6 @@ namespace BusTicketBooking.Migrations
                     b.Navigation("Schedules");
                 });
 
-            modelBuilder.Entity("BusTicketBooking.Models.BusOperator", b =>
-                {
-                    b.Navigation("Buses");
-
-                    b.Navigation("Routes");
-                });
-
             modelBuilder.Entity("BusTicketBooking.Models.BusRoute", b =>
                 {
                     b.Navigation("RouteStops");
@@ -1088,8 +867,6 @@ namespace BusTicketBooking.Migrations
             modelBuilder.Entity("BusTicketBooking.Models.User", b =>
                 {
                     b.Navigation("Bookings");
-
-                    b.Navigation("OperatorProfile");
                 });
 #pragma warning restore 612, 618
         }

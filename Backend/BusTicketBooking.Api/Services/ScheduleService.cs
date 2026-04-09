@@ -91,42 +91,12 @@ namespace BusTicketBooking.Services
         /// Returns all schedules in the system ordered by departure time (earliest first).
         /// Includes bus and route details. No filtering applied — admin use only.
         /// </summary>
-        private async Task<IEnumerable<ScheduleResponseDto>> GetAllAsync(CancellationToken ct = default)
+        public async Task<IEnumerable<ScheduleResponseDto>> GetAllAsync(CancellationToken ct = default)
         {
             var list = await _db.BusSchedules
                 .Include(s => s.Bus)
                 .Include(s => s.Route)
                 .AsNoTracking()
-                .OrderBy(s => s.DepartureUtc)
-                .ToListAsync(ct);
-
-            return list.Select(e => Map(e, e.Bus!, e.Route!));
-        }
-
-        /// <summary>
-        /// Returns schedules filtered by the caller's role:
-        ///   - Admin    → returns all schedules (same as GetAllAsync).
-        ///   - Operator → returns only schedules for buses owned by that operator.
-        ///                Returns empty if the operator has no profile or no buses.
-        /// </summary>
-        public async Task<IEnumerable<ScheduleResponseDto>> GetAllSecuredAsync(Guid userId, string role, CancellationToken ct = default)
-        {
-            if (role == Roles.Admin)
-                return await GetAllAsync(ct);  // Admin sees all
-
-            // Operator: find their BusOperator profile, then filter by their buses
-            var operatorProfile = await _db.BusOperators
-                .AsNoTracking()
-                .FirstOrDefaultAsync(o => o.UserId == userId, ct);
-
-            if (operatorProfile == null)
-                return Enumerable.Empty<ScheduleResponseDto>();
-
-            var list = await _db.BusSchedules
-                .Include(s => s.Bus)
-                .Include(s => s.Route)
-                .AsNoTracking()
-                .Where(s => s.Bus!.OperatorId == operatorProfile.Id)
                 .OrderBy(s => s.DepartureUtc)
                 .ToListAsync(ct);
 
@@ -329,55 +299,6 @@ namespace BusTicketBooking.Services
         }
 
         /// <summary>
-        /// Creates a schedule using operator username/company name, bus code, and route code
-        /// instead of GUIDs. Supports both UTC departure time and local time + timezone ID.
-        /// Throws InvalidOperationException if the bus or route is not found for the operator,
-        /// the departure is in the past, or a duplicate schedule exists.
-        /// </summary>
-        public async Task<ScheduleResponseDto> CreateByKeysAsync(CreateScheduleByKeysRequestDto dto, CancellationToken ct = default)
-        {
-            var operatorId = await ResolveOperatorIdAsync(dto.OperatorUsername, dto.CompanyName, ct);
-
-            var bus = await _db.Buses.AsNoTracking()
-                .FirstOrDefaultAsync(b => b.OperatorId == operatorId && b.Code == dto.BusCode, ct)
-                ?? throw new InvalidOperationException("Bus not found for operator.");
-
-            var route = await _db.BusRoutes.AsNoTracking()
-                .FirstOrDefaultAsync(r => r.OperatorId == operatorId && r.RouteCode == dto.RouteCode, ct)
-                ?? throw new InvalidOperationException("Route not found for operator.");
-
-            DateTime depUtc = dto.DepartureUtc.HasValue
-                ? EnsureUtc(dto.DepartureUtc.Value)
-                : ConvertToUtc(
-                    DateTime.SpecifyKind(
-                        DateTime.Parse(dto.DepartureLocal!, System.Globalization.CultureInfo.InvariantCulture),
-                        DateTimeKind.Unspecified),
-                    dto.TimeZoneId!);
-
-            if (depUtc < DateTime.UtcNow.AddMinutes(-1))
-                throw new InvalidOperationException("Departure time must be in the future.");
-
-            var dup = (await _schedules.FindAsync(
-                s => s.BusId == bus.Id && s.DepartureUtc == depUtc,
-                ct)).Any();
-
-            if (dup)
-                throw new InvalidOperationException("A schedule for this bus at the specified time already exists.");
-
-            var entity = new BusSchedule
-            {
-                BusId = bus.Id,
-                RouteId = route.Id,
-                DepartureUtc = depUtc,
-                BasePrice = dto.BasePrice
-            };
-
-            entity = await _schedules.AddAsync(entity, ct);
-
-            return Map(entity, bus, route);
-        }
-
-        /// <summary>
         /// Searches for schedules using city/stop names instead of GUIDs.
         /// Supports additional filters: bus type, price range, amenities.
         /// Applies the same departure/cancellation filters as SearchAsync.
@@ -481,55 +402,6 @@ namespace BusTicketBooking.Services
         }
 
         // ── Private helpers ───────────────────────────────────────────────────
-
-        /// <summary>
-        /// Checks whether a schedule belongs to the given operator user.
-        /// Used by the controller for lightweight ownership verification
-        /// without loading all schedules.
-        /// </summary>
-        public async Task<bool> IsOwnedByOperatorAsync(Guid scheduleId, Guid userId, CancellationToken ct = default)
-        {
-            var operatorProfile = await _db.BusOperators
-                .AsNoTracking()
-                .FirstOrDefaultAsync(o => o.UserId == userId, ct);
-
-            if (operatorProfile == null) return false;
-
-            return await _db.BusSchedules
-                .AsNoTracking()
-                .AnyAsync(s => s.Id == scheduleId && s.Bus!.OperatorId == operatorProfile.Id, ct);
-        }
-
-        /// <summary>
-        /// Resolves an operator's GUID from either their username or company name.
-        /// Throws InvalidOperationException if neither resolves to a valid operator.
-        /// </summary>
-        private async Task<Guid> ResolveOperatorIdAsync(string? username, string? companyName, CancellationToken ct)
-        {
-            if (!string.IsNullOrWhiteSpace(username))
-            {
-                var user = await _db.Users.AsNoTracking()
-                    .FirstOrDefaultAsync(u => u.Username == username, ct)
-                    ?? throw new InvalidOperationException("Operator user not found.");
-
-                var op = await _db.BusOperators.AsNoTracking()
-                    .FirstOrDefaultAsync(o => o.UserId == user.Id, ct)
-                    ?? throw new InvalidOperationException("Operator profile not found.");
-
-                return op.Id;
-            }
-
-            if (!string.IsNullOrWhiteSpace(companyName))
-            {
-                var op = await _db.BusOperators.AsNoTracking()
-                    .FirstOrDefaultAsync(o => o.CompanyName == companyName, ct)
-                    ?? throw new InvalidOperationException("Operator with given company name not found.");
-
-                return op.Id;
-            }
-
-            throw new InvalidOperationException("Provide OperatorUsername or CompanyName.");
-        }
 
         /// <summary>
         /// Ensures a DateTime value is in UTC.

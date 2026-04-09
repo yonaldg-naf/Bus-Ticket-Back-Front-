@@ -34,10 +34,6 @@ import { ThemeService } from '../../services/theme.service';
             <a routerLink="/my-bookings" routerLinkActive="text-red-600 bg-red-50 dark:bg-red-900/20 font-semibold"
               class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">My Bookings</a>
           }
-          @if (auth.isOperator()) {
-            <a routerLink="/operator" routerLinkActive="text-red-600 bg-red-50 dark:bg-red-900/20 font-semibold"
-              class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">Operator</a>
-          }
           @if (auth.isAdmin()) {
             <a routerLink="/admin" routerLinkActive="text-red-600 bg-red-50 dark:bg-red-900/20 font-semibold"
               class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">Admin</a>
@@ -84,7 +80,7 @@ import { ThemeService } from '../../services/theme.service';
                     <p class="text-sm font-bold text-gray-900 dark:text-white truncate">{{ auth.currentUser()?.fullName }}</p>
                     <p class="text-xs text-gray-500 dark:text-slate-400 truncate mt-0.5">{{ auth.currentUser()?.email }}</p>
                     <span class="inline-block mt-2 text-xs px-2.5 py-0.5 rounded-full font-semibold"
-                      [class]="auth.isAdmin() ? 'bg-purple-100 text-purple-700' : auth.isOperator() ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'">
+                      [class]="auth.isAdmin() ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'">
                       {{ auth.currentUser()?.role }}
                     </span>
                   </div>
@@ -143,17 +139,6 @@ import { ThemeService } from '../../services/theme.service';
         </div>
       </div>
     </header>
-
-    <!-- Pending Operator Banner -->
-    @if (auth.currentUser()?.role === 'PendingOperator') {
-      <div class="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-b border-orange-200 dark:border-orange-800 px-4 py-2.5">
-        <div class="max-w-7xl mx-auto flex items-center justify-center gap-2 text-sm text-orange-700 dark:text-orange-400">
-          <span class="text-base">⏳</span>
-          <strong>Operator approval pending.</strong>
-          <span class="hidden sm:inline">Admin will review your request shortly. Full access granted once approved.</span>
-        </div>
-      </div>
-    }
   `,
 })
 export class NavbarComponent {

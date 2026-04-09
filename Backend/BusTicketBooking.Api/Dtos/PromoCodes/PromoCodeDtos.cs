@@ -29,7 +29,6 @@ namespace BusTicketBooking.Dtos.PromoCodes
         public int MaxUses { get; set; }
         public int UsedCount { get; set; }
         public bool IsActive { get; set; }
-        public string CompanyName { get; set; } = string.Empty;
         public DateTime CreatedAtUtc { get; set; }
     }
 

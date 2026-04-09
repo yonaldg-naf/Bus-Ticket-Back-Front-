@@ -13,12 +13,6 @@ export interface CreateBookingRequest {
   promoCode?: string;
 }
 
-export interface CreateBookingByKeysRequest {
-  busCode: string;
-  departureUtc: string; // ISO UTC
-  passengers: BookingPassengerDto[];
-}
-
 @Injectable({ providedIn: 'root' })
 export class BookingService {
   private http = inject(HttpClient);
@@ -26,10 +20,6 @@ export class BookingService {
 
   create(dto: CreateBookingRequest): Observable<BookingResponse> {
     return this.http.post<BookingResponse>(`${this.base}`, dto);
-  }
-
-  createByKeys(dto: CreateBookingByKeysRequest): Observable<BookingResponse> {
-    return this.http.post<BookingResponse>(`${this.base}/by-keys`, dto);
   }
 
   getMyBookings(): Observable<BookingResponse[]> {
@@ -46,17 +36,5 @@ export class BookingService {
 
   pay(id: string, dto: PayBookingRequest): Observable<BookingResponse> {
     return this.http.post<BookingResponse>(`${this.base}/${id}/pay`, dto);
-  }
-
-  getOperatorStats(): Observable<{ totalBookings: number; confirmedBookings: number; revenue: number }> {
-    return this.http.get<{ totalBookings: number; confirmedBookings: number; revenue: number }>(`${this.base}/operator-stats`);
-  }
-
-  getBySchedule(scheduleId: string): Observable<any[]> {
-    return this.http.get<any[]>(`${this.base}/schedule/${scheduleId}`);
-  }
-
-  busMiss(id: string): Observable<{ bookingId: string; status: string; originalAmount: number; refundAmount: number; message: string }> {
-    return this.http.post<any>(`${this.base}/${id}/bus-miss`, {});
   }
 }

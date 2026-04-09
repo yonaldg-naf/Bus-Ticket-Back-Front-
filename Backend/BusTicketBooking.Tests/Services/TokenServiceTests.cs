@@ -56,7 +56,7 @@ public class TokenServiceTests
     public void GenerateToken_ContainsCorrectClaims()
     {
         var svc  = Build();
-        var user = SeedHelper.MakeUser(Roles.Operator);
+        var user = SeedHelper.MakeUser(Roles.Admin);
         user.FullName = "Test Operator";
 
         var (token, _) = svc.GenerateAccessToken(user);
@@ -69,7 +69,7 @@ public class TokenServiceTests
             jwt.Claims.First(c => c.Type == JwtRegisteredClaimNames.Sub).Value);
 
         // role claim = user role
-        Assert.Equal(Roles.Operator,
+        Assert.Equal(Roles.Admin,
             jwt.Claims.First(c => c.Type == "role" ||
                                   c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role").Value);
 

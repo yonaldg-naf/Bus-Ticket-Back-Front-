@@ -2,11 +2,9 @@ using System;
 
 namespace BusTicketBooking.Models
 {
-    /// <summary>Discount / promo code created by an operator.</summary>
+    /// <summary>Discount / promo code created by admin.</summary>
     public class PromoCode : BaseEntity
     {
-        public Guid OperatorId { get; set; }
-
         public string Code { get; set; } = string.Empty;
 
         /// <summary>Flat (1) or Percentage (2).</summary>
@@ -22,7 +20,5 @@ namespace BusTicketBooking.Models
         public int MaxUses { get; set; } = 100;
         public int UsedCount { get; set; } = 0;
         public bool IsActive { get; set; } = true;
-
-        public BusOperator? Operator { get; set; }
     }
 }

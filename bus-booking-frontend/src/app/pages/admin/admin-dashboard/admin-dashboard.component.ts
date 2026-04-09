@@ -4,7 +4,6 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../services/auth.service';
 import { AnalyticsService, AdminSummary } from '../../../services/analytics.service';
 import { AuditLogEntry } from '../../../services/audit-log.service';
-import { OperatorApprovalService } from '../../../services/operator-approval.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -28,13 +27,6 @@ import { OperatorApprovalService } from '../../../services/operator-approval.ser
           </div>
         </div>
         <div class="flex items-center gap-3">
-          @if (pendingCount() > 0) {
-            <a routerLink="/admin/operator-approvals"
-              class="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors">
-              <span class="w-5 h-5 bg-amber-500 text-white rounded-full flex items-center justify-center text-xs font-bold">{{ pendingCount() }}</span>
-              Pending Approvals
-            </a>
-          }
           <div class="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
             <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
             <span class="text-xs text-green-700 font-medium">Systems Online</span>
@@ -204,30 +196,27 @@ import { OperatorApprovalService } from '../../../services/operator-approval.ser
 export class AdminDashboardComponent implements OnInit {
   auth = inject(AuthService);
   private analyticsSvc = inject(AnalyticsService);
-  private approvalSvc  = inject(OperatorApprovalService);
 
   logsLoading  = signal(true);
   pendingCount = signal(0);
   recentLogs   = signal<AuditLogEntry[]>([]);
 
   stats = signal([
-    { label: 'Total Buses',    icon: '🚌', value: '—', loading: true, iconBg: 'bg-red-50',    badge: 'Fleet',     badgeCls: 'bg-red-100 text-red-600'    },
-    { label: 'Schedules',      icon: '🗓️', value: '—', loading: true, iconBg: 'bg-blue-50',   badge: 'Active',    badgeCls: 'bg-blue-100 text-blue-600'   },
-    { label: 'Cities Covered', icon: '🏙️', value: '—', loading: true, iconBg: 'bg-purple-50', badge: 'Network',   badgeCls: 'bg-purple-100 text-purple-600'},
-    { label: 'Total Stops',    icon: '📍', value: '—', loading: true, iconBg: 'bg-orange-50', badge: 'Stops',     badgeCls: 'bg-orange-100 text-orange-600'},
+    { label: 'Total Buses',     icon: '🚌', value: '—', loading: true, iconBg: 'bg-red-50',    badge: 'Fleet',    badgeCls: 'bg-red-100 text-red-600'    },
+    { label: 'Schedules',       icon: '🗓️', value: '—', loading: true, iconBg: 'bg-blue-50',   badge: 'Active',   badgeCls: 'bg-blue-100 text-blue-600'   },
+    { label: 'Routes',          icon: '🗺️', value: '—', loading: true, iconBg: 'bg-teal-50',   badge: 'Network',  badgeCls: 'bg-teal-100 text-teal-600'   },
+    { label: 'Total Users',     icon: '👥', value: '—', loading: true, iconBg: 'bg-purple-50', badge: 'Users',    badgeCls: 'bg-purple-100 text-purple-600'},
   ]);
 
   adminCards = [
-    { title: 'Operator Approvals',   desc: 'Review pending operator requests',        icon: '✅', bg: 'bg-green-50',  link: '/admin/operator-approvals',    badge: '' },
-    { title: 'Manage Users',         desc: 'View and manage all user accounts',        icon: '👥', bg: 'bg-blue-50',   link: '/admin/manage-users',           badge: '' },
-    { title: 'Manage Stops',         desc: 'Add and edit bus stops & cities',          icon: '📍', bg: 'bg-orange-50', link: '/admin/stops',                  badge: '' },
-    { title: 'Audit Logs',           desc: 'Full system activity & error trail',       icon: '📋', bg: 'bg-slate-100', link: '/admin/audit-logs',             badge: '' },
-    { title: 'Operator Performance', desc: 'Metrics and leaderboard for all operators',icon: '📊', bg: 'bg-yellow-50', link: '/admin/operator-performance',   badge: '' },
-    { title: 'All Complaints',       desc: 'View and reply to all customer complaints', icon: '💬', bg: 'bg-orange-50', link: '/admin/complaints',             badge: '' },
-    { title: 'All Buses',            desc: 'View all registered buses',                icon: '🚌', bg: 'bg-red-50',    link: '/operator/buses',               badge: '' },
-    { title: 'All Schedules',        desc: 'Manage all departure schedules',           icon: '🗓️', bg: 'bg-indigo-50', link: '/operator/schedules',           badge: '' },
-    { title: 'All Routes',           desc: 'View routes across all operators',         icon: '🗺️', bg: 'bg-teal-50',   link: '/operator/routes',              badge: '' },
-    { title: 'Operator Panel',       desc: 'Switch to operator management view',       icon: '🎛️', bg: 'bg-purple-50', link: '/operator',                     badge: '' },
+    { title: 'Manage Users',   desc: 'View and manage all user accounts',         icon: '👥', bg: 'bg-blue-50',   link: '/admin/manage-users', badge: '' },
+    { title: 'Manage Stops',   desc: 'Add and edit bus stops & cities',           icon: '📍', bg: 'bg-orange-50', link: '/admin/stops',        badge: '' },
+    { title: 'Manage Buses',   desc: 'Create and manage the bus fleet',           icon: '🚌', bg: 'bg-red-50',    link: '/admin/buses',        badge: '' },
+    { title: 'Manage Routes',  desc: 'Create and manage routes',                  icon: '🗺️', bg: 'bg-teal-50',   link: '/admin/routes',       badge: '' },
+    { title: 'Schedules',      desc: 'Manage all departure schedules',            icon: '🗓️', bg: 'bg-indigo-50', link: '/admin/schedules',    badge: '' },
+    { title: 'Promo Codes',    desc: 'Create and manage discount codes',          icon: '🎟️', bg: 'bg-yellow-50', link: '/admin/promo-codes',  badge: '' },
+    { title: 'All Complaints', desc: 'View and reply to customer complaints',     icon: '💬', bg: 'bg-purple-50', link: '/admin/complaints',   badge: '' },
+    { title: 'Audit Logs',     desc: 'Full system activity & error trail',        icon: '📋', bg: 'bg-slate-100', link: '/admin/audit-logs',   badge: '' },
   ];
 
   healthItems = [
@@ -237,19 +226,12 @@ export class AdminDashboardComponent implements OnInit {
   ];
 
   ngOnInit() {
-    // Single call replaces 5 separate API requests
     this.analyticsSvc.getAdminSummary().subscribe({
       next: (s: AdminSummary) => {
         this.updateStat(0, s.totalBuses.toString());
         this.updateStat(1, s.totalSchedules.toString());
-        this.updateStat(2, s.totalRoutes.toString());   // reuse routes slot for cities approximation
-        this.updateStat(3, s.totalRoutes.toString());   // placeholder — stops not in summary
-        this.pendingCount.set(s.pendingApprovals);
-        this.adminCards = this.adminCards.map(c =>
-          c.link === '/admin/operator-approvals'
-            ? { ...c, badge: s.pendingApprovals > 0 ? String(s.pendingApprovals) : '' }
-            : c
-        );
+        this.updateStat(2, s.totalRoutes.toString());
+        this.updateStat(3, s.totalUsers.toString());
         this.recentLogs.set(
           (s.recentActivity ?? []).map((a, i) => ({
             id: String(i),
@@ -266,19 +248,8 @@ export class AdminDashboardComponent implements OnInit {
       error: (err) => {
         [0, 1, 2, 3].forEach(i => this.updateStat(i, '—'));
         this.logsLoading.set(false);
-        console.error(err)
+        console.error(err);
       },
-    });
-
-    // Pending approvals count (kept separate for the badge — admin-summary already includes it)
-    this.approvalSvc.getPending().subscribe({
-      next: d => {
-        this.pendingCount.set(d.length);
-        this.adminCards = this.adminCards.map(c =>
-          c.link === '/admin/operator-approvals' ? { ...c, badge: d.length > 0 ? String(d.length) : '' } : c
-        );
-      },
-      error: () => {},
     });
   }
 

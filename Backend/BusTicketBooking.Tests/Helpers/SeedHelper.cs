@@ -4,9 +4,6 @@ using BusTicketBooking.Models.Enums;
 
 namespace BusTicketBooking.Tests.Helpers
 {
-    /// <summary>
-    /// Builds common test entities so each test file doesn't repeat the same setup code.
-    /// </summary>
     public static class SeedHelper
     {
         // ── Users ─────────────────────────────────────────────────────────────
@@ -16,30 +13,18 @@ namespace BusTicketBooking.Tests.Helpers
             {
                 Id           = Guid.NewGuid(),
                 Username     = "testuser_" + Guid.NewGuid().ToString()[..6],
-                Email        = "test@example.com",
+                Email        = Guid.NewGuid().ToString()[..6] + "@test.com",
                 FullName     = "Test User",
                 Role         = role,
                 PasswordHash = "hash"
             };
 
-        // ── Operator ──────────────────────────────────────────────────────────
-
-        public static BusOperator MakeOperator(Guid userId)
-            => new BusOperator
-            {
-                Id          = Guid.NewGuid(),
-                UserId      = userId,
-                CompanyName = "Test Bus Co",
-                SupportPhone = "9999999999"
-            };
-
         // ── Bus ───────────────────────────────────────────────────────────────
 
-        public static Bus MakeBus(Guid operatorId, BusStatus status = BusStatus.Available, int seats = 40)
+        public static Bus MakeBus(BusStatus status = BusStatus.Available, int seats = 40)
             => new Bus
             {
                 Id                 = Guid.NewGuid(),
-                OperatorId         = operatorId,
                 Code               = "BUS-" + Guid.NewGuid().ToString()[..4].ToUpper(),
                 RegistrationNumber = "MH12AB1234",
                 BusType            = BusType.Seater,
@@ -49,12 +34,11 @@ namespace BusTicketBooking.Tests.Helpers
 
         // ── Route ─────────────────────────────────────────────────────────────
 
-        public static BusRoute MakeRoute(Guid operatorId)
+        public static BusRoute MakeRoute()
             => new BusRoute
             {
-                Id          = Guid.NewGuid(),
-                OperatorId  = operatorId,
-                RouteCode   = "RT-" + Guid.NewGuid().ToString()[..4].ToUpper()
+                Id        = Guid.NewGuid(),
+                RouteCode = "RT-" + Guid.NewGuid().ToString()[..4].ToUpper()
             };
 
         // ── Schedule ──────────────────────────────────────────────────────────
@@ -77,11 +61,11 @@ namespace BusTicketBooking.Tests.Helpers
             BookingStatus status = BookingStatus.Pending, decimal amount = 500m)
             => new Booking
             {
-                Id          = Guid.NewGuid(),
-                UserId      = userId,
-                ScheduleId  = scheduleId,
-                Status      = status,
-                TotalAmount = amount,
+                Id             = Guid.NewGuid(),
+                UserId         = userId,
+                ScheduleId     = scheduleId,
+                Status         = status,
+                TotalAmount    = amount,
                 DiscountAmount = 0
             };
 
@@ -110,42 +94,35 @@ namespace BusTicketBooking.Tests.Helpers
 
         // ── Promo Code ────────────────────────────────────────────────────────
 
-        public static PromoCode MakePromo(Guid operatorId,
+        public static PromoCode MakePromo(
             string code = "SAVE10", int discountType = 1, decimal discountValue = 100m,
             int maxUses = 10, int usedCount = 0, decimal? minAmount = null)
             => new PromoCode
             {
-                Id            = Guid.NewGuid(),
-                OperatorId    = operatorId,
-                Code          = code,
-                DiscountType  = discountType,
-                DiscountValue = discountValue,
-                MaxUses       = maxUses,
-                UsedCount     = usedCount,
-                IsActive      = true,
-                ExpiresAtUtc  = DateTime.UtcNow.AddDays(30),
+                Id               = Guid.NewGuid(),
+                Code             = code,
+                DiscountType     = discountType,
+                DiscountValue    = discountValue,
+                MaxUses          = maxUses,
+                UsedCount        = usedCount,
+                IsActive         = true,
+                ExpiresAtUtc     = DateTime.UtcNow.AddDays(30),
                 MinBookingAmount = minAmount
             };
 
-        // ── Seed a full scenario (operator + bus + route + schedule) ──────────
+        // ── Seed a full scenario (bus + route + schedule) ─────────────────────
 
-        public static (BusOperator op, Bus bus, BusRoute route, BusSchedule schedule)
+        public static (object placeholder, Bus bus, BusRoute route, BusSchedule schedule)
             SeedSchedule(AppDbContext db,
                 BusStatus busStatus = BusStatus.Available,
                 DateTime? departure = null,
                 decimal price = 500m,
                 bool scheduleCancelled = false)
         {
-            var user = MakeUser(Roles.Operator);
-            db.Users.Add(user);
-
-            var op = MakeOperator(user.Id);
-            db.BusOperators.Add(op);
-
-            var bus = MakeBus(op.Id, busStatus);
+            var bus = MakeBus(busStatus);
             db.Buses.Add(bus);
 
-            var route = MakeRoute(op.Id);
+            var route = MakeRoute();
             db.BusRoutes.Add(route);
 
             var schedule = MakeSchedule(bus.Id, route.Id, departure, price, scheduleCancelled);
@@ -153,11 +130,10 @@ namespace BusTicketBooking.Tests.Helpers
 
             db.SaveChanges();
 
-            // Attach nav props so tests can use them without extra queries
             schedule.Bus   = bus;
             schedule.Route = route;
 
-            return (op, bus, route, schedule);
+            return (new object(), bus, route, schedule);
         }
     }
 }

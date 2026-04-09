@@ -14,7 +14,6 @@ export interface PromoCodeResponse {
   maxUses: number;
   usedCount: number;
   isActive: boolean;
-  companyName: string;
   createdAtUtc: string;
 }
 
@@ -45,8 +44,8 @@ export class PromoCodeService {
     return this.http.post<PromoCodeResponse>(this.base, dto);
   }
 
-  getMy(): Observable<PromoCodeResponse[]> {
-    return this.http.get<PromoCodeResponse[]>(`${this.base}/my`);
+  getAll(): Observable<PromoCodeResponse[]> {
+    return this.http.get<PromoCodeResponse[]>(this.base);
   }
 
   toggle(id: string): Observable<PromoCodeResponse> {

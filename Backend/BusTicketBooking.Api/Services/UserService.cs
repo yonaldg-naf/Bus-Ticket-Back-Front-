@@ -60,15 +60,6 @@ namespace BusTicketBooking.Services
             return await _users.AddAsync(user);
         }
 
-        /// <summary>Returns the company name for an operator user, or null if not found.</summary>
-        public async Task<string?> GetOperatorCompanyNameAsync(Guid userId, CancellationToken ct = default)
-        {
-            var op = await _db.BusOperators
-                .AsNoTracking()
-                .FirstOrDefaultAsync(o => o.UserId == userId, ct);
-            return op?.CompanyName;
-        }
-
         /// <summary>Returns a paged, filterable list of all users (admin use).</summary>
         /// <summary>
         /// Returns a paged, filterable list of all users in the system.

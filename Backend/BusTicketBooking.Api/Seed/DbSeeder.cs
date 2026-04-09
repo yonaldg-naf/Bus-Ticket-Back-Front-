@@ -30,34 +30,7 @@ namespace BusTicketBooking.Seed
                 logger.LogInformation("Seeded Admin user: {Username}", adminUser);
             }
 
-            // 2) Operator user + Operator profile (optional)
-            string opUser = config["Seed:Operator:Username"] ?? "operator";
-            string opEmail = config["Seed:Operator:Email"] ?? "operator@btb.local";
-            string opPass = config["Seed:Operator:Password"] ?? "Operator@123";
-            bool createOperator = bool.TryParse(config["Seed:Operator:Enabled"], out var opEnabled) ? opEnabled : true;
-            if (createOperator && !await db.Users.AnyAsync(u => u.Username == opUser))
-            {
-                var op = new User
-                {
-                    Username = opUser,
-                    Email = opEmail,
-                    FullName = "Default Operator",
-                    Role = Roles.Operator
-                };
-                op.PasswordHash = passwords.Hash(op, opPass);
-                db.Users.Add(op);
-                await db.SaveChangesAsync(); // ensure Id
-
-                db.BusOperators.Add(new BusOperator
-                {
-                    UserId = op.Id,
-                    CompanyName = "Sample Bus Operator",
-                    SupportPhone = "+91-00000-00000"
-                });
-                logger.LogInformation("Seeded Operator user/profile: {Username}", opUser);
-            }
-
-            // 3) Seed default Stops if empty (10 Indian cities)
+            // 2) Seed default Stops if empty (10 Indian cities)
             if (!await db.Stops.AnyAsync())
             {
                 var seedStops = new[]

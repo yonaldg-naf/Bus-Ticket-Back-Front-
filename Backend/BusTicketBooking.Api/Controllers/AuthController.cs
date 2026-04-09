@@ -1,10 +1,10 @@
-﻿using BusTicketBooking.Dtos.Auth;
+﻿using System.Threading;
+using System.Threading.Tasks;
+using BusTicketBooking.Dtos.Auth;
 using BusTicketBooking.Interfaces;
 using BusTicketBooking.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace BusTicketBooking.Controllers
 {
@@ -29,16 +29,12 @@ namespace BusTicketBooking.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var assignedRole = dto.Role.Trim() == Roles.Operator
-                ? Roles.PendingOperator
-                : Roles.Customer;
-
             var user = new User
             {
                 Username = dto.Username.Trim(),
                 Email    = dto.Email.Trim(),
                 FullName = dto.FullName.Trim(),
-                Role     = assignedRole
+                Role     = Roles.Customer
             };
 
             try
@@ -71,11 +67,10 @@ namespace BusTicketBooking.Controllers
             if (user is null || !_passwords.Verify(user, dto.Password))
                 return Unauthorized("Invalid username or password.");
 
-            var (token, expires) = _tokens.GenerateAccessToken(user);
+            if (user.Role != Roles.Admin && user.Role != Roles.Customer)
+                return Unauthorized("Invalid username or password.");
 
-            string? companyName = null; 
-            if (user.Role == Roles.Operator)
-                companyName = await _users.GetOperatorCompanyNameAsync(user.Id, ct);
+            var (token, expires) = _tokens.GenerateAccessToken(user);
 
             return Ok(new AuthResponseDto
             {
@@ -86,7 +81,7 @@ namespace BusTicketBooking.Controllers
                 Email        = user.Email,
                 Role         = user.Role,
                 FullName     = user.FullName,
-                CompanyName  = companyName ?? string.Empty
+                CompanyName  = string.Empty
             });
         }
 
@@ -96,7 +91,6 @@ namespace BusTicketBooking.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             var ok = await _users.ResetPasswordAsync(dto.Email, dto.NewPassword, ct);
-            // Always return 200 to avoid email enumeration
             return Ok(new { message = ok ? "Password reset successfully." : "If that email exists, the password has been updated." });
         }
 

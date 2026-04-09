@@ -1,5 +1,4 @@
 <Solution>
   <Project Path="BusTicketBooking.Api/BusTicketBooking.csproj" />
-  <Project Path="Project.Tests/Project.Tests.csproj" Id="eded84c7-f841-43c0-8596-eb43f63427af" />
   <Project Path="BusTicketBooking.Tests/BusTicketBooking.Tests.csproj" />
 </Solution>

@@ -13,11 +13,10 @@ export interface RegisterRequest {
   username: string;
   email: string;
   password: string;
-  role: 'Customer' | 'Operator' | 'Admin';
   fullName: string;
 }
 
-export type UserRole = 'Customer' | 'Operator' | 'Admin' | 'PendingOperator';
+export type UserRole = 'Customer' | 'Admin';
 
 export interface AuthResponse {
   accessToken: string;
@@ -55,7 +54,6 @@ export class AuthService {
   role = computed(() => this._currentUser()?.role ?? null);
 
   isAdmin = computed(() => this.role() === 'Admin');
-  isOperator = computed(() => this.role() === 'Operator');
   isCustomer = computed(() => this.role() === 'Customer');
 
   private base = `${environment.apiUrl}/auth`;
@@ -69,8 +67,6 @@ export class AuthService {
         this.saveSession(res);
 
         if (res.role === 'Admin') this.router.navigate(['/admin']);
-        else if (res.role === 'Operator') this.router.navigate(['/operator']);
-        else if (res.role === 'PendingOperator') this.router.navigate(['/auth/pending-approval']);
         else this.router.navigate(['/home']);
       })
     );

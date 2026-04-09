@@ -94,29 +94,10 @@ namespace BusTicketBooking.Services
                 .ToListAsync(ct);
         }
 
-        /// <summary>
-        /// Returns complaints based on the caller's role:
-        ///   - Admin    → returns all complaints in the system.
-        ///   - Operator → returns only complaints for bookings on their buses.
-        ///                Returns empty if the operator has no profile.
-        ///
-        /// Results are ordered newest first and include customer name, bus/route info, and reply status.
-        /// </summary>
-        public async Task<IEnumerable<ComplaintResponseDto>> GetAllAsync(Guid callerUserId, string role, CancellationToken ct = default)
+        public async Task<IEnumerable<ComplaintResponseDto>> GetAllAsync(CancellationToken ct = default)
         {
-            IQueryable<Complaint> query = _db.Complaints.AsNoTracking();
-
-            if (role == Roles.Operator)
-            {
-                var op = await _db.BusOperators.AsNoTracking()
-                    .FirstOrDefaultAsync(o => o.UserId == callerUserId, ct);
-
-                if (op is null) return Array.Empty<ComplaintResponseDto>();
-
-                query = query.Where(c => c.Booking!.Schedule!.Bus!.OperatorId == op.Id);
-            }
-
-            return await query
+            return await _db.Complaints
+                .AsNoTracking()
                 .OrderByDescending(c => c.CreatedAtUtc)
                 .Select(c => new ComplaintResponseDto
                 {
@@ -139,32 +120,12 @@ namespace BusTicketBooking.Services
                 .ToListAsync(ct);
         }
 
-        /// <summary>
-        /// Adds a reply to a complaint and marks it as "Resolved".
-        ///
-        /// Access rules:
-        ///   - Admin → can reply to any complaint.
-        ///   - Operator → can only reply to complaints for bookings on their own buses.
-        ///
-        /// Throws NotFoundException if the complaint doesn't exist.
-        /// Throws ForbiddenException if the operator doesn't own the related bus.
-        /// Returns the updated complaint with the reply included.
-        /// </summary>
-        public async Task<ComplaintResponseDto?> ReplyAsync(Guid callerUserId, string role, Guid id, ReplyComplaintRequestDto dto, CancellationToken ct = default)
+        public async Task<ComplaintResponseDto?> ReplyAsync(Guid id, ReplyComplaintRequestDto dto, CancellationToken ct = default)
         {
             var complaint = await _db.Complaints
                 .Include(c => c.Booking).ThenInclude(b => b!.Schedule).ThenInclude(s => s!.Bus)
                 .FirstOrDefaultAsync(c => c.Id == id, ct)
                 ?? throw new NotFoundException("Complaint not found.");
-
-            if (role == Roles.Operator)
-            {
-                var op = await _db.BusOperators.AsNoTracking()
-                    .FirstOrDefaultAsync(o => o.UserId == callerUserId, ct);
-
-                if (op is null || complaint.Booking?.Schedule?.Bus?.OperatorId != op.Id)
-                    throw new ForbiddenException("You do not have access to this complaint.");
-            }
 
             complaint.Reply        = dto.Reply.Trim();
             complaint.Status       = "Resolved";

@@ -10,7 +10,7 @@ namespace BusTicketBooking.Interfaces
     {
         Task<ComplaintResponseDto> RaiseAsync(Guid userId, Guid bookingId, CreateComplaintRequestDto dto, CancellationToken ct = default);
         Task<IEnumerable<ComplaintResponseDto>> GetMyAsync(Guid userId, CancellationToken ct = default);
-        Task<IEnumerable<ComplaintResponseDto>> GetAllAsync(Guid callerUserId, string role, CancellationToken ct = default);
-        Task<ComplaintResponseDto?> ReplyAsync(Guid callerUserId, string role, Guid id, ReplyComplaintRequestDto dto, CancellationToken ct = default);
+        Task<IEnumerable<ComplaintResponseDto>> GetAllAsync(CancellationToken ct = default);
+        Task<ComplaintResponseDto?> ReplyAsync(Guid id, ReplyComplaintRequestDto dto, CancellationToken ct = default);
     }
 }

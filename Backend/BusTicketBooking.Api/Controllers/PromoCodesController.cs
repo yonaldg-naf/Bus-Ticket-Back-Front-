@@ -18,25 +18,13 @@ namespace BusTicketBooking.Controllers
 
         public PromoCodesController(IPromoCodeService promoCodeService) => _promoCodeService = promoCodeService;
 
-        private Guid UserId => Guid.TryParse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub"), out var id) ? id : Guid.Empty;
-
-        /// <summary>Operator: create a promo code.</summary>
-        [Authorize(Roles = Roles.Operator)]
+        /// <summary>Admin: create a promo code.</summary>
+        [Authorize(Roles = Roles.Admin)]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreatePromoCodeRequestDto dto, CancellationToken ct)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-            var result = await _promoCodeService.CreateAsync(UserId, dto, ct);
-            return Ok(result);
-        }
-
-        /// <summary>Operator: get their promo codes.</summary>
-        [Authorize(Roles = Roles.Operator)]
-        [HttpGet("my")]
-        public async Task<IActionResult> GetMy(CancellationToken ct)
-        {
-            var result = await _promoCodeService.GetMyAsync(UserId, ct);
+            var result = await _promoCodeService.CreateAsync(dto, ct);
             return Ok(result);
         }
 
@@ -44,26 +32,23 @@ namespace BusTicketBooking.Controllers
         [Authorize(Roles = Roles.Admin)]
         [HttpGet]
         public async Task<IActionResult> GetAll(CancellationToken ct)
-        {
-            var result = await _promoCodeService.GetAllAsync(ct);
-            return Ok(result);
-        }
+            => Ok(await _promoCodeService.GetAllAsync(ct));
 
-        /// <summary>Operator: toggle active/inactive.</summary>
-        [Authorize(Roles = Roles.Operator)]
+        /// <summary>Admin: toggle active/inactive.</summary>
+        [Authorize(Roles = Roles.Admin)]
         [HttpPatch("{id:guid}/toggle")]
         public async Task<IActionResult> Toggle([FromRoute] Guid id, CancellationToken ct)
         {
-            var result = await _promoCodeService.ToggleAsync(UserId, id, ct);
+            var result = await _promoCodeService.ToggleAsync(id, ct);
             return result is null ? NotFound() : Ok(result);
         }
 
-        /// <summary>Operator: delete a promo code.</summary>
-        [Authorize(Roles = Roles.Operator)]
+        /// <summary>Admin: delete a promo code.</summary>
+        [Authorize(Roles = Roles.Admin)]
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete([FromRoute] Guid id, CancellationToken ct)
         {
-            await _promoCodeService.DeleteAsync(UserId, id, ct);
+            await _promoCodeService.DeleteAsync(id, ct);
             return NoContent();
         }
 

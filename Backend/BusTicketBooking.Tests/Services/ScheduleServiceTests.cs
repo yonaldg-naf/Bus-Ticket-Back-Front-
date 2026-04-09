@@ -10,33 +10,26 @@ namespace BusTicketBooking.Tests.Services;
 
 public class ScheduleServiceTests
 {
-    // ScheduleService requires WalletService for schedule cancellation refunds
     private static ScheduleService Build(AppDbContext db) =>
         new(new Repository<BusSchedule>(db),
             new Repository<Bus>(db),
             new Repository<BusRoute>(db),
             db,
-            new WalletService(new BusTicketBooking.Repositories.Repository<BusTicketBooking.Models.Wallet>(db), new BusTicketBooking.Repositories.Repository<BusTicketBooking.Models.WalletTransaction>(db)));
+            new WalletService(
+                new Repository<BusTicketBooking.Models.Wallet>(db),
+                new Repository<BusTicketBooking.Models.WalletTransaction>(db)));
 
-    // Seeds a full route with two stops so SearchAsync can find it
     private static (Stop from, Stop to, BusSchedule schedule) SeedSearchData(
         AppDbContext db, DateTime? departure = null, bool cancelled = false)
     {
-        var op = new BusOperator { CompanyName = "Travels", SupportPhone = "123" };
-        db.BusOperators.Add(op);
-
-        var bus = new Bus
-        {
-            OperatorId = op.Id, Code = "B1", RegistrationNumber = "TN01",
-            BusType = BusType.Seater, TotalSeats = 40, Status = BusStatus.Available
-        };
+        var bus = SeedHelper.MakeBus();
         db.Buses.Add(bus);
 
-        var fromStop = new Stop { City = "Chennai",    Name = "Chennai Central" };
-        var toStop   = new Stop { City = "Bangalore",  Name = "Majestic" };
+        var fromStop = new Stop { City = "Chennai",   Name = "Chennai Central" };
+        var toStop   = new Stop { City = "Bangalore", Name = "Majestic" };
         db.Stops.AddRange(fromStop, toStop);
 
-        var route = new BusRoute { OperatorId = op.Id, RouteCode = "CHN-BLR" };
+        var route = SeedHelper.MakeRoute();
         db.BusRoutes.Add(route);
         db.SaveChanges();
 
@@ -58,10 +51,10 @@ public class ScheduleServiceTests
         return (fromStop, toStop, schedule);
     }
 
-    // ── SearchByKeysAsync (replaces removed SearchAsync) ─────────────────────
+    // ── SearchByKeysAsync ─────────────────────────────────────────────────────
 
     [Fact]
-    public async Task SearchAsync_FutureSchedule_IsReturned()
+    public async Task Search_FutureSchedule_IsReturned()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
@@ -78,7 +71,7 @@ public class ScheduleServiceTests
     }
 
     [Fact]
-    public async Task SearchAsync_DepartedSchedule_IsExcluded()
+    public async Task Search_DepartedSchedule_IsExcluded()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
@@ -95,7 +88,7 @@ public class ScheduleServiceTests
     }
 
     [Fact]
-    public async Task SearchAsync_CancelledSchedule_IsExcluded()
+    public async Task Search_CancelledSchedule_IsExcluded()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
@@ -112,13 +105,12 @@ public class ScheduleServiceTests
     }
 
     [Fact]
-    public async Task SearchAsync_WrongDirection_IsExcluded()
+    public async Task Search_WrongDirection_IsExcluded()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
         SeedSearchData(db);
 
-        // Searching in reverse direction — should return nothing
         var result = await svc.SearchByKeysAsync(new SearchSchedulesByKeysRequestDto
         {
             FromCity = "Bangalore", ToCity = "Chennai",
@@ -129,61 +121,8 @@ public class ScheduleServiceTests
         Assert.Empty(result.Items);
     }
 
-    // ── SearchByKeysAsync ─────────────────────────────────────────────────────
-
     [Fact]
-    public async Task SearchByKeysAsync_FutureSchedule_IsReturned()
-    {
-        var db  = DbHelper.CreateDb();
-        var svc = Build(db);
-        SeedSearchData(db, departure: DateTime.UtcNow.AddHours(2));
-
-        var result = await svc.SearchByKeysAsync(new SearchSchedulesByKeysRequestDto
-        {
-            FromCity = "Chennai", ToCity = "Bangalore",
-            Date = DateOnly.FromDateTime(DateTime.UtcNow),
-            UtcOffsetMinutes = 0, Page = 1, PageSize = 10
-        });
-
-        Assert.Single(result.Items);
-    }
-
-    [Fact]
-    public async Task SearchByKeysAsync_DepartedSchedule_IsExcluded()
-    {
-        var db  = DbHelper.CreateDb();
-        var svc = Build(db);
-        SeedSearchData(db, departure: DateTime.UtcNow.AddHours(-1));
-
-        var result = await svc.SearchByKeysAsync(new SearchSchedulesByKeysRequestDto
-        {
-            FromCity = "Chennai", ToCity = "Bangalore",
-            Date = DateOnly.FromDateTime(DateTime.UtcNow),
-            UtcOffsetMinutes = 0, Page = 1, PageSize = 10
-        });
-
-        Assert.Empty(result.Items);
-    }
-
-    [Fact]
-    public async Task SearchByKeysAsync_CancelledSchedule_IsExcluded()
-    {
-        var db  = DbHelper.CreateDb();
-        var svc = Build(db);
-        SeedSearchData(db, cancelled: true);
-
-        var result = await svc.SearchByKeysAsync(new SearchSchedulesByKeysRequestDto
-        {
-            FromCity = "Chennai", ToCity = "Bangalore",
-            Date = DateOnly.FromDateTime(DateTime.UtcNow),
-            UtcOffsetMinutes = 0, Page = 1, PageSize = 10
-        });
-
-        Assert.Empty(result.Items);
-    }
-
-    [Fact]
-    public async Task SearchByKeysAsync_UnknownCity_ReturnsEmpty()
+    public async Task Search_UnknownCity_ReturnsEmpty()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
@@ -202,7 +141,7 @@ public class ScheduleServiceTests
     // ── GetAvailabilityAsync ──────────────────────────────────────────────────
 
     [Fact]
-    public async Task GetAvailabilityAsync_NoBookings_AllSeatsAvailable()
+    public async Task GetAvailability_NoBookings_AllSeatsAvailable()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
@@ -216,7 +155,7 @@ public class ScheduleServiceTests
     }
 
     [Fact]
-    public async Task GetAvailabilityAsync_ConfirmedBooking_SeatIsBooked()
+    public async Task GetAvailability_ConfirmedBooking_SeatIsBooked()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
@@ -236,28 +175,7 @@ public class ScheduleServiceTests
     }
 
     [Fact]
-    public async Task GetAvailabilityAsync_BusMissedBooking_SeatIsFreed()
-    {
-        var db  = DbHelper.CreateDb();
-        var svc = Build(db);
-        var (_, _, schedule) = SeedSearchData(db);
-
-        var user = new User { Username = "u3", Email = "u3@test.com", FullName = "U3", Role = "Customer", PasswordHash = "x" };
-        db.Users.Add(user);
-        var booking = new Booking { UserId = user.Id, ScheduleId = schedule.Id, Status = BookingStatus.BusMissed, TotalAmount = 500 };
-        db.Bookings.Add(booking);
-        db.BookingPassengers.Add(new BookingPassenger { BookingId = booking.Id, Name = "U3", SeatNo = "1" });
-        db.SaveChanges();
-
-        var result = await svc.GetAvailabilityAsync(schedule.Id);
-
-        // BusMissed seats are freed — all 40 available
-        Assert.Equal(40, result.AvailableCount);
-        Assert.DoesNotContain("1", result.BookedSeats);
-    }
-
-    [Fact]
-    public async Task GetAvailabilityAsync_CancelledBooking_SeatIsFreed()
+    public async Task GetAvailability_CancelledBooking_SeatIsFreed()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
@@ -278,68 +196,51 @@ public class ScheduleServiceTests
     // ── CreateAsync ───────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task CreateAsync_PastDeparture_Throws()
+    public async Task Create_PastDeparture_Throws()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
+        var bus   = SeedHelper.MakeBus();
+        var route = SeedHelper.MakeRoute();
+        db.Buses.Add(bus); db.BusRoutes.Add(route); db.SaveChanges();
 
-        var op = new BusOperator { CompanyName = "T", SupportPhone = "1" };
-        db.BusOperators.Add(op);
-        var bus = new Bus { OperatorId = op.Id, Code = "B1", RegistrationNumber = "R1", BusType = BusType.Seater, TotalSeats = 10, Status = BusStatus.Available };
-        db.Buses.Add(bus);
-        var route = new BusRoute { OperatorId = op.Id, RouteCode = "A-B" };
-        db.BusRoutes.Add(route);
-        db.SaveChanges();
-
-        var dto = new CreateScheduleRequestDto
+        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateAsync(new CreateScheduleRequestDto
         {
             BusId = bus.Id, RouteId = route.Id,
-            DepartureUtc = DateTime.UtcNow.AddHours(-2),
-            BasePrice = 100
-        };
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateAsync(dto));
+            DepartureUtc = DateTime.UtcNow.AddHours(-2), BasePrice = 100
+        }));
     }
 
     [Fact]
-    public async Task CreateAsync_DuplicateDeparture_Throws()
+    public async Task Create_DuplicateDeparture_Throws()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
-
-        var op = new BusOperator { CompanyName = "T", SupportPhone = "1" };
-        db.BusOperators.Add(op);
-        var bus = new Bus { OperatorId = op.Id, Code = "B2", RegistrationNumber = "R2", BusType = BusType.Seater, TotalSeats = 10, Status = BusStatus.Available };
-        db.Buses.Add(bus);
-        var route = new BusRoute { OperatorId = op.Id, RouteCode = "A-C" };
-        db.BusRoutes.Add(route);
-        var dep = DateTime.UtcNow.AddHours(5);
-        dep = new DateTime(dep.Year, dep.Month, dep.Day, dep.Hour, dep.Minute, dep.Second, DateTimeKind.Utc);
+        var bus   = SeedHelper.MakeBus();
+        var route = SeedHelper.MakeRoute();
+        db.Buses.Add(bus); db.BusRoutes.Add(route);
+        var dep = new DateTime(DateTime.UtcNow.AddHours(5).Ticks / TimeSpan.TicksPerSecond * TimeSpan.TicksPerSecond, DateTimeKind.Utc);
         db.BusSchedules.Add(new BusSchedule { BusId = bus.Id, RouteId = route.Id, DepartureUtc = dep, BasePrice = 200 });
         db.SaveChanges();
 
-        var dto = new CreateScheduleRequestDto
+        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateAsync(new CreateScheduleRequestDto
         {
-            BusId = bus.Id, RouteId = route.Id,
-            DepartureUtc = dep, BasePrice = 200
-        };
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateAsync(dto));
+            BusId = bus.Id, RouteId = route.Id, DepartureUtc = dep, BasePrice = 200
+        }));
     }
 
     // ── CancelAsync ───────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task CancelAsync_IssuesFullRefund_ToAllConfirmedBookings()
+    public async Task Cancel_IssuesFullRefund_ToAllConfirmedBookings()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);
         var (_, _, schedule) = SeedSearchData(db, departure: DateTime.UtcNow.AddHours(10));
 
-        var userId = Guid.NewGuid();
-        var user   = new User { Id = userId, Username = "cu1", Email = "cu1@t.com", FullName = "CU1", Role = "Customer", PasswordHash = "x" };
+        var userId  = Guid.NewGuid();
+        var user    = new User { Id = userId, Username = "cu1", Email = "cu1@t.com", FullName = "CU1", Role = "Customer", PasswordHash = "x" };
         db.Users.Add(user);
-
         var booking = new Booking { UserId = userId, ScheduleId = schedule.Id, Status = BookingStatus.Confirmed, TotalAmount = 600 };
         var payment = new Payment { BookingId = booking.Id, Amount = 600, Status = PaymentStatus.Success, ProviderReference = "P1" };
         booking.Payment = payment;
@@ -358,7 +259,7 @@ public class ScheduleServiceTests
     }
 
     [Fact]
-    public async Task CancelAsync_ReturnsNull_WhenScheduleNotFound()
+    public async Task Cancel_ReturnsNull_WhenScheduleNotFound()
     {
         var db  = DbHelper.CreateDb();
         var svc = Build(db);

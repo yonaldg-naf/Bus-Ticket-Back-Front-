@@ -3,7 +3,6 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BookingService } from '../../../services/booking.service';
-import { ReviewService, ReviewResponse } from '../../../services/review.service';
 import { ComplaintService, ComplaintResponse } from '../../../services/complaint.service';
 import { ToastService } from '../../../services/toast.service';
 import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../models/booking.models';
@@ -159,69 +158,13 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
           </div>
         }
 
-        <!-- Review Section (only for confirmed past trips) -->
-        @if (booking()!.status === BookingStatus.Confirmed && isPastTrip()) {
-          <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-            <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
-              <h2 class="font-semibold text-slate-800 dark:text-white">Rate Your Trip</h2>
-              <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Share your experience to help other travelers</p>
-            </div>
-
-            @if (existingReview()) {
-              <div class="p-5">
-                <div class="flex items-center gap-1 mb-2">
-                  @for (star of [1,2,3,4,5]; track star) {
-                    <svg class="w-5 h-5" [class]="star <= existingReview()!.rating ? 'text-amber-400' : 'text-gray-200'"
-                      fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                    </svg>
-                  }
-                  <span class="text-sm text-gray-500 ml-2">Your review</span>
-                </div>
-                @if (existingReview()!.comment) {
-                  <p class="text-sm text-gray-700 italic">"{{ existingReview()!.comment }}"</p>
-                }
-              </div>
-            } @else {
-              <div class="p-5 space-y-4">
-                <!-- Star rating -->
-                <div>
-                  <p class="text-sm font-medium text-gray-700 mb-2">Rating</p>
-                  <div class="flex items-center gap-1">
-                    @for (star of [1,2,3,4,5]; track star) {
-                      <button (click)="reviewRating = star"
-                        class="transition-transform hover:scale-110">
-                        <svg class="w-8 h-8" [class]="star <= reviewRating ? 'text-amber-400' : 'text-gray-200'"
-                          fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                        </svg>
-                      </button>
-                    }
-                    <span class="text-sm text-gray-500 ml-2">{{ ratingLabel(reviewRating) }}</span>
-                  </div>
-                </div>
-                <div>
-                  <p class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Comment (optional)</p>
-                  <textarea [(ngModel)]="reviewComment" rows="3" placeholder="How was your journey?"
-                    class="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 transition-colors resize-none">
-                  </textarea>
-                </div>
-                <button (click)="submitReview()" [disabled]="reviewRating === 0 || submittingReview()"
-                  class="px-5 py-2.5 bg-red-600 text-white text-sm font-semibold rounded-xl hover:bg-red-700 disabled:opacity-50 transition-colors">
-                  {{ submittingReview() ? 'Submitting…' : 'Submit Review' }}
-                </button>
-              </div>
-            }
-          </div>
-        }
-
         <!-- Complaint Section (during or after travel) -->
         @if (canRaiseComplaint()) {
           <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
               <div>
                 <h2 class="font-semibold text-slate-800 dark:text-white">Complaints</h2>
-                <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Raise an issue — sent to the operator and admin</p>
+                <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Raise an issue — sent to admin</p>
               </div>
               @if (!showComplaintForm()) {
                 <button (click)="showComplaintForm.set(true)"
@@ -234,10 +177,8 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
               }
             </div>
 
-            <!-- Complaint form -->
             @if (showComplaintForm()) {
               <div class="p-5 border-b border-slate-100 dark:border-slate-700 space-y-3">
-                <p class="text-xs text-slate-500 dark:text-slate-400">Describe your issue clearly. This will be sent to the bus operator and admin.</p>
                 <textarea [(ngModel)]="complaintMessage" rows="4"
                   placeholder="e.g. Driver was rude, bus was late by 2 hours, AC was not working..."
                   class="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-400 transition-colors resize-none">
@@ -255,7 +196,6 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
               </div>
             }
 
-            <!-- Existing complaints -->
             @if (complaints().length > 0) {
               <div class="divide-y divide-slate-50 dark:divide-slate-700">
                 @for (c of complaints(); track c.id) {
@@ -272,7 +212,7 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
                     <p class="text-sm text-slate-700 dark:text-slate-300">{{ c.message }}</p>
                     @if (c.reply) {
                       <div class="mt-2 pl-3 border-l-2 border-green-400">
-                        <p class="text-xs font-semibold text-green-700 dark:text-green-400 mb-0.5">Operator/Admin Reply</p>
+                        <p class="text-xs font-semibold text-green-700 dark:text-green-400 mb-0.5">Admin Reply</p>
                         <p class="text-sm text-slate-600 dark:text-slate-300">{{ c.reply }}</p>
                       </div>
                     }
@@ -290,25 +230,6 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
 
         <!-- Action buttons -->
         <div class="space-y-3">
-          @if (isBusMissWindow()) {
-            <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
-              <div class="flex items-start gap-3">
-                <div class="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-                  <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                  </svg>
-                </div>
-                <div>
-                  <p class="font-semibold text-amber-800 text-sm">Did you miss the bus?</p>
-                  <p class="text-xs text-amber-700 mt-0.5">This button is available 5 min before to 5 min after departure. You'll receive a 75% refund.</p>
-                </div>
-              </div>
-              <button (click)="reportBusMiss()" [disabled]="busMissing()"
-                class="w-full py-2.5 text-sm font-semibold rounded-xl bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50 transition-colors">
-                {{ busMissing() ? 'Processing…' : '🚌 I Missed the Bus — Claim 75% Refund' }}
-              </button>
-            </div>
-          }
           @if ((booking()!.status === BookingStatus.Pending || booking()!.status === BookingStatus.Confirmed)
                && booking()!.status !== BookingStatus.OperatorCancelled) {
             @if (!showCancelForm()) {
@@ -370,22 +291,15 @@ export class BookingDetailComponent implements OnInit {
   private route      = inject(ActivatedRoute);
   router             = inject(Router);
   private bookingSvc = inject(BookingService);
-  private reviewSvc  = inject(ReviewService);
   private complaintSvc = inject(ComplaintService);
   private toast      = inject(ToastService);
 
   BookingStatus   = BookingStatus;
   loading         = signal(true);
   cancelling      = signal(false);
-  busMissing      = signal(false);
   booking         = signal<BookingResponse | null>(null);
   showCancelForm  = signal(false);
   cancelReason    = '';
-
-  existingReview    = signal<ReviewResponse | null>(null);
-  submittingReview  = signal(false);
-  reviewRating      = 0;
-  reviewComment     = '';
 
   // Complaint
   complaints          = signal<ComplaintResponse[]>([]);
@@ -401,13 +315,6 @@ export class BookingDetailComponent implements OnInit {
       next: b => {
         this.booking.set(b);
         this.loading.set(false);
-        if (b.status === BookingStatus.Confirmed && this.isPastTrip()) {
-          this.reviewSvc.getMyReview(b.id).subscribe({
-            next: r => this.existingReview.set(r),
-            error: () => {}
-          });
-        }
-        // Load complaints for this booking (during or after travel)
         if (b.status === BookingStatus.Confirmed) {
           this.loadComplaints(b.id);
         }
@@ -426,7 +333,7 @@ export class BookingDetailComponent implements OnInit {
   canRaiseComplaint(): boolean {
     const b = this.booking();
     if (!b || b.status !== BookingStatus.Confirmed) return false;
-    return new Date(b.departureUtc) <= new Date(); // during or after travel
+    return new Date(b.departureUtc) <= new Date();
   }
 
   submitComplaint() {
@@ -441,7 +348,7 @@ export class BookingDetailComponent implements OnInit {
         this.complaintMessage = '';
         this.showComplaintForm.set(false);
         this.submittingComplaint.set(false);
-        this.toast.success('Complaint raised. The operator and admin have been notified.');
+        this.toast.success('Complaint raised. Admin has been notified.');
       },
       error: err => {
         this.submittingComplaint.set(false);
@@ -456,53 +363,12 @@ export class BookingDetailComponent implements OnInit {
     return new Date(b.departureUtc) < new Date();
   }
 
-  isBusMissWindow(): boolean {
-    const b = this.booking();
-    if (!b || b.status !== BookingStatus.Confirmed) return false;
-    const now = Date.now();
-    const dep = new Date(b.departureUtc).getTime();
-    return now >= dep - 5 * 60 * 1000 && now <= dep + 5 * 60 * 1000;
-  }
-
-  reportBusMiss() {
-    if (!confirm('Report that you missed this bus? You will receive a 75% refund.')) return;
-    this.busMissing.set(true);
-    this.bookingSvc.busMiss(this.booking()!.id).subscribe({
-      next: res => {
-        this.busMissing.set(false);
-        this.toast.success(res.message);
-        this.bookingSvc.getById(this.booking()!.id).subscribe(b => this.booking.set(b));
-      },
-      error: err => {
-        this.busMissing.set(false);
-        this.toast.error(err.error?.message ?? 'Failed to report bus miss.');
-      }
-    });
-  }
-
   cancelBooking() {
     this.cancelling.set(true);
     this.bookingSvc.cancelPost(this.booking()!.id).subscribe({
       next: () => { this.toast.success('Booking cancelled.'); this.router.navigate(['/my-bookings']); },
       error: err => { this.cancelling.set(false); this.toast.error(err.error?.message ?? 'Cancellation failed.'); },
     });
-  }
-
-  submitReview() {
-    if (this.reviewRating === 0) return;
-    this.submittingReview.set(true);
-    this.reviewSvc.create({
-      bookingId: this.booking()!.id,
-      rating: this.reviewRating,
-      comment: this.reviewComment.trim() || undefined
-    }).subscribe({
-      next: r => { this.existingReview.set(r); this.submittingReview.set(false); this.toast.success('Review submitted!'); },
-      error: err => { this.submittingReview.set(false); this.toast.error(err.error?.message ?? 'Failed to submit review.'); }
-    });
-  }
-
-  ratingLabel(r: number): string {
-    return ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'][r] ?? '';
   }
 
   statusBadge(s: BookingStatus): string {

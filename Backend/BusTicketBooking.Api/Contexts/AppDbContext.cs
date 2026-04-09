@@ -8,7 +8,6 @@ namespace BusTicketBooking.Contexts
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<User> Users => Set<User>();
-        public DbSet<BusOperator> BusOperators => Set<BusOperator>();
         public DbSet<Bus> Buses => Set<Bus>();
         public DbSet<Stop> Stops => Set<Stop>();
         public DbSet<BusRoute> BusRoutes => Set<BusRoute>();
@@ -18,9 +17,7 @@ namespace BusTicketBooking.Contexts
         public DbSet<BookingPassenger> BookingPassengers => Set<BookingPassenger>();
         public DbSet<Payment> Payments => Set<Payment>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
-        public DbSet<Review> Reviews => Set<Review>();
         public DbSet<PromoCode> PromoCodes => Set<PromoCode>();
-        public DbSet<Announcement> Announcements => Set<Announcement>();
         public DbSet<Complaint> Complaints => Set<Complaint>();
         public DbSet<Wallet> Wallets => Set<Wallet>();
         public DbSet<WalletTransaction> WalletTransactions => Set<WalletTransaction>();
@@ -28,8 +25,6 @@ namespace BusTicketBooking.Contexts
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // ── Global: stamp all DateTime columns as UTC when read from DB ──────────
-            // SQL Server datetime2 has no timezone info; EF returns Kind=Unspecified.
-            // This causes incorrect comparisons with DateTime.UtcNow in business logic.
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {
                 foreach (var property in entityType.GetProperties()
@@ -73,28 +68,13 @@ namespace BusTicketBooking.Contexts
                 e.Property(u => u.Role).HasMaxLength(30).IsRequired();
             });
 
-            // BusOperator
-            modelBuilder.Entity<BusOperator>(e =>
-            {
-                e.Property(o => o.CompanyName).HasMaxLength(200).IsRequired();
-                e.Property(o => o.SupportPhone).HasMaxLength(30);
-                e.HasOne(o => o.User)
-                 .WithOne(u => u.OperatorProfile)
-                 .HasForeignKey<BusOperator>(o => o.UserId)
-                 .OnDelete(DeleteBehavior.Restrict);
-            });
-
             // Bus
             modelBuilder.Entity<Bus>(e =>
             {
                 e.Property(b => b.Code).HasMaxLength(50).IsRequired();
+                e.HasIndex(b => b.Code).IsUnique();
                 e.Property(b => b.RegistrationNumber).HasMaxLength(50).IsRequired();
                 e.Property(b => b.Amenities).HasMaxLength(500);
-                e.HasIndex(b => new { b.OperatorId, b.Code }).IsUnique();
-                e.HasOne(b => b.Operator)
-                 .WithMany(o => o.Buses)
-                 .HasForeignKey(b => b.OperatorId)
-                 .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Stop
@@ -109,11 +89,7 @@ namespace BusTicketBooking.Contexts
             modelBuilder.Entity<BusRoute>(e =>
             {
                 e.Property(r => r.RouteCode).HasMaxLength(50).IsRequired();
-                e.HasIndex(r => new { r.OperatorId, r.RouteCode }).IsUnique();
-                e.HasOne(r => r.Operator)
-                 .WithMany(o => o.Routes)
-                 .HasForeignKey(r => r.OperatorId)
-                 .OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(r => r.RouteCode).IsUnique();
             });
 
             // RouteStop
@@ -147,16 +123,14 @@ namespace BusTicketBooking.Contexts
                  .HasForeignKey(s => s.RouteId)
                  .OnDelete(DeleteBehavior.Restrict);
             });
+
             // Booking
             modelBuilder.Entity<Booking>(e =>
             {
                 e.Property(b => b.TotalAmount).HasPrecision(10, 2);
                 e.Property(b => b.DiscountAmount).HasPrecision(10, 2);
                 e.Property(b => b.PromoCode).HasMaxLength(50);
-
-                // Index on UserId so "get my bookings" doesn't do a full table scan
                 e.HasIndex(b => b.UserId);
-                // Index on ScheduleId for operator/admin queries by schedule
                 e.HasIndex(b => b.ScheduleId);
 
                 e.HasOne(b => b.User)
@@ -213,16 +187,6 @@ namespace BusTicketBooking.Contexts
                 e.HasIndex(l => l.UserId);
             });
 
-            // Review
-            modelBuilder.Entity<Review>(e =>
-            {
-                e.Property(r => r.Comment).HasMaxLength(1000);
-                e.HasIndex(r => r.BookingId).IsUnique(); // one review per booking
-                e.HasOne(r => r.Booking).WithMany().HasForeignKey(r => r.BookingId).OnDelete(DeleteBehavior.Cascade);
-                e.HasOne(r => r.User).WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Restrict);
-                e.HasOne(r => r.Schedule).WithMany().HasForeignKey(r => r.ScheduleId).OnDelete(DeleteBehavior.Restrict);
-            });
-
             // PromoCode
             modelBuilder.Entity<PromoCode>(e =>
             {
@@ -231,15 +195,6 @@ namespace BusTicketBooking.Contexts
                 e.Property(p => p.MinBookingAmount).HasPrecision(10, 2);
                 e.Property(p => p.MaxDiscountAmount).HasPrecision(10, 2);
                 e.HasIndex(p => p.Code).IsUnique();
-                e.HasOne(p => p.Operator).WithMany().HasForeignKey(p => p.OperatorId).OnDelete(DeleteBehavior.Cascade);
-            });
-
-            // Announcement
-            modelBuilder.Entity<Announcement>(e =>
-            {
-                e.Property(a => a.Message).HasMaxLength(500).IsRequired();
-                e.Property(a => a.Type).HasMaxLength(20).IsRequired();
-                e.HasOne(a => a.Schedule).WithMany().HasForeignKey(a => a.ScheduleId).OnDelete(DeleteBehavior.Cascade);
             });
 
             // Complaint
@@ -248,7 +203,6 @@ namespace BusTicketBooking.Contexts
                 e.Property(c => c.Message).HasMaxLength(1000).IsRequired();
                 e.Property(c => c.Reply).HasMaxLength(1000);
                 e.Property(c => c.Status).HasMaxLength(20).IsRequired();
-                // Index so customer "get my complaints" and operator filter don't full-scan
                 e.HasIndex(c => c.UserId);
                 e.HasOne(c => c.Booking).WithMany().HasForeignKey(c => c.BookingId).OnDelete(DeleteBehavior.Cascade);
                 e.HasOne(c => c.User).WithMany().HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Restrict);
@@ -258,7 +212,7 @@ namespace BusTicketBooking.Contexts
             modelBuilder.Entity<Wallet>(e =>
             {
                 e.Property(w => w.Balance).HasPrecision(12, 2);
-                e.HasIndex(w => w.UserId).IsUnique(); // one wallet per user
+                e.HasIndex(w => w.UserId).IsUnique();
                 e.HasOne(w => w.User).WithMany().HasForeignKey(w => w.UserId).OnDelete(DeleteBehavior.Cascade);
             });
 

@@ -88,20 +88,16 @@ builder.Services.AddScoped<IRouteService, RouteService>();
 builder.Services.AddScoped<IScheduleService, ScheduleService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 
-// ? NEW: needed for From/To dropdowns (cities & stops)
 builder.Services.AddScoped<IStopService, StopService>();
 
-builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+builder.Services.AddScoped<AnalyticsService>();
 
 // Wallet
 builder.Services.AddScoped<IWalletService, WalletService>();
 
 // New services
-builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IPromoCodeService, PromoCodeService>();
 builder.Services.AddScoped<IComplaintService, ComplaintService>();
-builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
-builder.Services.AddScoped<IOperatorApprovalService, OperatorApprovalService>();
 
 // Audit & error logging
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
@@ -138,12 +134,7 @@ builder.Services
     });
 
 // Optional named policies if you prefer policy-based attributes
-// builder.Services.AddAuthorization(options =>
-// {
-//     options.AddPolicy("AdminOnly", p => p.RequireRole(Roles.Admin));
-//     options.AddPolicy("OperatorOnly", p => p.RequireRole(Roles.Operator));
-// });
-builder.Services.AddAuthorization(); // keep default authorization enabled
+builder.Services.AddAuthorization();
 #endregion
 
 var app = builder.Build();

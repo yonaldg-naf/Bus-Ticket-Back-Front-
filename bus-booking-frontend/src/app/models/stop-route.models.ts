@@ -31,21 +31,18 @@ export interface RouteStopView {
 
 export interface RouteResponse {
   id: string;
-  operatorId: string;
   routeCode: string;
   stops: RouteStopView[];
   createdAtUtc: string;
   updatedAtUtc?: string;
 }
 
-export interface CreateRouteByKeysRequest {
-  operatorUsername?: string;
-  companyName?: string;
+export interface CreateRouteRequest {
   routeCode: string;
   stops: StopRef[];
 }
 
-export interface UpdateRouteByKeysRequest {
+export interface UpdateRouteRequest {
   newRouteCode: string;
   stops: StopRef[];
 }
