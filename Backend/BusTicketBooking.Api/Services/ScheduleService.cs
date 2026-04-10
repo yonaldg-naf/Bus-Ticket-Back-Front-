@@ -258,7 +258,7 @@ namespace BusTicketBooking.Services
 
         /// <summary>
         /// Returns the seat availability for a schedule — which seats are booked and which are free.
-        /// Cancelled, OperatorCancelled, and BusMissed bookings do NOT count as booked
+        /// Cancelled and OperatorCancelled bookings do NOT count as booked
         /// (those seats are freed back to available).
         /// Throws InvalidOperationException if the schedule does not exist.
         /// </summary>
@@ -277,8 +277,7 @@ namespace BusTicketBooking.Services
             var bookedSeats = await _db.Bookings
                 .Where(b => b.ScheduleId == scheduleId
                          && b.Status != BookingStatus.Cancelled
-                         && b.Status != BookingStatus.OperatorCancelled
-                         && b.Status != BookingStatus.BusMissed)
+                         && b.Status != BookingStatus.OperatorCancelled)
                 .SelectMany(b => b.Passengers.Select(p => p.SeatNo))
                 .ToListAsync(ct);
 

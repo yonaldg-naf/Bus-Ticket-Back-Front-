@@ -7,9 +7,6 @@
         Cancelled = 3,          // Cancelled by customer
 
         // Used when operator cancels the schedule
-        OperatorCancelled = 5,
-
-        // Customer missed the bus — partial refund issued
-        BusMissed = 6
+        OperatorCancelled = 5
     }
 }
