@@ -112,12 +112,6 @@ describe('Guards', () => {
       const result = runGuard(noAuthGuard) as UrlTree;
       expect(result.toString()).toBe('/home');
     });
-
-    it('redirects PendingOperator to /home', () => {
-      setup(makeUser('PendingOperator'));
-      const result = runGuard(noAuthGuard) as UrlTree;
-      expect(result.toString()).toBe('/home');
-    });
   });
 
   // ══ roleGuard ════════════════════════════════════════════════
@@ -144,20 +138,10 @@ describe('Guards', () => {
       expect(result.toString()).toBe('/auth/login');
     });
 
-    it('blocks PendingOperator from Operator-only routes', () => {
-      setup(makeUser('PendingOperator'));
-      const result = runRoleGuard(['Operator']) as UrlTree;
-      expect(result.toString()).toBe('/home');
-    });
-
-    it('allows Customer to access Customer routes', () => {
+    it('blocks Customer from Admin-only routes', () => {
       setup(makeUser('Customer'));
-      expect(runRoleGuard(['Customer'])).toBeTrue();
-    });
-
-    it('allows Admin when multiple roles listed', () => {
-      setup(makeUser('Admin'));
-      expect(runRoleGuard(['Admin', 'Operator', 'Customer'])).toBeTrue();
+      const result = runRoleGuard(['Admin']) as UrlTree;
+      expect(result.toString()).toBe('/home');
     });
   });
 });

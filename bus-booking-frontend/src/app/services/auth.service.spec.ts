@@ -57,7 +57,6 @@ describe('AuthService', () => {
     it('isLoggedIn() returns false', () => expect(service.isLoggedIn()).toBeFalse());
     it('role() returns null', () => expect(service.role()).toBeNull());
     it('isAdmin() returns false', () => expect(service.isAdmin()).toBeFalse());
-    it('isOperator() returns false', () => expect(service.isOperator()).toBeFalse());
     it('isCustomer() returns false', () => expect(service.isCustomer()).toBeFalse());
     it('getToken() returns null', () => expect(service.getToken()).toBeNull());
     it('isTokenExpired() returns true', () => expect(service.isTokenExpired()).toBeTrue());
@@ -90,15 +89,7 @@ describe('AuthService', () => {
   describe('when role is Admin', () => {
     beforeEach(() => setup({ ...mockCurrentUser, role: 'Admin' }));
     it('isAdmin() returns true', () => expect(service.isAdmin()).toBeTrue());
-    it('isOperator() returns false', () => expect(service.isOperator()).toBeFalse());
     it('isCustomer() returns false', () => expect(service.isCustomer()).toBeFalse());
-  });
-
-  // ── Operator role ─────────────────────────────────────────────
-  describe('when role is Operator', () => {
-    beforeEach(() => setup({ ...mockCurrentUser, role: 'Operator' }));
-    it('isOperator() returns true', () => expect(service.isOperator()).toBeTrue());
-    it('isAdmin() returns false', () => expect(service.isAdmin()).toBeFalse());
   });
 
   // ── login() ──────────────────────────────────────────────────
@@ -132,12 +123,6 @@ describe('AuthService', () => {
       expect(router.navigate).toHaveBeenCalledWith(['/admin']);
     });
 
-    it('navigates to /operator for Operator role', () => {
-      service.login({ username: 'o', password: 'p' }).subscribe();
-      http.expectOne('/api/auth/login').flush({ ...mockAuthResponse, role: 'Operator' });
-      expect(router.navigate).toHaveBeenCalledWith(['/operator']);
-    });
-
     it('navigates to /home for Customer role', () => {
       service.login({ username: 'c', password: 'p' }).subscribe();
       http.expectOne('/api/auth/login').flush({ ...mockAuthResponse, role: 'Customer' });
@@ -148,14 +133,14 @@ describe('AuthService', () => {
   // ── register() ───────────────────────────────────────────────
   describe('register()', () => {
     it('POSTs to /api/auth/register', () => {
-      service.register({ username: 'u', email: 'e@e.com', password: 'p', role: 'Customer', fullName: 'U' }).subscribe();
+      service.register({ username: 'u', email: 'e@e.com', password: 'p', fullName: 'U' }).subscribe();
       const req = http.expectOne('/api/auth/register');
       expect(req.request.method).toBe('POST');
       req.flush(mockAuthResponse);
     });
 
     it('saves session after register', () => {
-      service.register({ username: 'u', email: 'e@e.com', password: 'p', role: 'Customer', fullName: 'U' }).subscribe();
+      service.register({ username: 'u', email: 'e@e.com', password: 'p', fullName: 'U' }).subscribe();
       http.expectOne('/api/auth/register').flush(mockAuthResponse);
       expect(service.currentUser()?.username).toBe('testuser');
     });

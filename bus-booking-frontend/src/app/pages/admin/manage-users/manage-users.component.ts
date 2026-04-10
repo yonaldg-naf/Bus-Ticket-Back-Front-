@@ -166,11 +166,9 @@ export class ManageUsersComponent implements OnInit {
   private searchTimer: ReturnType<typeof setTimeout> | undefined;
 
   roleFilters = [
-    { value: '',                label: 'All'       },
-    { value: 'Customer',        label: 'Customers' },
-    { value: 'Operator',        label: 'Operators' },
-    { value: 'PendingOperator', label: 'Pending'   },
-    { value: 'Admin',           label: 'Admins'    },
+    { value: '',         label: 'All'       },
+    { value: 'Customer', label: 'Customers' },
+    { value: 'Admin',    label: 'Admins'    },
   ];
 
   totalPages(): number { return Math.ceil(this.total() / this.pageSize); }
@@ -207,18 +205,16 @@ export class ManageUsersComponent implements OnInit {
 
   roleBadge(role: string): string {
     const m: Record<string, string> = {
-      Admin:           'bg-purple-100 text-purple-700',
-      Operator:        'bg-blue-100 text-blue-700',
-      Customer:        'bg-emerald-100 text-emerald-700',
-      PendingOperator: 'bg-amber-100 text-amber-700',
+      Admin:    'bg-purple-100 text-purple-700',
+      Customer: 'bg-emerald-100 text-emerald-700',
     };
     return m[role] ?? 'bg-slate-100 text-slate-600';
   }
 
   avatarClass(role: string): string {
     const m: Record<string, string> = {
-      Admin: 'bg-purple-500', Operator: 'bg-blue-500',
-      Customer: 'bg-emerald-500', PendingOperator: 'bg-amber-400',
+      Admin:    'bg-purple-500',
+      Customer: 'bg-emerald-500',
     };
     return m[role] ?? 'bg-slate-400';
   }

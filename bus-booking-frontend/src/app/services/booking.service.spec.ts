@@ -106,20 +106,7 @@ describe('BookingService', () => {
     });
   });
 
-  // ── getOperatorStats() ────────────────────────────────────────
-  describe('getOperatorStats()', () => {
-    it('GETs /api/bookings/operator-stats', () => {
-      const stats = { totalBookings: 50, confirmedBookings: 40, revenue: 25000 };
-      service.getOperatorStats().subscribe(s => {
-        expect(s.totalBookings).toBe(50);
-        expect(s.confirmedBookings).toBe(40);
-        expect(s.revenue).toBe(25000);
-      });
-      const req = http.expectOne('/api/bookings/operator-stats');
-      expect(req.request.method).toBe('GET');
-      req.flush(stats);
-    });
-  });
+  // ── getOperatorStats() removed — operator role no longer exists ──────────
 
   // ── BookingStatus enum ────────────────────────────────────────
   describe('BookingStatus enum values', () => {

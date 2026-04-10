@@ -57,13 +57,6 @@ describe('UserManagementService', () => {
       expect(req.request.params.get('role')).toBe('Customer');
       req.flush(mockResult);
     });
-
-    it('sends role=PendingOperator', () => {
-      service.getUsers({ role: 'PendingOperator' }).subscribe();
-      const req = http.expectOne(r => r.url === '/api/auth/users');
-      expect(req.request.params.get('role')).toBe('PendingOperator');
-      req.flush(mockResult);
-    });
   });
 
   // ── Search filter ─────────────────────────────────────────────
