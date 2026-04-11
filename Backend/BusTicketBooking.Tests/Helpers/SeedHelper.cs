@@ -61,12 +61,11 @@ namespace BusTicketBooking.Tests.Helpers
             BookingStatus status = BookingStatus.Pending, decimal amount = 500m)
             => new Booking
             {
-                Id             = Guid.NewGuid(),
-                UserId         = userId,
-                ScheduleId     = scheduleId,
-                Status         = status,
-                TotalAmount    = amount,
-                DiscountAmount = 0
+                Id          = Guid.NewGuid(),
+                UserId      = userId,
+                ScheduleId  = scheduleId,
+                Status      = status,
+                TotalAmount = amount,
             };
 
         // ── Payment ───────────────────────────────────────────────────────────
@@ -90,24 +89,6 @@ namespace BusTicketBooking.Tests.Helpers
                 Id      = Guid.NewGuid(),
                 UserId  = userId,
                 Balance = balance
-            };
-
-        // ── Promo Code ────────────────────────────────────────────────────────
-
-        public static PromoCode MakePromo(
-            string code = "SAVE10", int discountType = 1, decimal discountValue = 100m,
-            int maxUses = 10, int usedCount = 0, decimal? minAmount = null)
-            => new PromoCode
-            {
-                Id               = Guid.NewGuid(),
-                Code             = code,
-                DiscountType     = discountType,
-                DiscountValue    = discountValue,
-                MaxUses          = maxUses,
-                UsedCount        = usedCount,
-                IsActive         = true,
-                ExpiresAtUtc     = DateTime.UtcNow.AddDays(30),
-                MinBookingAmount = minAmount
             };
 
         // ── Seed a full scenario (bus + route + schedule) ─────────────────────

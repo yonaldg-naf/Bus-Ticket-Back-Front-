@@ -32,8 +32,6 @@ export interface BookingResponse {
   scheduleId: string;
   status: BookingStatus;
   totalAmount: number;
-  promoCode?: string;
-  discountAmount: number;
   createdAtUtc: string;
   updatedAtUtc?: string;
   busCode: string;

@@ -2,8 +2,7 @@
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../services/auth.service';
-import { AnalyticsService, AdminSummary } from '../../../services/analytics.service';
-import { AuditLogEntry } from '../../../services/audit-log.service';
+import { AuditLogService, AuditLogEntry } from '../../../services/audit-log.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -195,17 +194,16 @@ import { AuditLogEntry } from '../../../services/audit-log.service';
 })
 export class AdminDashboardComponent implements OnInit {
   auth = inject(AuthService);
-  private analyticsSvc = inject(AnalyticsService);
+  private auditSvc = inject(AuditLogService);
 
   logsLoading  = signal(true);
-  pendingCount = signal(0);
   recentLogs   = signal<AuditLogEntry[]>([]);
 
   stats = signal([
-    { label: 'Total Buses',     icon: '🚌', value: '—', loading: true, iconBg: 'bg-red-50',    badge: 'Fleet',    badgeCls: 'bg-red-100 text-red-600'    },
-    { label: 'Schedules',       icon: '🗓️', value: '—', loading: true, iconBg: 'bg-blue-50',   badge: 'Active',   badgeCls: 'bg-blue-100 text-blue-600'   },
-    { label: 'Routes',          icon: '🗺️', value: '—', loading: true, iconBg: 'bg-teal-50',   badge: 'Network',  badgeCls: 'bg-teal-100 text-teal-600'   },
-    { label: 'Total Users',     icon: '👥', value: '—', loading: true, iconBg: 'bg-purple-50', badge: 'Users',    badgeCls: 'bg-purple-100 text-purple-600'},
+    { label: 'Total Buses',     icon: '🚌', value: '—', loading: false, iconBg: 'bg-red-50',    badge: 'Fleet',    badgeCls: 'bg-red-100 text-red-600'    },
+    { label: 'Schedules',       icon: '🗓️', value: '—', loading: false, iconBg: 'bg-blue-50',   badge: 'Active',   badgeCls: 'bg-blue-100 text-blue-600'   },
+    { label: 'Routes',          icon: '🗺️', value: '—', loading: false, iconBg: 'bg-teal-50',   badge: 'Network',  badgeCls: 'bg-teal-100 text-teal-600'   },
+    { label: 'Total Users',     icon: '👥', value: '—', loading: false, iconBg: 'bg-purple-50', badge: 'Users',    badgeCls: 'bg-purple-100 text-purple-600'},
   ]);
 
   adminCards = [
@@ -214,8 +212,6 @@ export class AdminDashboardComponent implements OnInit {
     { title: 'Manage Buses',   desc: 'Create and manage the bus fleet',           icon: '🚌', bg: 'bg-red-50',    link: '/admin/buses',        badge: '' },
     { title: 'Manage Routes',  desc: 'Create and manage routes',                  icon: '🗺️', bg: 'bg-teal-50',   link: '/admin/routes',       badge: '' },
     { title: 'Schedules',      desc: 'Manage all departure schedules',            icon: '🗓️', bg: 'bg-indigo-50', link: '/admin/schedules',    badge: '' },
-    { title: 'Promo Codes',    desc: 'Create and manage discount codes',          icon: '🎟️', bg: 'bg-yellow-50', link: '/admin/promo-codes',  badge: '' },
-    { title: 'All Complaints', desc: 'View and reply to customer complaints',     icon: '💬', bg: 'bg-purple-50', link: '/admin/complaints',   badge: '' },
     { title: 'Audit Logs',     desc: 'Full system activity & error trail',        icon: '📋', bg: 'bg-slate-100', link: '/admin/audit-logs',   badge: '' },
   ];
 
@@ -226,35 +222,13 @@ export class AdminDashboardComponent implements OnInit {
   ];
 
   ngOnInit() {
-    this.analyticsSvc.getAdminSummary().subscribe({
-      next: (s: AdminSummary) => {
-        this.updateStat(0, s.totalBuses.toString());
-        this.updateStat(1, s.totalSchedules.toString());
-        this.updateStat(2, s.totalRoutes.toString());
-        this.updateStat(3, s.totalUsers.toString());
-        this.recentLogs.set(
-          (s.recentActivity ?? []).map((a, i) => ({
-            id: String(i),
-            logType: 'Audit' as const,
-            action: a.action,
-            description: a.description,
-            username: a.username,
-            isSuccess: a.isSuccess,
-            createdAtUtc: a.createdAtUtc,
-          }))
-        );
+    this.auditSvc.getLogs({ pageSize: 8 }).subscribe({
+      next: result => {
+        this.recentLogs.set(result.items);
         this.logsLoading.set(false);
       },
-      error: (err) => {
-        [0, 1, 2, 3].forEach(i => this.updateStat(i, '—'));
-        this.logsLoading.set(false);
-        console.error(err);
-      },
+      error: () => this.logsLoading.set(false),
     });
-  }
-
-  private updateStat(i: number, value: string) {
-    this.stats.update(s => s.map((item, idx) => idx === i ? { ...item, value, loading: false } : item));
   }
 
   formatRelative(iso: string): string {

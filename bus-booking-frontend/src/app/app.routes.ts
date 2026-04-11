@@ -39,11 +39,6 @@ export const routes: Routes = [
     ],
   },
   {
-    path: 'favorites',
-    canActivate: [authGuard],
-    loadComponent: () => import('./pages/favorites/favorites.component').then(m => m.FavoritesComponent),
-  },
-  {
     path: 'profile',
     canActivate: [authGuard],
     loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent),
@@ -61,11 +56,9 @@ export const routes: Routes = [
       { path: 'stops',        loadComponent: () => import('./pages/admin/manage-stops/manage-stops.component').then(m => m.ManageStopsComponent) },
       { path: 'audit-logs',   loadComponent: () => import('./pages/admin/audit-logs/audit-logs.component').then(m => m.AuditLogsComponent) },
       { path: 'manage-users', loadComponent: () => import('./pages/admin/manage-users/manage-users.component').then(m => m.ManageUsersComponent) },
-      { path: 'complaints',   loadComponent: () => import('./pages/admin/complaints/complaints.component').then(m => m.AdminComplaintsComponent) },
       { path: 'buses',        loadComponent: () => import('./pages/admin/manage-buses/manage-buses.component').then(m => m.ManageBusesComponent) },
       { path: 'routes',       loadComponent: () => import('./pages/admin/manage-routes/manage-routes.component').then(m => m.ManageRoutesComponent) },
       { path: 'schedules',    loadComponent: () => import('./pages/admin/manage-schedules/manage-schedules.component').then(m => m.ManageSchedulesComponent) },
-      { path: 'promo-codes',  loadComponent: () => import('./pages/admin/promo-codes/promo-codes.component').then(m => m.PromoCodesComponent) },
     ],
   },
   {

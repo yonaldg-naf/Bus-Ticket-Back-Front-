@@ -10,7 +10,6 @@ export { BookingResponse, BookingStatus, BookingPassengerDto, PayBookingRequest 
 export interface CreateBookingRequest {
   scheduleId: string;
   passengers: BookingPassengerDto[];
-  promoCode?: string;
 }
 
 @Injectable({ providedIn: 'root' })

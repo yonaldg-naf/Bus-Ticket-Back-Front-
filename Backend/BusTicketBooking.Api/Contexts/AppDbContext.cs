@@ -17,8 +17,6 @@ namespace BusTicketBooking.Contexts
         public DbSet<BookingPassenger> BookingPassengers => Set<BookingPassenger>();
         public DbSet<Payment> Payments => Set<Payment>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
-        public DbSet<PromoCode> PromoCodes => Set<PromoCode>();
-        public DbSet<Complaint> Complaints => Set<Complaint>();
         public DbSet<Wallet> Wallets => Set<Wallet>();
         public DbSet<WalletTransaction> WalletTransactions => Set<WalletTransaction>();
 
@@ -128,8 +126,6 @@ namespace BusTicketBooking.Contexts
             modelBuilder.Entity<Booking>(e =>
             {
                 e.Property(b => b.TotalAmount).HasPrecision(10, 2);
-                e.Property(b => b.DiscountAmount).HasPrecision(10, 2);
-                e.Property(b => b.PromoCode).HasMaxLength(50);
                 e.HasIndex(b => b.UserId);
                 e.HasIndex(b => b.ScheduleId);
 
@@ -185,27 +181,6 @@ namespace BusTicketBooking.Contexts
                 e.HasIndex(l => l.CreatedAtUtc);
                 e.HasIndex(l => l.LogType);
                 e.HasIndex(l => l.UserId);
-            });
-
-            // PromoCode
-            modelBuilder.Entity<PromoCode>(e =>
-            {
-                e.Property(p => p.Code).HasMaxLength(50).IsRequired();
-                e.Property(p => p.DiscountValue).HasPrecision(10, 2);
-                e.Property(p => p.MinBookingAmount).HasPrecision(10, 2);
-                e.Property(p => p.MaxDiscountAmount).HasPrecision(10, 2);
-                e.HasIndex(p => p.Code).IsUnique();
-            });
-
-            // Complaint
-            modelBuilder.Entity<Complaint>(e =>
-            {
-                e.Property(c => c.Message).HasMaxLength(1000).IsRequired();
-                e.Property(c => c.Reply).HasMaxLength(1000);
-                e.Property(c => c.Status).HasMaxLength(20).IsRequired();
-                e.HasIndex(c => c.UserId);
-                e.HasOne(c => c.Booking).WithMany().HasForeignKey(c => c.BookingId).OnDelete(DeleteBehavior.Cascade);
-                e.HasOne(c => c.User).WithMany().HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Restrict);
             });
 
             // Wallet

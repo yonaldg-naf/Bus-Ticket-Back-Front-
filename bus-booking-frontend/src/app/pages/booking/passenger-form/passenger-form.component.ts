@@ -7,7 +7,6 @@ import { BookingService, BookingPassengerDto } from '../../../services/booking.s
 import { BookingStateService } from '../../../services/booking-state.service';
 import { AuthService } from '../../../services/auth.service';
 import { ToastService } from '../../../services/toast.service';
-import { PromoCodeService, ValidatePromoResponse } from '../../../services/promo-code.service';
 
 @Component({
   selector: 'app-passenger-form',
@@ -121,40 +120,6 @@ import { PromoCodeService, ValidatePromoResponse } from '../../../services/promo
               </div>
             }
 
-            <!-- Promo Code with live validation -->
-            <div class="mt-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
-              <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Promo Code (optional)</label>
-              <div class="flex gap-2">
-                <input [(ngModel)]="promoCode" [ngModelOptions]="{standalone: true}"
-                  placeholder="Enter promo code" maxlength="50"
-                  [disabled]="!!validatedPromo()"
-                  class="flex-1 text-sm border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-400 uppercase transition-colors disabled:bg-slate-50 dark:disabled:bg-slate-600 disabled:text-slate-400"/>
-                @if (!validatedPromo()) {
-                  <button type="button" (click)="validatePromo()" [disabled]="promoValidating() || !promoCode.trim()"
-                    class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-xl transition-colors disabled:opacity-50 whitespace-nowrap">
-                    {{ promoValidating() ? 'Checking…' : 'Apply' }}
-                  </button>
-                } @else {
-                  <button type="button" (click)="removePromo()"
-                    class="px-4 py-2 border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-300 text-xs font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap">
-                    Remove
-                  </button>
-                }
-              </div>
-              @if (validatedPromo()) {
-                <div class="mt-2 flex items-center gap-2 p-2.5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
-                  <svg class="w-4 h-4 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                  </svg>
-                  <span class="text-xs font-semibold text-green-700 dark:text-green-400">{{ validatedPromo()!.code }}</span>
-                  <span class="text-xs text-green-600 dark:text-green-500">— saves ₹{{ validatedPromo()!.discountAmount | number:'1.0-0' }}</span>
-                </div>
-              }
-              @if (promoError()) {
-                <p class="mt-1.5 text-xs text-red-500">{{ promoError() }}</p>
-              }
-            </div>
-
             <button type="submit" [disabled]="loading()" class="btn-primary w-full py-3.5 text-base mt-5">
               @if (loading()) {
                 <svg class="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
@@ -192,19 +157,9 @@ import { PromoCodeService, ValidatePromoResponse } from '../../../services/promo
                   <span class="font-medium text-red-600">{{ draft()!.selectedSeats.join(', ') }}</span>
                 </div>
                 <div class="pt-2 border-t border-slate-100 dark:border-slate-700 space-y-1.5">
-                  @if (validatedPromo()) {
-                    <div class="flex justify-between text-sm text-slate-500 dark:text-slate-400">
-                      <span>Subtotal</span>
-                      <span>₹{{ draftTotal() | number:'1.0-0' }}</span>
-                    </div>
-                    <div class="flex justify-between text-sm text-green-600 font-medium">
-                      <span>Promo ({{ validatedPromo()!.code }})</span>
-                      <span>-₹{{ validatedPromo()!.discountAmount | number:'1.0-0' }}</span>
-                    </div>
-                  }
                   <div class="flex justify-between font-bold text-slate-900 dark:text-white text-base pt-1">
                     <span>Total</span>
-                    <span class="text-red-600">₹{{ finalTotal() | number:'1.0-0' }}</span>
+                    <span class="text-red-600">₹{{ draftTotal() | number:'1.0-0' }}</span>
                   </div>
                 </div>
               </div>
@@ -229,16 +184,11 @@ export class PassengerFormComponent implements OnInit {
   private bookingSvc   = inject(BookingService);
   private bookingState = inject(BookingStateService);
   private toast        = inject(ToastService);
-  private promoSvc     = inject(PromoCodeService);
   auth                 = inject(AuthService);
 
   loading          = signal(false);
   errorMsg         = signal('');
   draft            = this.bookingState.draft;
-  promoCode        = '';
-  promoValidating  = signal(false);
-  validatedPromo   = signal<ValidatePromoResponse | null>(null);
-  promoError       = signal('');
   bookingFor       = signal<('self' | 'other')[]>([]);
 
   form = this.fb.group({ passengers: this.fb.array([]) });
@@ -295,30 +245,6 @@ export class PassengerFormComponent implements OnInit {
     return (d?.selectedSeats.length ?? 0) * (d?.schedule?.basePrice ?? 0);
   }
 
-  finalTotal() {
-    return Math.max(0, this.draftTotal() - (this.validatedPromo()?.discountAmount ?? 0));
-  }
-
-  validatePromo() {
-    const code = this.promoCode.trim().toUpperCase();
-    if (!code) return;
-    this.promoValidating.set(true);
-    this.promoError.set('');
-    this.promoSvc.validate(code, this.draftTotal()).subscribe({
-      next: (r: ValidatePromoResponse) => {
-        this.promoValidating.set(false);
-        if (r.isValid) { this.validatedPromo.set(r); this.promoCode = r.code; }
-        else { this.promoError.set(r.message ?? 'Invalid promo code.'); }
-      },
-      error: (err: any) => {
-        this.promoValidating.set(false);
-        this.promoError.set(err?.error?.message ?? 'Could not validate promo code.');
-      },
-    });
-  }
-
-  removePromo() { this.validatedPromo.set(null); this.promoError.set(''); this.promoCode = ''; }
-
   goBack() { this.router.navigate(['/booking/seats', this.route.snapshot.paramMap.get('scheduleId')!]); }
 
   formatTime(utc: string) {
@@ -336,7 +262,7 @@ export class PassengerFormComponent implements OnInit {
     const passengers: BookingPassengerDto[] = this.passengersArray.value.map((p: any) => ({
       name: p.name, age: p.age ?? undefined, seatNo: p.seatNo,
     }));
-    this.bookingSvc.create({ scheduleId, passengers, promoCode: this.validatedPromo()?.code || undefined }).subscribe({
+    this.bookingSvc.create({ scheduleId, passengers }).subscribe({
       next: booking => {
         this.bookingState.setPassengers(passengers);
         this.bookingState.setPendingBookingId(booking.id);

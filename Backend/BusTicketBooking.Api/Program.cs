@@ -90,14 +90,8 @@ builder.Services.AddScoped<IBookingService, BookingService>();
 
 builder.Services.AddScoped<IStopService, StopService>();
 
-builder.Services.AddScoped<AnalyticsService>();
-
 // Wallet
 builder.Services.AddScoped<IWalletService, WalletService>();
-
-// New services
-builder.Services.AddScoped<IPromoCodeService, PromoCodeService>();
-builder.Services.AddScoped<IComplaintService, ComplaintService>();
 
 // Audit & error logging
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();

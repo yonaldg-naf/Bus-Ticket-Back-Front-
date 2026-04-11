@@ -6,7 +6,6 @@ export interface BookingDraft {
   schedule: ScheduleResponse;
   selectedSeats: string[];
   passengers: BookingPassengerDto[];
-  promoCode?: string;
   pendingBookingId?: string;
 }
 
@@ -29,11 +28,6 @@ export class BookingStateService {
   setPassengers(passengers: BookingPassengerDto[]): void {
     const d = this._draft();
     if (d) this.update({ ...d, passengers });
-  }
-
-  setPromoCode(promoCode: string | undefined): void {
-    const d = this._draft();
-    if (d) this.update({ ...d, promoCode });
   }
 
   setPendingBookingId(bookingId: string): void {

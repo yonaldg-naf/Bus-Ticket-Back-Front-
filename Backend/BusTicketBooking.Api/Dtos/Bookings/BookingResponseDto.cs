@@ -9,8 +9,6 @@ namespace BusTicketBooking.Dtos.Bookings
         public Guid ScheduleId { get; set; }
         public BookingStatus Status { get; set; }
         public decimal TotalAmount { get; set; }
-        public string? PromoCode { get; set; }
-        public decimal DiscountAmount { get; set; }
         public DateTime CreatedAtUtc { get; set; }
         public DateTime? UpdatedAtUtc { get; set; }
 

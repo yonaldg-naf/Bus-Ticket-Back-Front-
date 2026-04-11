@@ -128,8 +128,6 @@ namespace BusTicketBooking.Middlewares
             if (path.Contains("/auth"))       return "Auth";
             if (path.Contains("/auditlogs"))  return "AuditLog";
             if (path.Contains("/wallet"))     return "Wallet";
-            if (path.Contains("/complaints")) return "Complaint";
-            if (path.Contains("/promocodes")) return "PromoCode";
             return null;
         }
 

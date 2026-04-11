@@ -125,14 +125,8 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
               <div class="space-y-2 text-sm mb-5">
                 <div class="flex justify-between text-slate-600 dark:text-slate-300">
                   <span>{{ booking()!.passengers.length }} passenger{{ booking()!.passengers.length !== 1 ? 's' : '' }}</span>
-                  <span>₹{{ (booking()!.totalAmount + booking()!.discountAmount) | number:'1.0-0' }}</span>
+                  <span>₹{{ booking()!.totalAmount | number:'1.0-0' }}</span>
                 </div>
-                @if (booking()!.discountAmount > 0) {
-                  <div class="flex justify-between text-green-600 font-medium">
-                    <span>Discount ({{ booking()!.promoCode }})</span>
-                    <span>-₹{{ booking()!.discountAmount | number:'1.0-0' }}</span>
-                  </div>
-                }
                 <div class="flex justify-between font-bold text-slate-900 dark:text-white text-xl pt-2 border-t border-slate-100 dark:border-slate-700">
                   <span>Total</span>
                   <span class="text-red-600">₹{{ finalAmount() | number:'1.0-0' }}</span>

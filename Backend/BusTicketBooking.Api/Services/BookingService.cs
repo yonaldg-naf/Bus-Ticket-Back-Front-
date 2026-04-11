@@ -65,10 +65,9 @@ namespace BusTicketBooking.Services
         ///   3. Validates that all requested seat numbers exist on this bus.
         ///   4. Calculates total = base price × passenger count.
         ///   5. Opens a serializable transaction to prevent race conditions on seat booking.
-        ///   6. Validates and applies the promo code (if provided), incrementing UsedCount atomically.
-        ///   7. Checks that none of the requested seats are already taken.
-        ///   8. Creates the Booking (Pending), BookingPassenger records, and a Payment (Initiated).
-        ///   9. Commits the transaction and returns the full booking details.
+        ///   6. Checks that none of the requested seats are already taken.
+        ///   7. Creates the Booking (Pending), BookingPassenger records, and a Payment (Initiated).
+        ///   8. Commits the transaction and returns the full booking details.
         ///
         /// Throws InvalidOperationException for any validation failure.
         /// </summary>
@@ -124,38 +123,7 @@ namespace BusTicketBooking.Services
 
             var total = schedule.BasePrice * dto.Passengers.Count;
 
-            // Promo + seat check + booking creation all inside one serializable transaction
-            decimal discount = 0;
-            string? appliedPromoCode = null;
-            var finalAmount = total;
-
             await using var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
-
-            // Apply promo inside transaction so UsedCount increment is atomic with booking
-            if (!string.IsNullOrWhiteSpace(dto.PromoCode))
-            {
-                var promo = await _db.PromoCodes
-                    .FirstOrDefaultAsync(p => p.Code == dto.PromoCode.ToUpper().Trim() && p.IsActive, ct);
-
-                if (promo != null
-                    && promo.ExpiresAtUtc >= DateTime.UtcNow
-                    && promo.UsedCount < promo.MaxUses
-                    && (!promo.MinBookingAmount.HasValue || total >= promo.MinBookingAmount.Value))
-                {
-                    discount = promo.DiscountType == 2
-                        ? Math.Round(total * promo.DiscountValue / 100, 2)
-                        : promo.DiscountValue;
-
-                    if (promo.MaxDiscountAmount.HasValue && discount > promo.MaxDiscountAmount.Value)
-                        discount = promo.MaxDiscountAmount.Value;
-
-                    discount = Math.Min(discount, total);
-                    appliedPromoCode = promo.Code;
-                    promo.UsedCount++;
-                }
-            }
-
-            finalAmount = total - discount;
 
             var requestedSeats = dto.Passengers.Select(p => p.SeatNo.Trim()).ToList();
 
@@ -177,9 +145,7 @@ namespace BusTicketBooking.Services
                 UserId = userId,
                 ScheduleId = dto.ScheduleId,
                 Status = BookingStatus.Pending,
-                TotalAmount = finalAmount,
-                PromoCode = appliedPromoCode,
-                DiscountAmount = discount
+                TotalAmount = total,
             };
 
             await _bookings.AddAsync(entity, ct);
@@ -199,7 +165,7 @@ namespace BusTicketBooking.Services
             var payment = new Payment
             {
                 BookingId = entity.Id,
-                Amount = finalAmount,
+                Amount = total,
                 Status = PaymentStatus.Initiated,
                 ProviderReference = "INIT"
             };
@@ -233,8 +199,6 @@ namespace BusTicketBooking.Services
                     ScheduleId       = b.ScheduleId,
                     Status           = b.Status,
                     TotalAmount      = b.TotalAmount,
-                    DiscountAmount   = b.DiscountAmount,
-                    PromoCode        = b.PromoCode,
                     CreatedAtUtc     = b.CreatedAtUtc,
                     UpdatedAtUtc     = b.UpdatedAtUtc,
 
@@ -453,8 +417,6 @@ namespace BusTicketBooking.Services
                 ScheduleId = e.ScheduleId,
                 Status = e.Status,
                 TotalAmount = e.TotalAmount,
-                PromoCode = e.PromoCode,
-                DiscountAmount = e.DiscountAmount,
                 CreatedAtUtc = e.CreatedAtUtc,
                 UpdatedAtUtc = e.UpdatedAtUtc,
 

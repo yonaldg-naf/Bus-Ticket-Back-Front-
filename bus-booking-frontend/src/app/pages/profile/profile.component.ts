@@ -71,9 +71,6 @@ import { AuthService } from '../../services/auth.service';
                 <a routerLink="/my-bookings" class="flex-1 py-3 text-center text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                   My Bookings
                 </a>
-                <a routerLink="/favorites" class="flex-1 py-3 text-center text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                  ❤️ Favourites
-                </a>
               }
               @if (user.role === 'Admin') {
                 <a routerLink="/admin" class="flex-1 py-3 text-center text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
