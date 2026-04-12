@@ -60,7 +60,6 @@ namespace BusTicketBooking.Services
             return await _users.AddAsync(user);
         }
 
-        /// <summary>Returns a paged, filterable list of all users (admin use).</summary>
         /// <summary>
         /// Returns a paged, filterable list of all users in the system.
         /// Admin-only — used for the user management page.

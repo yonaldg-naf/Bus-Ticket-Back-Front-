@@ -11,6 +11,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BusTicketBooking.Services
 {
+    /// <summary>
+    /// Manages bus routes — the ordered sequences of stops a bus travels through.
+    /// Routes are identified by a unique RouteCode and contain at least two stops.
+    ///
+    /// Key behaviours:
+    ///   - Stops are referenced by city + name. If a stop doesn't exist yet,
+    ///     it is automatically created (GetOrCreateStopAsync).
+    ///   - Updating a route replaces all its stops entirely (delete + re-insert).
+    ///   - All read operations use AppDbContext directly to support Include/ThenInclude
+    ///     for loading nested RouteStop → Stop data.
+    /// </summary>
     public class RouteService : IRouteService
     {
         private readonly IRepository<BusRoute> _routes;
@@ -29,6 +40,10 @@ namespace BusTicketBooking.Services
             _db         = db;
         }
 
+        /// <summary>
+        /// Returns all routes with their ordered stops.
+        /// Uses AppDbContext directly to support Include/ThenInclude for stop data.
+        /// </summary>
         public async Task<IEnumerable<RouteResponseDto>> GetAllAsync(CancellationToken ct = default)
         {
             var data = await _db.BusRoutes
@@ -39,6 +54,10 @@ namespace BusTicketBooking.Services
             return data.Select(MapRoute);
         }
 
+        /// <summary>
+        /// Returns a single route by ID with its ordered stops.
+        /// Returns null if no route with the given ID exists.
+        /// </summary>
         public async Task<RouteResponseDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
         {
             var route = await _db.BusRoutes
@@ -49,6 +68,13 @@ namespace BusTicketBooking.Services
             return route is null ? null : MapRoute(route);
         }
 
+        /// <summary>
+        /// Creates a new route with an ordered list of stops identified by city + name.
+        /// Requires at least two stops. RouteCode must be unique.
+        /// Stops that don't exist yet are automatically created.
+        /// Throws InvalidOperationException if fewer than 2 stops are provided
+        /// or if the RouteCode is already taken.
+        /// </summary>
         public async Task<RouteResponseDto> CreateAsync(CreateRouteByKeysRequestDto dto, CancellationToken ct = default)
         {
             if (dto.Stops.Count < 2) throw new InvalidOperationException("A route must contain at least two stops.");
@@ -74,6 +100,13 @@ namespace BusTicketBooking.Services
             return await GetByIdAsync(route.Id, ct) ?? throw new InvalidOperationException("Route creation failed.");
         }
 
+        /// <summary>
+        /// Updates a route's code and replaces its stops entirely.
+        /// All existing RouteStop records are deleted and re-created from the new list.
+        /// Validates that the new RouteCode is not already used by another route.
+        /// Requires at least two stops.
+        /// Returns null if no route with the given ID exists.
+        /// </summary>
         public async Task<RouteResponseDto?> UpdateAsync(Guid id, UpdateRouteByKeysRequestDto dto, CancellationToken ct = default)
         {
             var route = await _routes.GetByIdAsync(id, ct);
@@ -109,6 +142,10 @@ namespace BusTicketBooking.Services
             return await GetByIdAsync(route.Id, ct);
         }
 
+        /// <summary>
+        /// Permanently deletes a route and all its associated RouteStop records.
+        /// Returns false if no route with the given ID exists.
+        /// </summary>
         public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
         {
             var route = await _routes.GetByIdAsync(id, ct);
@@ -120,6 +157,10 @@ namespace BusTicketBooking.Services
             return true;
         }
 
+        /// <summary>
+        /// Looks up a stop by city + name. If it doesn't exist, creates and saves it.
+        /// Used during route creation and update to resolve stop references by key.
+        /// </summary>
         private async Task<Stop> GetOrCreateStopAsync(string city, string name, CancellationToken ct)
         {
             city = city.Trim();
@@ -129,6 +170,10 @@ namespace BusTicketBooking.Services
             return await _stops.AddAsync(new Stop { City = city, Name = name }, ct);
         }
 
+        /// <summary>
+        /// Maps a BusRoute entity to a RouteResponseDto.
+        /// Stops are ordered by their sequence Order field.
+        /// </summary>
         private static RouteResponseDto MapRoute(BusRoute route) => new()
         {
             Id           = route.Id,
