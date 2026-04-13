@@ -62,6 +62,13 @@ namespace BusTicketBooking.Controllers
             return ok ? Ok() : NotFound();
         }
 
-
+        // PUT: api/Stops/cities/{city}
+        [HttpPut("cities/{city}")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<IActionResult> RenameCity(string city, [FromBody] UpdateCityRequestDto dto, CancellationToken ct = default)
+        {
+            var count = await _stopService.RenameCityAsync(city, dto.NewCityName, ct);
+            return count == 0 ? NotFound() : Ok(new { updated = count });
+        }
     }
 }

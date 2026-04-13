@@ -2,14 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { BusType, BusStatus } from '../models/bus-schedule.models';
+import { RouteResponse, CreateRouteRequest, UpdateRouteRequest, StopRef } from '../models/stop-route.models';
+
+export { BusType, BusStatus };
 
 /* ---------- Bus ---------- */
-export enum BusType {
-  Seater = 1, SemiSleeper = 2, Sleeper = 3, AC = 4, NonAC = 5
-}
-export enum BusStatus {
-  Available = 1, UnderRepair = 2, NotAvailable = 3
-}
 export interface BusResponse {
   id: string;
   code: string;
@@ -64,26 +62,7 @@ export class BusService {
 }
 
 /* ---------- Routes ---------- */
-export interface StopRef { city: string; name: string; }
-export interface RouteStopView {
-  stopId: string; order: number; arrivalOffsetMin?: number; departureOffsetMin?: number;
-  city: string; name: string;
-}
-export interface RouteResponse {
-  id: string;
-  routeCode: string;
-  stops: RouteStopView[];
-  createdAtUtc: string;
-  updatedAtUtc?: string;
-}
-export interface CreateRouteRequest {
-  routeCode: string;
-  stops: StopRef[];
-}
-export interface UpdateRouteRequest {
-  newRouteCode: string;
-  stops: StopRef[];
-}
+export { RouteResponse, CreateRouteRequest, UpdateRouteRequest, StopRef };
 
 @Injectable({ providedIn: 'root' })
 export class RouteService {

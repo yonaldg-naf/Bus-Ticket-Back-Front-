@@ -133,7 +133,7 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Seed database in Development (migrate + seed Admin/Operator + sample Stops)
+// Seed database in Development (migrate + seed Admin + sample Stops)
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();

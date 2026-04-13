@@ -13,10 +13,6 @@ namespace BusTicketBooking.Dtos.Auth
         [Required, MinLength(6), MaxLength(100)]
         public string Password { get; set; } = string.Empty;
 
-        // Default role is Customer; allow override if you want (Admin/Operator controlled later)
-        [MaxLength(30)]
-        public string Role { get; set; } = "Customer";
-
         [MaxLength(200)]
         public string FullName { get; set; } = string.Empty;
     }

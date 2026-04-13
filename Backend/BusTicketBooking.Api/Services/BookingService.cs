@@ -133,7 +133,9 @@ namespace BusTicketBooking.Services
                       bp => bp.BookingId,
                       b => b.Id,
                       (bp, b) => new { bp.SeatNo, b.ScheduleId, b.Status })
-                .Where(x => x.ScheduleId == dto.ScheduleId && x.Status != BookingStatus.Cancelled)
+                .Where(x => x.ScheduleId == dto.ScheduleId
+                         && x.Status != BookingStatus.Cancelled
+                         && x.Status != BookingStatus.OperatorCancelled)
                 .Select(x => x.SeatNo)
                 .ToListAsync(ct);
 
@@ -467,22 +469,5 @@ namespace BusTicketBooking.Services
         /// </summary>
         private static List<string> GenerateNumericSeats(int totalSeats)
             => Enumerable.Range(1, totalSeats).Select(i => i.ToString()).ToList();
-
-        // ===========================
-        // HELPER: ENSURE DATETIME IS UTC
-        // ===========================
-        // Guarantees the DateTime we store and compare is always in UTC.
-        // If the value is already UTC → use it as-is.
-        // If it's Local time → convert it to UTC.
-        // If the Kind is Unspecified (common when deserializing JSON) → treat it as UTC directly,
-        // because all our API fields named "...Utc" are expected to be UTC already.
-        // ===========================
-        private static DateTime EnsureUtc(DateTime dt) =>
-            dt.Kind switch
-            {
-                DateTimeKind.Utc => dt,
-                DateTimeKind.Local => dt.ToUniversalTime(),
-                _ => DateTime.SpecifyKind(dt, DateTimeKind.Utc)
-            };
     }
 }

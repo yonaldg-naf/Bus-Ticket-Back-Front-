@@ -26,7 +26,6 @@ export interface AuthResponse {
   email: string;
   role: UserRole;
   fullName: string;
-  companyName?: string;
 }
 
 export interface CurrentUser {
@@ -35,7 +34,6 @@ export interface CurrentUser {
   email: string;
   role: UserRole;
   fullName: string;
-  companyName?: string;
   token: string;
   expiresAtUtc: string;
 }
@@ -121,7 +119,6 @@ export class AuthService {
       email: res.email,
       role: res.role,
       fullName: res.fullName,
-      companyName: res.companyName,
       token: res.accessToken,
       expiresAtUtc: res.expiresAtUtc,
     };

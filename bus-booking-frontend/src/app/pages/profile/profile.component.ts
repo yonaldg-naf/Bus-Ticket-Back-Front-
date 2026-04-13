@@ -52,12 +52,6 @@ import { AuthService } from '../../services/auth.service';
                   <span class="text-sm text-slate-500 dark:text-slate-400">Email</span>
                   <span class="font-semibold text-slate-800 dark:text-white text-sm">{{ user.email }}</span>
                 </div>
-                @if (user.companyName) {
-                  <div class="px-6 py-4 flex items-center justify-between">
-                    <span class="text-sm text-slate-500 dark:text-slate-400">Company</span>
-                    <span class="font-semibold text-slate-800 dark:text-white text-sm">{{ user.companyName }}</span>
-                  </div>
-                }
                 <div class="px-6 py-4 flex items-center justify-between">
                   <span class="text-sm text-slate-500 dark:text-slate-400">Session expires</span>
                   <span class="text-sm text-slate-600 dark:text-slate-300">{{ formatExpiry(user.expiresAtUtc) }}</span>
@@ -105,12 +99,6 @@ import { AuthService } from '../../services/auth.service';
                   <p class="text-xs text-slate-400 uppercase tracking-wide mb-1">Role</p>
                   <p class="font-semibold text-slate-800 dark:text-white">{{ roleLabel(user.role) }}</p>
                 </div>
-                @if (user.companyName) {
-                  <div class="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl sm:col-span-2">
-                    <p class="text-xs text-slate-400 uppercase tracking-wide mb-1">Company</p>
-                    <p class="font-semibold text-slate-800 dark:text-white">{{ user.companyName }}</p>
-                  </div>
-                }
                 <div class="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl sm:col-span-2">
                   <p class="text-xs text-slate-400 uppercase tracking-wide mb-1">Session Expires</p>
                   <p class="font-semibold text-slate-800 dark:text-white">{{ formatExpiry(user.expiresAtUtc) }}</p>

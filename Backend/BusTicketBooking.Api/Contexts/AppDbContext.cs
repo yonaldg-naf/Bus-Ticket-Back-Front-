@@ -45,17 +45,6 @@ namespace BusTicketBooking.Contexts
                 }
             }
 
-            // BaseEntity concurrency token
-            foreach (var entity in modelBuilder.Model.GetEntityTypes())
-            {
-                var rowVersion = entity.FindProperty(nameof(BaseEntity.RowVersion));
-                if (rowVersion != null)
-                {
-                    rowVersion.IsConcurrencyToken = true;
-                    rowVersion.ValueGenerated = Microsoft.EntityFrameworkCore.Metadata.ValueGenerated.OnAddOrUpdate;
-                }
-            }
-
             // User
             modelBuilder.Entity<User>(e =>
             {

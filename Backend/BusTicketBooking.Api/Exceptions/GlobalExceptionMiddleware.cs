@@ -11,7 +11,6 @@ namespace BusTicketBooking.Middlewares
         public GlobalExceptionMiddleware(ILogger<GlobalExceptionMiddleware> logger)
         {
             _logger = logger;
-            //hello
         }
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)

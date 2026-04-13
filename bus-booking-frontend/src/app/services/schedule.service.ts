@@ -2,31 +2,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-
-export interface PagedResult<T> {
-  page: number;
-  pageSize: number;
-  totalCount: number;
-  items: T[];
-}
-
-export interface ScheduleResponse {
-  id: string;
-  busId: string;
-  routeId: string;
-  busCode: string;
-  registrationNumber: string;
-  routeCode: string;
-  busType: number;
-  totalSeats: number;
-  departureUtc: string;
-  basePrice: number;
-  amenities: string[];
-  createdAtUtc: string;
-  updatedAtUtc?: string;
-  isCancelledByOperator?: boolean;
-  cancelReason?: string;
-}
+import { ScheduleResponse, SeatAvailabilityResponse, PagedResult } from '../models/bus-schedule.models';
 
 export interface SearchSchedulesByKeysRequest {
   fromCity: string;
@@ -44,15 +20,7 @@ export interface SearchSchedulesByKeysRequest {
   maxPrice?: number;
 }
 
-export interface SeatAvailabilityResponse {
-  scheduleId: string;
-  busCode: string;
-  totalSeats: number;
-  bookedCount: number;
-  availableCount: number;
-  availableSeats: string[];
-  bookedSeats: string[];
-}
+export { PagedResult, ScheduleResponse, SeatAvailabilityResponse };
 
 @Injectable({ providedIn: 'root' })
 export class ScheduleService {
