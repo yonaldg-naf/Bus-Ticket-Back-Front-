@@ -4,16 +4,12 @@ export enum BookingStatus {
   Pending = 1,
   Confirmed = 2,
   Cancelled = 3,
-  OperatorCancelled = 5,
-  BusMissed = 6,
 }
 
 export const BookingStatusLabels: Record<BookingStatus, string> = {
   [BookingStatus.Pending]: 'Pending',
   [BookingStatus.Confirmed]: 'Confirmed',
   [BookingStatus.Cancelled]: 'Cancelled',
-  [BookingStatus.OperatorCancelled]: 'Cancelled by operator',
-  [BookingStatus.BusMissed]: 'Bus Missed',
 };
 
 // ─── Passenger ────────────────────────────────────────────────────────────────
@@ -39,7 +35,7 @@ export interface BookingResponse {
   routeCode: string;
   departureUtc: string;
   busStatus: number;
-  isScheduleCancelledByOperator?: boolean;
+  isScheduleCancelledByAdmin?: boolean;
   scheduleCancelReason?: string;
   refundAmount?: number;
   refundPercent?: number;

@@ -57,13 +57,13 @@ import { BookingResponse, BookingStatus, BookingStatusLabels } from '../../../mo
           </div>
         }
 
-        @if (booking()!.status === BookingStatus.OperatorCancelled) {
+        @if (booking()!.isScheduleCancelledByAdmin) {
           <div class="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
             <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
             </svg>
             <div>
-              <p class="font-semibold text-red-800">This trip was cancelled by the operator.</p>
+              <p class="font-semibold text-red-800">This trip was cancelled by the admin.</p>
               @if (booking()!.scheduleCancelReason) {
                 <p class="text-sm text-red-700 mt-0.5">Reason: {{ booking()!.scheduleCancelReason }}</p>
               }
@@ -276,10 +276,9 @@ export class BookingConfirmComponent implements OnInit {
 
   statusBadgeClass(s: BookingStatus): string {
     const map: Record<number, string> = {
-      [BookingStatus.Pending]:           'badge badge-warning',
-      [BookingStatus.Confirmed]:         'badge badge-success',
-      [BookingStatus.Cancelled]:         'badge badge-error',
-      [BookingStatus.OperatorCancelled]: 'badge badge-error',
+      [BookingStatus.Pending]:   'badge badge-warning',
+      [BookingStatus.Confirmed]: 'badge badge-success',
+      [BookingStatus.Cancelled]: 'badge badge-error',
     };
     return map[s] ?? 'badge badge-gray';
   }

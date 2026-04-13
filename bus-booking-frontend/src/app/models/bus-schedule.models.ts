@@ -32,7 +32,7 @@ export interface ScheduleResponse {
   amenities: string[];
   createdAtUtc: string;
   updatedAtUtc?: string;
-  isCancelledByOperator?: boolean;
+  isCancelledByAdmin?: boolean;
   cancelReason?: string;
 }
 

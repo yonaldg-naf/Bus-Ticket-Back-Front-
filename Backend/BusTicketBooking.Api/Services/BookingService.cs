@@ -21,8 +21,6 @@ namespace BusTicketBooking.Services
     /// Key behaviours:
     ///   - Seat availability is checked inside a serializable transaction to prevent
     ///     two users from booking the same seat simultaneously.
-    ///   - Promo code validation and UsedCount increment happen atomically inside
-    ///     the same transaction as booking creation.
     ///   - Cancellation refunds follow a time-based policy:
     ///       48h+ before departure → 100% refund
     ///       24–48h before         → 75% refund
@@ -30,6 +28,7 @@ namespace BusTicketBooking.Services
     ///       0–6h before           → 25% refund
     ///       Already departed      → no refund
     ///   - Refunds are credited to the user's in-app wallet automatically.
+    ///   - Only customers can create and manage their own bookings.
     /// </summary>
     public class BookingService : IBookingService
     {
@@ -62,7 +61,7 @@ namespace BusTicketBooking.Services
         /// Steps:
         ///   1. Validates at least one passenger is provided and no duplicate seats in the request.
         ///   2. Loads the schedule and checks it is not cancelled, not departed, and the bus is available.
-        ///   3. Validates that all requested seat numbers exist on this bus.
+        ///   3. Validates that all requested seat numbers are valid for this bus.
         ///   4. Calculates total = base price × passenger count.
         ///   5. Opens a serializable transaction to prevent race conditions on seat booking.
         ///   6. Checks that none of the requested seats are already taken.
@@ -70,6 +69,7 @@ namespace BusTicketBooking.Services
         ///   8. Commits the transaction and returns the full booking details.
         ///
         /// Throws InvalidOperationException for any validation failure.
+        /// Only callable by authenticated customers (role: Customer).
         /// </summary>
         public async Task<BookingResponseDto> CreateAsync(Guid userId, CreateBookingRequestDto dto, CancellationToken ct = default)
         {
@@ -95,8 +95,8 @@ namespace BusTicketBooking.Services
                 .FirstOrDefaultAsync(s => s.Id == dto.ScheduleId, ct)
                 ?? throw new InvalidOperationException("Schedule not found.");
 
-            if (schedule.IsCancelledByOperator)
-                throw new InvalidOperationException("This schedule was cancelled by the operator.");
+            if (schedule.IsCancelledByAdmin)
+                throw new InvalidOperationException("This schedule has been cancelled by the admin.");
 
             if (schedule.DepartureUtc <= DateTime.UtcNow)
                 throw new InvalidOperationException("This schedule has already departed. Booking is no longer available.");
@@ -134,8 +134,7 @@ namespace BusTicketBooking.Services
                       b => b.Id,
                       (bp, b) => new { bp.SeatNo, b.ScheduleId, b.Status })
                 .Where(x => x.ScheduleId == dto.ScheduleId
-                         && x.Status != BookingStatus.Cancelled
-                         && x.Status != BookingStatus.OperatorCancelled)
+                         && x.Status != BookingStatus.Cancelled)
                 .Select(x => x.SeatNo)
                 .ToListAsync(ct);
 
@@ -210,7 +209,7 @@ namespace BusTicketBooking.Services
                     DepartureUtc         = b.Schedule.DepartureUtc,
                     BusStatus            = b.Schedule.Bus.Status,
 
-                    IsScheduleCancelledByOperator = b.Schedule.IsCancelledByOperator,
+                    IsScheduleCancelledByAdmin = b.Schedule.IsCancelledByAdmin,
                     ScheduleCancelReason          = b.Schedule.CancelReason,
 
                     Passengers = b.Passengers.Select(p => new BookingPassengerDto
@@ -249,7 +248,7 @@ namespace BusTicketBooking.Services
         /// Returns a single booking by ID.
         /// If allowPrivileged is false (regular customer), only the booking owner can see it —
         /// returns null for any other user (treated as not found by the controller).
-        /// If allowPrivileged is true (admin or operator), any booking can be fetched.
+        /// If allowPrivileged is true (admin), any booking can be fetched regardless of ownership.
         /// </summary>
         public async Task<BookingResponseDto?> GetByIdForUserAsync(Guid userId, Guid bookingId, bool allowPrivileged = false, CancellationToken ct = default)
         {
@@ -274,7 +273,7 @@ namespace BusTicketBooking.Services
         ///
         /// Refunds are only issued for Confirmed bookings with a successful payment.
         /// Pending (unpaid) bookings are cancelled with no refund.
-        /// Already-cancelled or operator-cancelled bookings return true immediately (idempotent).
+        /// Already-cancelled bookings return true immediately (idempotent).
         /// Throws UnauthorizedAccessException if allowPrivileged is false and the user doesn't own the booking.
         /// Returns false if the booking does not exist.
         /// </summary>
@@ -291,7 +290,6 @@ namespace BusTicketBooking.Services
                 throw new UnauthorizedAccessException("You cannot cancel a booking you don't own.");
 
             if (booking.Status == BookingStatus.Cancelled) return true;
-            if (booking.Status == BookingStatus.OperatorCancelled) return true;
 
             // Calculate refund based on policy (only for confirmed bookings that were paid)
             if (booking.Status == BookingStatus.Confirmed && booking.Payment?.Status == PaymentStatus.Success)
@@ -352,8 +350,7 @@ namespace BusTicketBooking.Services
             if (booking is null) return null;
             if (!allowPrivileged && booking.UserId != userId) return null;
 
-            if (booking.Status == BookingStatus.Cancelled ||
-                booking.Status == BookingStatus.OperatorCancelled)
+            if (booking.Status == BookingStatus.Cancelled)
                 throw new InvalidOperationException("Cannot pay a cancelled booking.");
 
             var payAmount = amount <= 0 ? booking.TotalAmount : amount;
@@ -429,7 +426,7 @@ namespace BusTicketBooking.Services
 
                 BusStatus = e.Schedule?.Bus?.Status ?? BusStatus.Available,
 
-                IsScheduleCancelledByOperator = e.Schedule?.IsCancelledByOperator ?? false,
+                IsScheduleCancelledByAdmin = e.Schedule?.IsCancelledByAdmin ?? false,
                 ScheduleCancelReason = e.Schedule?.CancelReason,
 
                 Passengers = e.Passengers

@@ -174,8 +174,7 @@ export class WalletComponent implements OnInit {
       TopUp: 'Wallet Top-Up',
       BookingPayment: 'Booking Payment',
       CancellationRefund: 'Cancellation Refund',
-      BusMissRefund: 'Bus Miss Refund',
-      OperatorCancelRefund: 'Operator Cancellation Refund',
+      AdminCancelRefund: 'Admin Cancellation Refund',
     };
     return map[reason] ?? reason;
   }

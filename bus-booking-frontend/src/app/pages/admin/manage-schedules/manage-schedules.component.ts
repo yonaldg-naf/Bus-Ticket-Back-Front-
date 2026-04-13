@@ -62,14 +62,14 @@ import { ToastService } from '../../../services/toast.service';
                 </div>
                 <div>
                   <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Departure (UTC) *</label>
-                  <input formControlName="departureUtc" type="datetime-local"
+                  <input formControlName="departureUtc" type="datetime-local" [min]="minDateTime"
                     class="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 dark:text-white focus:outline-none"/>
                   @if (isInvalid('departureUtc')) { <p class="text-xs text-red-500 mt-1">Required</p> }
                 </div>
               } @else {
                 <div>
                   <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Departure (Local) *</label>
-                  <input formControlName="departureLocal" type="datetime-local"
+                  <input formControlName="departureLocal" type="datetime-local" [min]="minDateTime"
                     class="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 dark:text-white focus:outline-none"/>
                 </div>
               }
@@ -122,7 +122,7 @@ import { ToastService } from '../../../services/toast.service';
                   <td class="px-6 py-4 text-slate-600 dark:text-slate-300 text-xs">{{ formatDate(s.departureUtc) }}</td>
                   <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">₹{{ s.basePrice }}</td>
                   <td class="px-6 py-4">
-                    @if (s.isCancelledByOperator) {
+                    @if (s.isCancelledByAdmin) {
                       <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">Cancelled</span>
                     } @else {
                       <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Active</span>
@@ -130,7 +130,7 @@ import { ToastService } from '../../../services/toast.service';
                   </td>
                   <td class="px-6 py-4">
                     <div class="flex items-center justify-end gap-2">
-                      @if (!s.isCancelledByOperator) {
+                      @if (!s.isCancelledByAdmin) {
                         <button (click)="editSchedule(s)" class="px-3 py-1.5 text-xs font-semibold border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700">Edit</button>
                         <button (click)="cancelSchedule(s)" class="px-3 py-1.5 text-xs font-semibold border border-amber-200 text-amber-600 rounded-xl hover:bg-amber-50">Cancel</button>
                       }
@@ -161,6 +161,11 @@ export class ManageSchedulesComponent implements OnInit {
   schedules  = signal<ScheduleResponse[]>([]);
   buses      = signal<BusResponse[]>([]);
   routes     = signal<RouteResponse[]>([]);
+
+  // Minimum selectable datetime — now, formatted for datetime-local input (YYYY-MM-DDTHH:mm)
+  get minDateTime(): string {
+    return new Date().toISOString().slice(0, 16);
+  }
 
   form = this.fb.group({
     busId:          ['', Validators.required],

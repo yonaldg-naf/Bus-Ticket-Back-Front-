@@ -161,11 +161,10 @@ export class BookingListComponent implements OnInit {
       new Date(b.departureUtc) >= now
     );
     if (f === 'completed') return all.filter(b =>
-      b.status === BookingStatus.BusMissed ||
-      (b.status === BookingStatus.Confirmed && new Date(b.departureUtc) < now)
+      b.status === BookingStatus.Confirmed && new Date(b.departureUtc) < now
     );
     if (f === 'cancelled') return all.filter(b =>
-      b.status === BookingStatus.Cancelled || b.status === BookingStatus.OperatorCancelled
+      b.status === BookingStatus.Cancelled
     );
     return all;
   });
@@ -213,22 +212,18 @@ export class BookingListComponent implements OnInit {
 
   badgeClass(s: BookingStatus): string {
     const map: Record<number, string> = {
-      [BookingStatus.Pending]:           'badge badge-warning',
-      [BookingStatus.Confirmed]:         'badge badge-success',
-      [BookingStatus.Cancelled]:         'badge badge-error',
-      [BookingStatus.OperatorCancelled]: 'badge badge-error',
-      [BookingStatus.BusMissed]:         'badge badge-warning',
+      [BookingStatus.Pending]:   'badge badge-warning',
+      [BookingStatus.Confirmed]: 'badge badge-success',
+      [BookingStatus.Cancelled]: 'badge badge-error',
     };
     return map[s] ?? 'badge badge-gray';
   }
 
   statusBg(s: BookingStatus): string {
     const map: Record<number, string> = {
-      [BookingStatus.Pending]:           'bg-yellow-50',
-      [BookingStatus.Confirmed]:         'bg-green-50',
-      [BookingStatus.Cancelled]:         'bg-red-50',
-      [BookingStatus.OperatorCancelled]: 'bg-red-50',
-      [BookingStatus.BusMissed]:         'bg-amber-50',
+      [BookingStatus.Pending]:   'bg-yellow-50',
+      [BookingStatus.Confirmed]: 'bg-green-50',
+      [BookingStatus.Cancelled]: 'bg-red-50',
     };
     return map[s] ?? 'bg-gray-100';
   }

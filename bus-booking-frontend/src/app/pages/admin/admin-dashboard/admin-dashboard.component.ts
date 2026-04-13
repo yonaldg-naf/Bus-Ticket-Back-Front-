@@ -1,8 +1,12 @@
 ﻿import { Component, inject, signal, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { forkJoin } from 'rxjs';
 import { AuthService } from '../../../services/auth.service';
 import { AuditLogService, AuditLogEntry } from '../../../services/audit-log.service';
+import { BusService, RouteService } from '../../../services/bus-route.service';
+import { ScheduleService } from '../../../services/schedule.service';
+import { UserManagementService } from '../../../services/user-management.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -195,6 +199,10 @@ import { AuditLogService, AuditLogEntry } from '../../../services/audit-log.serv
 export class AdminDashboardComponent implements OnInit {
   auth = inject(AuthService);
   private auditSvc = inject(AuditLogService);
+  private busSvc = inject(BusService);
+  private routeSvc = inject(RouteService);
+  private scheduleSvc = inject(ScheduleService);
+  private userSvc = inject(UserManagementService);
 
   logsLoading  = signal(true);
   recentLogs   = signal<AuditLogEntry[]>([]);
@@ -222,6 +230,23 @@ export class AdminDashboardComponent implements OnInit {
   ];
 
   ngOnInit() {
+    forkJoin({
+      buses:     this.busSvc.getAll(),
+      schedules: this.scheduleSvc.getAll(),
+      routes:    this.routeSvc.getAll(),
+      users:     this.userSvc.getUsers({ pageSize: 1 }),
+    }).subscribe({
+      next: ({ buses, schedules, routes, users }) => {
+        this.stats.update(s => s.map(stat => {
+          if (stat.label === 'Total Buses')  return { ...stat, value: String(buses.length) };
+          if (stat.label === 'Schedules')    return { ...stat, value: String(schedules.length) };
+          if (stat.label === 'Routes')       return { ...stat, value: String(routes.length) };
+          if (stat.label === 'Total Users')  return { ...stat, value: String(users.total) };
+          return stat;
+        }));
+      },
+    });
+
     this.auditSvc.getLogs({ pageSize: 8 }).subscribe({
       next: result => {
         this.recentLogs.set(result.items);

@@ -27,7 +27,7 @@ namespace BusTicketBooking.Services
         ///   - unique_name  : username
         ///   - email        : user's email address
         ///   - name         : user's full name (falls back to username if not set)
-        ///   - role         : user's role (Admin / Operator / Customer)
+        ///   - role         : user's role (Admin / Customer)
         ///   - jti          : unique token ID to prevent replay attacks
         ///
         /// Signed with HMAC-SHA256 using the secret key from config.

@@ -321,7 +321,7 @@ export class HomeComponent implements OnInit {
 
   cities = signal<CityResponse[]>([]);
   sameCityError = signal(false);
-  today = new Date().toISOString().split('T')[0];
+  today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
   passengers = 1;
 
   // Typeahead state

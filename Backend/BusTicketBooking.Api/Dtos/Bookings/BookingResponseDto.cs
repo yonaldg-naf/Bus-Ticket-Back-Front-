@@ -21,17 +21,13 @@ namespace BusTicketBooking.Dtos.Bookings
         // <-- existing: surface current bus status to the customer
         public BusStatus BusStatus { get; set; }
 
-        // ----------------------------------------------------------
-        // NEW FIELDS for operator‑cancelled schedule visibility
-        // ----------------------------------------------------------
-
         /// <summary>
-        /// True when the operator cancels the schedule.
+        /// True when the admin cancels the schedule.
         /// </summary>
-        public bool IsScheduleCancelledByOperator { get; set; }
+        public bool IsScheduleCancelledByAdmin { get; set; }
 
         /// <summary>
-        /// Optional reason shown to customers ("Cancelled by operator").
+        /// Optional reason shown to customers.
         /// </summary>
         public string? ScheduleCancelReason { get; set; }
 

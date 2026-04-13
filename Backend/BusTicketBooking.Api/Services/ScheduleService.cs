@@ -19,9 +19,10 @@ namespace BusTicketBooking.Services
     ///
     /// Key behaviours:
     ///   - All departure times are stored and compared in UTC.
-    ///   - Search filters out departed and operator-cancelled schedules automatically.
-    ///   - Cancelling a schedule issues full wallet refunds to all confirmed bookings.
-    ///   - Supports both GUID-based and key-based (busCode + routeCode) operations.
+    ///   - Search filters out departed and admin-cancelled schedules automatically.
+    ///   - Cancelling a schedule issues full wallet refunds to all confirmed paid bookings.
+    ///   - Admin operations (create/update/delete/getAll) require the Admin role.
+    ///   - Public operations (getById, seat availability, search) are accessible anonymously.
     /// </summary>
     public class ScheduleService : IScheduleService
     {
@@ -162,9 +163,9 @@ namespace BusTicketBooking.Services
         /// confirmed bookings on that schedule.
         ///
         /// Steps:
-        ///   1. Marks the schedule as IsCancelledByOperator = true with the given reason.
+        ///   1. Marks the schedule as IsCancelledByAdmin = true with the given reason.
         ///   2. Finds all active bookings (not already cancelled).
-        ///   3. Sets each booking's status to OperatorCancelled.
+        ///   3. Sets each booking's status to Cancelled.
         ///   4. For each booking that was paid (PaymentStatus.Success), credits the full
         ///      booking amount back to the customer's wallet.
         ///
@@ -179,7 +180,7 @@ namespace BusTicketBooking.Services
 
             if (sched is null) return null;
 
-            sched.IsCancelledByOperator = true;
+            sched.IsCancelledByAdmin = true;
             sched.CancelReason = reason;
             sched.UpdatedAtUtc = DateTime.UtcNow;
 
@@ -187,22 +188,21 @@ namespace BusTicketBooking.Services
             var bookings = await _db.Bookings
                 .Include(b => b.Payment)
                 .Where(b => b.ScheduleId == id
-                         && b.Status != BookingStatus.OperatorCancelled
                          && b.Status != BookingStatus.Cancelled)
                 .ToListAsync(ct);
 
             foreach (var b in bookings)
             {
-                b.Status = BookingStatus.OperatorCancelled;
+                b.Status = BookingStatus.Cancelled;
                 b.UpdatedAtUtc = DateTime.UtcNow;
 
                 // Full refund for confirmed paid bookings
                 if (b.Payment?.Status == PaymentStatus.Success)
                 {
                     await _wallet.CreditAsync(
-                        b.UserId, b.TotalAmount, "OperatorCancelRefund",
+                        b.UserId, b.TotalAmount, "AdminCancelRefund",
                         bookingId: b.Id,
-                        description: $"Full refund — operator cancelled schedule #{id.ToString()[..8].ToUpper()}",
+                        description: $"Full refund — admin cancelled schedule #{id.ToString()[..8].ToUpper()}",
                         ct: ct);
                 }
             }
@@ -214,8 +214,8 @@ namespace BusTicketBooking.Services
         /// <summary>
         /// Deletes a schedule. Behaviour depends on whether bookings exist:
         ///   - No bookings → permanently deletes the schedule record.
-        ///   - Has bookings → soft-deletes by marking IsCancelledByOperator = true
-        ///                    and setting all non-cancelled bookings to OperatorCancelled.
+        ///   - Has bookings → soft-deletes by marking IsCancelledByAdmin = true
+        ///                    and setting all non-cancelled bookings to Cancelled.
         ///                    The schedule record is kept for historical reference.
         /// Returns false if the schedule does not exist.
         /// </summary>
@@ -229,8 +229,8 @@ namespace BusTicketBooking.Services
 
             if (hasBookings)
             {
-                sched.IsCancelledByOperator = true;
-                sched.CancelReason = "Cancelled by operator";
+                sched.IsCancelledByAdmin = true;
+                sched.CancelReason = "Cancelled by admin";
                 sched.UpdatedAtUtc = DateTime.UtcNow;
 
                 await _schedules.UpdateAsync(sched, ct);
@@ -241,9 +241,9 @@ namespace BusTicketBooking.Services
 
                 foreach (var b in bookings)
                 {
-                    if (b.Status != BookingStatus.OperatorCancelled)
+                    if (b.Status != BookingStatus.Cancelled)
                     {
-                        b.Status = BookingStatus.OperatorCancelled;
+                        b.Status = BookingStatus.Cancelled;
                         b.UpdatedAtUtc = DateTime.UtcNow;
                     }
                 }
@@ -258,8 +258,7 @@ namespace BusTicketBooking.Services
 
         /// <summary>
         /// Returns the seat availability for a schedule — which seats are booked and which are free.
-        /// Cancelled and OperatorCancelled bookings do NOT count as booked
-        /// (those seats are freed back to available).
+        /// Cancelled bookings do NOT count as booked (those seats are freed back to available).
         /// Throws InvalidOperationException if the schedule does not exist.
         /// </summary>
         public async Task<SeatAvailabilityResponseDto> GetAvailabilityAsync(Guid scheduleId, CancellationToken ct = default)
@@ -276,8 +275,7 @@ namespace BusTicketBooking.Services
 
             var bookedSeats = await _db.Bookings
                 .Where(b => b.ScheduleId == scheduleId
-                         && b.Status != BookingStatus.Cancelled
-                         && b.Status != BookingStatus.OperatorCancelled)
+                         && b.Status != BookingStatus.Cancelled)
                 .SelectMany(b => b.Passengers.Select(p => p.SeatNo))
                 .ToListAsync(ct);
 
@@ -298,10 +296,13 @@ namespace BusTicketBooking.Services
         }
 
         /// <summary>
-        /// Searches for schedules using city/stop names instead of GUIDs.
-        /// Supports additional filters: bus type, price range, amenities.
-        /// Applies the same departure/cancellation filters as SearchAsync.
-        /// Returns an empty result if no stops are found for the given city names.
+        /// Searches for available schedules using city/stop names instead of GUIDs.
+        /// Converts the customer's local date to a UTC window using their timezone offset,
+        /// then filters schedules to those departing within that window.
+        /// Automatically excludes departed and admin-cancelled schedules.
+        /// Supports optional filters: bus type, price range, amenities.
+        /// Supports sorting by departure time, price, bus code, or route code.
+        /// Returns an empty paged result if no stops are found for the given city names.
         /// </summary>
         public async Task<PagedResult<ScheduleResponseDto>> SearchByKeysAsync(SearchSchedulesByKeysRequestDto dto, CancellationToken ct = default)
         {
@@ -342,7 +343,7 @@ namespace BusTicketBooking.Services
                 .Where(s => s.DepartureUtc >= dayStartUtc
                          && s.DepartureUtc < dayEndUtc
                          && s.DepartureUtc > now               // exclude departed
-                         && !s.IsCancelledByOperator);          // exclude cancelled
+                         && !s.IsCancelledByAdmin);             // exclude cancelled
 
             var list = await baseQuery.ToListAsync(ct);
             var filtered = list.Where(s =>
@@ -447,7 +448,7 @@ namespace BusTicketBooking.Services
                 BasePrice = e.BasePrice,
                 CreatedAtUtc = e.CreatedAtUtc,
                 UpdatedAtUtc = e.UpdatedAtUtc,
-                IsCancelledByOperator = e.IsCancelledByOperator,
+                IsCancelledByAdmin = e.IsCancelledByAdmin,
                 CancelReason = e.CancelReason,
                 Amenities = string.IsNullOrWhiteSpace(bus.Amenities)
                     ? new List<string>()

@@ -5,7 +5,7 @@ namespace BusTicketBooking.Models
     /// <summary>
     /// Records every credit and debit on a user's wallet.
     /// Type: "Credit" | "Debit"
-    /// Reason: "TopUp" | "BookingPayment" | "CancellationRefund" | "BusMissRefund" | "OperatorCancelRefund"
+    /// Reason: "TopUp" | "BookingPayment" | "CancellationRefund" | "AdminCancelRefund"
     /// </summary>
     public class WalletTransaction : BaseEntity
     {

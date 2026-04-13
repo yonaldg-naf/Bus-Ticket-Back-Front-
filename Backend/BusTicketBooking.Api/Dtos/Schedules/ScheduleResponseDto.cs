@@ -17,7 +17,7 @@
         public DateTime DepartureUtc { get; set; }
         public decimal BasePrice { get; set; }
 
-        public bool IsCancelledByOperator { get; set; }
+        public bool IsCancelledByAdmin { get; set; }
         public string? CancelReason { get; set; }
 
         /// <summary>Amenities on this bus e.g. ["AC","WiFi","ChargingPort"]</summary>

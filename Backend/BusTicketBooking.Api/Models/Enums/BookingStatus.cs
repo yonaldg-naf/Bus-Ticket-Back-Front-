@@ -4,9 +4,6 @@
     {
         Pending = 1,
         Confirmed = 2,
-        Cancelled = 3,          // Cancelled by customer
-
-        // Used when operator cancels the schedule
-        OperatorCancelled = 5
+        Cancelled = 3,          // Cancelled by customer or admin
     }
 }

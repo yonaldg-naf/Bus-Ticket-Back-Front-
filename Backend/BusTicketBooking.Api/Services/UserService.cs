@@ -65,7 +65,7 @@ namespace BusTicketBooking.Services
         /// Admin-only — used for the user management page.
         ///
         /// Supports filtering by:
-        ///   - role   : exact match (e.g. "Admin", "Operator", "Customer").
+        ///   - role   : exact match (e.g. "Admin", "Customer").
         ///   - search : partial match on username, email, or full name (case-insensitive).
         ///
         /// Results are ordered newest first and paginated.
