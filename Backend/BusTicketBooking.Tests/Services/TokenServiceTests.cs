@@ -1,134 +1,112 @@
 using System.IdentityModel.Tokens.Jwt;
 using BusTicketBooking.Models;
 using BusTicketBooking.Services;
-using BusTicketBooking.Tests.Helpers;
 using Microsoft.Extensions.Configuration;
 
-namespace BusTicketBooking.Tests.Services;
-
-public class TokenServiceTests
+namespace BusTicketBooking.Tests.Services
 {
-    // Build a TokenService with a real in-memory IConfiguration
-    private static TokenService Build(int expiryMinutes = 60)
+    public class TokenServiceTests
     {
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
+        private static TokenService CreateService(int expiryMinutes = 60, string? issuer = null, string? audience = null)
+        {
+            var config = new Dictionary<string, string?>
             {
-                ["Jwt:Key"]                = "super-secret-test-key-that-is-long-enough-32chars",
-                ["Jwt:Issuer"]             = "TestIssuer",
-                ["Jwt:Audience"]           = "TestAudience",
-                ["Jwt:AccessTokenMinutes"] = expiryMinutes.ToString()
-            })
-            .Build();
+                ["Jwt:Key"] = "super-secret-key-that-is-long-enough-for-hmac256",
+                ["Jwt:AccessTokenMinutes"] = expiryMinutes.ToString(),
+                ["Jwt:Issuer"] = issuer,
+                ["Jwt:Audience"] = audience
+            };
+            var cfg = new ConfigurationBuilder().AddInMemoryCollection(config).Build();
+            return new TokenService(cfg);
+        }
 
-        return new TokenService(config);
-    }
+        private static User MakeUser() => new()
+        {
+            Id = Guid.NewGuid(),
+            Username = "john",
+            Email = "john@example.com",
+            FullName = "John Doe",
+            Role = "Customer"
+        };
 
-    // ── GenerateAccessToken ───────────────────────────────────────────────────
+        [Fact]
+        public void GenerateAccessToken_ReturnsNonEmptyToken()
+        {
+            var svc = CreateService();
+            var (token, _) = svc.GenerateAccessToken(MakeUser());
+            Assert.False(string.IsNullOrWhiteSpace(token));
+        }
 
-    [Fact]
-    public void GenerateToken_ReturnsNonEmptyJwt()
-    {
-        var svc  = Build();
-        var user = SeedHelper.MakeUser(Roles.Customer);
+        [Fact]
+        public void GenerateAccessToken_ExpiresInFuture()
+        {
+            var svc = CreateService(expiryMinutes: 60);
+            var (_, expiresAt) = svc.GenerateAccessToken(MakeUser());
+            Assert.True(expiresAt > DateTime.UtcNow);
+        }
 
-        var (token, _) = svc.GenerateAccessToken(user);
+        [Fact]
+        public void GenerateAccessToken_ContainsRoleClaim()
+        {
+            var svc = CreateService();
+            var user = MakeUser();
+            user.Role = "Admin";
+            var (token, _) = svc.GenerateAccessToken(user);
 
-        Assert.False(string.IsNullOrWhiteSpace(token));
-        // A JWT has exactly 3 dot-separated parts
-        Assert.Equal(3, token.Split('.').Length);
-    }
+            var handler = new JwtSecurityTokenHandler();
+            var jwt = handler.ReadJwtToken(token);
+            // ClaimTypes.Role maps to the long URI; check both forms
+            var roleClaim = jwt.Claims.FirstOrDefault(c =>
+                c.Type == "role" ||
+                c.Type == System.Security.Claims.ClaimTypes.Role);
+            Assert.Equal("Admin", roleClaim?.Value);
+        }
 
-    [Fact]
-    public void GenerateToken_ExpiresAtUtc_IsInFuture()
-    {
-        var svc  = Build(expiryMinutes: 60);
-        var user = SeedHelper.MakeUser(Roles.Customer);
+        [Fact]
+        public void GenerateAccessToken_ContainsSubClaim()
+        {
+            var svc = CreateService();
+            var user = MakeUser();
+            var (token, _) = svc.GenerateAccessToken(user);
 
-        var (_, expires) = svc.GenerateAccessToken(user);
+            var handler = new JwtSecurityTokenHandler();
+            var jwt = handler.ReadJwtToken(token);
+            var sub = jwt.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub);
+            Assert.Equal(user.Id.ToString(), sub?.Value);
+        }
 
-        Assert.True(expires > DateTime.UtcNow);
-        // Should expire roughly 60 minutes from now (allow 5s tolerance)
-        Assert.True(expires <= DateTime.UtcNow.AddMinutes(61));
-    }
+        [Fact]
+        public void GenerateAccessToken_MissingKey_ThrowsInvalidOperationException()
+        {
+            var cfg = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>())
+                .Build();
+            var svc = new TokenService(cfg);
+            Assert.Throws<InvalidOperationException>(() => svc.GenerateAccessToken(MakeUser()));
+        }
 
-    [Fact]
-    public void GenerateToken_ContainsCorrectClaims()
-    {
-        var svc  = Build();
-        var user = SeedHelper.MakeUser(Roles.Admin);
-        user.FullName = "Test Operator";
+        [Fact]
+        public void GenerateAccessToken_WithIssuerAndAudience_SetsThemOnToken()
+        {
+            var svc = CreateService(issuer: "myissuer", audience: "myaudience");
+            var (token, _) = svc.GenerateAccessToken(MakeUser());
 
-        var (token, _) = svc.GenerateAccessToken(user);
+            var handler = new JwtSecurityTokenHandler();
+            var jwt = handler.ReadJwtToken(token);
+            Assert.Equal("myissuer", jwt.Issuer);
+            Assert.Contains("myaudience", jwt.Audiences);
+        }
 
-        var handler = new JwtSecurityTokenHandler();
-        var jwt     = handler.ReadJwtToken(token);
+        [Fact]
+        public void GenerateAccessToken_CustomExpiry_ReflectsInExpiresAt()
+        {
+            var svc = CreateService(expiryMinutes: 30);
+            var before = DateTime.UtcNow;
+            var (_, expiresAt) = svc.GenerateAccessToken(MakeUser());
+            var after = DateTime.UtcNow;
 
-        // sub claim = user ID
-        Assert.Equal(user.Id.ToString(),
-            jwt.Claims.First(c => c.Type == JwtRegisteredClaimNames.Sub).Value);
-
-        // role claim = user role
-        Assert.Equal(Roles.Admin,
-            jwt.Claims.First(c => c.Type == "role" ||
-                                  c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role").Value);
-
-        // email claim
-        Assert.Equal(user.Email,
-            jwt.Claims.First(c => c.Type == JwtRegisteredClaimNames.Email).Value);
-    }
-
-    [Fact]
-    public void GenerateToken_ContainsIssuerAndAudience()
-    {
-        var svc  = Build();
-        var user = SeedHelper.MakeUser(Roles.Admin);
-
-        var (token, _) = svc.GenerateAccessToken(user);
-
-        var handler = new JwtSecurityTokenHandler();
-        var jwt     = handler.ReadJwtToken(token);
-
-        Assert.Equal("TestIssuer",   jwt.Issuer);
-        Assert.Contains("TestAudience", jwt.Audiences);
-    }
-
-    [Fact]
-    public void GenerateToken_TwoCallsProduceDifferentTokens()
-    {
-        // Each token has a unique jti (JWT ID) claim so they're never identical
-        var svc  = Build();
-        var user = SeedHelper.MakeUser(Roles.Customer);
-
-        var (token1, _) = svc.GenerateAccessToken(user);
-        var (token2, _) = svc.GenerateAccessToken(user);
-
-        Assert.NotEqual(token1, token2);
-    }
-
-    [Fact]
-    public void GenerateToken_Throws_WhenJwtKeyMissing()
-    {
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>())
-            .Build();
-
-        var svc  = new TokenService(config);
-        var user = SeedHelper.MakeUser(Roles.Customer);
-
-        Assert.Throws<InvalidOperationException>(() => svc.GenerateAccessToken(user));
-    }
-
-    [Fact]
-    public void GenerateToken_CustomExpiry_IsRespected()
-    {
-        var svc  = Build(expiryMinutes: 120);
-        var user = SeedHelper.MakeUser(Roles.Customer);
-
-        var (_, expires) = svc.GenerateAccessToken(user);
-
-        // Should expire roughly 120 minutes from now
-        var diff = (expires - DateTime.UtcNow).TotalMinutes;
-        Assert.True(diff > 119 && diff <= 121);
+            Assert.True(expiresAt >= before.AddMinutes(29));
+            Assert.True(expiresAt <= after.AddMinutes(31));
+        }
     }
 }

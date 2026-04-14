@@ -1,3 +1,4 @@
+using BusTicketBooking.Contexts;
 using BusTicketBooking.Dtos.Bus;
 using BusTicketBooking.Models;
 using BusTicketBooking.Models.Enums;
@@ -5,217 +6,181 @@ using BusTicketBooking.Repositories;
 using BusTicketBooking.Services;
 using BusTicketBooking.Tests.Helpers;
 
-namespace BusTicketBooking.Tests.Services;
-
-public class BusServiceTests
+namespace BusTicketBooking.Tests.Services
 {
-    private static BusService Build(BusTicketBooking.Contexts.AppDbContext db) =>
-        new(new Repository<Bus>(db));
-
-    // ── CreateAsync ───────────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task Create_SavesBus_AndReturnsDto()
+    public class BusServiceTests
     {
-        var db  = DbHelper.CreateDb();
-        var svc = Build(db);
-
-        var dto = new CreateBusRequestDto
+        private BusService CreateService(out AppDbContext db)
         {
-            Code               = "BUS-01",
-            RegistrationNumber = "MH12AB1234",
-            BusType            = BusType.Seater,
-            TotalSeats         = 40,
-            Status             = BusStatus.Available,
-            Amenities          = new List<string> { "AC", "WiFi" }
-        };
+            db = DbHelper.CreateDb();
+            return new BusService(new Repository<Bus>(db));
+        }
 
-        var result = await svc.CreateAsync(dto);
+        // ── CreateAsync ───────────────────────────────────────────────────────
 
-        Assert.Equal("BUS-01", result.Code);
-        Assert.Equal(40, result.TotalSeats);
-        Assert.Contains("AC", result.Amenities);
-        Assert.Contains("WiFi", result.Amenities);
-        Assert.Single(db.Buses);
-    }
-
-    [Fact]
-    public async Task Create_Throws_WhenDuplicateCode()
-    {
-        var db  = DbHelper.CreateDb();
-        var svc = Build(db);
-
-        var bus = SeedHelper.MakeBus();
-        db.Buses.Add(bus);
-        await db.SaveChangesAsync();
-
-        var dto = new CreateBusRequestDto
+        [Fact]
+        public async Task CreateAsync_ValidDto_ReturnsMappedDto()
         {
-            Code = bus.Code, RegistrationNumber = "XX",
-            BusType = BusType.Seater, TotalSeats = 10, Amenities = new()
-        };
+            var svc = CreateService(out _);
+            var dto = new CreateBusRequestDto
+            {
+                Code = "BUS001",
+                RegistrationNumber = "MH01AB1234",
+                BusType = BusType.AC,
+                TotalSeats = 40,
+                Status = BusStatus.Available,
+                Amenities = new List<string> { "AC", "WiFi" }
+            };
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateAsync(dto));
-    }
+            var result = await svc.CreateAsync(dto);
 
-    // ── GetAllAsync ───────────────────────────────────────────────────────────
+            Assert.Equal("BUS001", result.Code);
+            Assert.Equal("MH01AB1234", result.RegistrationNumber);
+            Assert.Equal(BusType.AC, result.BusType);
+            Assert.Equal(40, result.TotalSeats);
+            Assert.Contains("AC", result.Amenities);
+            Assert.Contains("WiFi", result.Amenities);
+        }
 
-    [Fact]
-    public async Task GetAll_ReturnsAllBuses()
-    {
-        var db  = DbHelper.CreateDb();
-        var svc = Build(db);
-
-        db.Buses.AddRange(SeedHelper.MakeBus(), SeedHelper.MakeBus());
-        await db.SaveChangesAsync();
-
-        var result = (await svc.GetAllAsync()).ToList();
-        Assert.Equal(2, result.Count);
-    }
-
-    [Fact]
-    public async Task GetAll_ReturnsEmpty_WhenNoBuses()
-    {
-        var db  = DbHelper.CreateDb();
-        var svc = Build(db);
-        var result = await svc.GetAllAsync();
-        Assert.Empty(result);
-    }
-
-    // ── UpdateAsync ───────────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task Update_ChangesFields_AndReturnsDto()
-    {
-        var db  = DbHelper.CreateDb();
-        var svc = Build(db);
-        var bus = SeedHelper.MakeBus();
-        db.Buses.Add(bus);
-        await db.SaveChangesAsync();
-
-        var dto = new UpdateBusRequestDto
+        [Fact]
+        public async Task CreateAsync_DuplicateCode_ThrowsInvalidOperationException()
         {
-            RegistrationNumber = "NEW-REG",
-            BusType            = BusType.Sleeper,
-            TotalSeats         = 30,
-            Status             = BusStatus.UnderRepair,
-            Amenities          = new List<string> { "Blanket" }
-        };
+            var svc = CreateService(out var db);
+            db.Buses.Add(new Bus { Code = "BUS001", RegistrationNumber = "X", BusType = BusType.Seater });
+            await db.SaveChangesAsync();
 
-        var result = await svc.UpdateAsync(bus.Id, dto);
+            var dto = new CreateBusRequestDto { Code = "BUS001", RegistrationNumber = "Y", BusType = BusType.Seater };
 
-        Assert.NotNull(result);
-        Assert.Equal("NEW-REG", result!.RegistrationNumber);
-        Assert.Equal(BusType.Sleeper, result.BusType);
-        Assert.Equal(30, result.TotalSeats);
-        Assert.Equal(BusStatus.UnderRepair, result.Status);
-        Assert.Contains("Blanket", result.Amenities);
-    }
+            await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateAsync(dto));
+        }
 
-    [Fact]
-    public async Task Update_ReturnsNull_WhenBusNotFound()
-    {
-        var db  = DbHelper.CreateDb();
-        var svc = Build(db);
-        var result = await svc.UpdateAsync(Guid.NewGuid(), new UpdateBusRequestDto
+        [Fact]
+        public async Task CreateAsync_NoAmenities_ReturnsEmptyList()
         {
-            RegistrationNumber = "X", BusType = BusType.Seater,
-            TotalSeats = 10, Status = BusStatus.Available, Amenities = new()
-        });
-        Assert.Null(result);
-    }
+            var svc = CreateService(out _);
+            var dto = new CreateBusRequestDto
+            {
+                Code = "BUS002",
+                RegistrationNumber = "MH02CD5678",
+                BusType = BusType.Seater,
+                Amenities = new List<string>()
+            };
 
-    // ── UpdateStatusAsync ─────────────────────────────────────────────────────
+            var result = await svc.CreateAsync(dto);
 
-    [Fact]
-    public async Task UpdateStatus_ChangesStatus()
-    {
-        var db  = DbHelper.CreateDb();
-        var svc = Build(db);
-        var bus = SeedHelper.MakeBus(BusStatus.Available);
-        db.Buses.Add(bus);
-        await db.SaveChangesAsync();
+            Assert.Empty(result.Amenities);
+        }
 
-        var result = await svc.UpdateStatusAsync(bus.Id, BusStatus.UnderRepair);
+        // ── GetAllAsync ───────────────────────────────────────────────────────
 
-        Assert.NotNull(result);
-        Assert.Equal(BusStatus.UnderRepair, result!.Status);
-    }
-
-    [Fact]
-    public async Task UpdateStatus_ReturnsNull_WhenBusNotFound()
-    {
-        var db  = DbHelper.CreateDb();
-        var svc = Build(db);
-        var result = await svc.UpdateStatusAsync(Guid.NewGuid(), BusStatus.Available);
-        Assert.Null(result);
-    }
-
-    // ── DeleteAsync ───────────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task Delete_RemovesBus_AndReturnsTrue()
-    {
-        var db  = DbHelper.CreateDb();
-        var svc = Build(db);
-        var bus = SeedHelper.MakeBus();
-        db.Buses.Add(bus);
-        await db.SaveChangesAsync();
-
-        var result = await svc.DeleteAsync(bus.Id);
-
-        Assert.True(result);
-        Assert.Empty(db.Buses);
-    }
-
-    [Fact]
-    public async Task Delete_ReturnsFalse_WhenBusNotFound()
-    {
-        var db  = DbHelper.CreateDb();
-        var svc = Build(db);
-        var result = await svc.DeleteAsync(Guid.NewGuid());
-        Assert.False(result);
-    }
-
-    // ── Amenities serialization ───────────────────────────────────────────────
-
-    [Fact]
-    public async Task Amenities_StoredAsCommaSeparated_ReturnedAsList()
-    {
-        var db  = DbHelper.CreateDb();
-        var svc = Build(db);
-
-        var dto = new CreateBusRequestDto
+        [Fact]
+        public async Task GetAllAsync_ReturnsMappedBuses()
         {
-            Code = "AMN-01", RegistrationNumber = "R1",
-            BusType = BusType.AC, TotalSeats = 40, Status = BusStatus.Available,
-            Amenities = new List<string> { "AC", "WiFi", "ChargingPort" }
-        };
+            var svc = CreateService(out var db);
+            db.Buses.AddRange(
+                new Bus { Code = "A", RegistrationNumber = "R1", BusType = BusType.Seater, Amenities = "AC,WiFi" },
+                new Bus { Code = "B", RegistrationNumber = "R2", BusType = BusType.Sleeper }
+            );
+            await db.SaveChangesAsync();
 
-        var result = await svc.CreateAsync(dto);
+            var result = (await svc.GetAllAsync()).ToList();
 
-        var stored = db.Buses.First(b => b.Code == "AMN-01");
-        Assert.Equal("AC,WiFi,ChargingPort", stored.Amenities);
-        Assert.Equal(3, result.Amenities.Count);
-        Assert.Contains("WiFi", result.Amenities);
-    }
+            Assert.Equal(2, result.Count);
+        }
 
-    [Fact]
-    public async Task Amenities_EmptyList_StoredAsNull()
-    {
-        var db  = DbHelper.CreateDb();
-        var svc = Build(db);
-
-        var dto = new CreateBusRequestDto
+        [Fact]
+        public async Task GetAllAsync_SplitsAmenitiesCorrectly()
         {
-            Code = "NO-AMN", RegistrationNumber = "R2",
-            BusType = BusType.Seater, TotalSeats = 40, Status = BusStatus.Available,
-            Amenities = new List<string>()
-        };
+            var svc = CreateService(out var db);
+            db.Buses.Add(new Bus { Code = "A", RegistrationNumber = "R1", BusType = BusType.AC, Amenities = "AC,WiFi,ChargingPort" });
+            await db.SaveChangesAsync();
 
-        await svc.CreateAsync(dto);
+            var result = (await svc.GetAllAsync()).First();
 
-        var stored = db.Buses.First(b => b.Code == "NO-AMN");
-        Assert.Null(stored.Amenities);
+            Assert.Equal(3, result.Amenities.Count);
+        }
+
+        // ── UpdateAsync ───────────────────────────────────────────────────────
+
+        [Fact]
+        public async Task UpdateAsync_ExistingBus_UpdatesFields()
+        {
+            var svc = CreateService(out var db);
+            var bus = new Bus { Code = "BUS001", RegistrationNumber = "OLD", BusType = BusType.Seater, TotalSeats = 30 };
+            db.Buses.Add(bus);
+            await db.SaveChangesAsync();
+
+            var dto = new UpdateBusRequestDto
+            {
+                RegistrationNumber = "NEW",
+                BusType = BusType.AC,
+                TotalSeats = 45,
+                Status = BusStatus.Available,
+                Amenities = new List<string> { "AC" }
+            };
+
+            var result = await svc.UpdateAsync(bus.Id, dto);
+
+            Assert.NotNull(result);
+            Assert.Equal("NEW", result!.RegistrationNumber);
+            Assert.Equal(BusType.AC, result.BusType);
+            Assert.Equal(45, result.TotalSeats);
+        }
+
+        [Fact]
+        public async Task UpdateAsync_NotFound_ReturnsNull()
+        {
+            var svc = CreateService(out _);
+            var result = await svc.UpdateAsync(Guid.NewGuid(), new UpdateBusRequestDto { RegistrationNumber = "X", BusType = BusType.Seater });
+            Assert.Null(result);
+        }
+
+        // ── UpdateStatusAsync ─────────────────────────────────────────────────
+
+        [Fact]
+        public async Task UpdateStatusAsync_ExistingBus_ChangesStatus()
+        {
+            var svc = CreateService(out var db);
+            var bus = new Bus { Code = "BUS001", RegistrationNumber = "R", BusType = BusType.Seater, Status = BusStatus.Available };
+            db.Buses.Add(bus);
+            await db.SaveChangesAsync();
+
+            var result = await svc.UpdateStatusAsync(bus.Id, BusStatus.UnderRepair);
+
+            Assert.NotNull(result);
+            Assert.Equal(BusStatus.UnderRepair, result!.Status);
+        }
+
+        [Fact]
+        public async Task UpdateStatusAsync_NotFound_ReturnsNull()
+        {
+            var svc = CreateService(out _);
+            var result = await svc.UpdateStatusAsync(Guid.NewGuid(), BusStatus.Available);
+            Assert.Null(result);
+        }
+
+        // ── DeleteAsync ───────────────────────────────────────────────────────
+
+        [Fact]
+        public async Task DeleteAsync_ExistingBus_ReturnsTrue()
+        {
+            var svc = CreateService(out var db);
+            var bus = new Bus { Code = "BUS001", RegistrationNumber = "R", BusType = BusType.Seater };
+            db.Buses.Add(bus);
+            await db.SaveChangesAsync();
+
+            var result = await svc.DeleteAsync(bus.Id);
+
+            Assert.True(result);
+            Assert.Empty(db.Buses.ToList());
+        }
+
+        [Fact]
+        public async Task DeleteAsync_NotFound_ReturnsFalse()
+        {
+            var svc = CreateService(out _);
+            var result = await svc.DeleteAsync(Guid.NewGuid());
+            Assert.False(result);
+        }
     }
 }

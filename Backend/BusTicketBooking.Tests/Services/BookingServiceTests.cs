@@ -1,318 +1,514 @@
+using BusTicketBooking.Contexts;
 using BusTicketBooking.Dtos.Bookings;
+using BusTicketBooking.Interfaces;
 using BusTicketBooking.Models;
 using BusTicketBooking.Models.Enums;
 using BusTicketBooking.Repositories;
 using BusTicketBooking.Services;
 using BusTicketBooking.Tests.Helpers;
+using Moq;
 
-namespace BusTicketBooking.Tests.Services;
-
-public class BookingServiceTests
+namespace BusTicketBooking.Tests.Services
 {
-    private static (BookingService svc, BusTicketBooking.Contexts.AppDbContext db) Build()
+    public class BookingServiceTests
     {
-        var db     = DbHelper.CreateDb();
-        var wallet = new WalletService(
-            new Repository<BusTicketBooking.Models.Wallet>(db),
-            new Repository<BusTicketBooking.Models.WalletTransaction>(db));
-        var svc = new BookingService(
-            new Repository<Booking>(db),
-            new Repository<BookingPassenger>(db),
-            new Repository<Payment>(db),
-            new Repository<BusSchedule>(db),
-            db, wallet);
-        return (svc, db);
-    }
+        /// <summary>
+        /// Creates a BookingService backed by the SAME AppDbContext for both
+        /// the generic repositories and the direct _db queries, so that
+        /// LoadForResponse can find entities written by the repositories.
+        /// </summary>
+        private (BookingService svc, AppDbContext db, Mock<IWalletService> walletMock) CreateService(string? dbName = null)
+        {
+            var db = DbHelper.CreateDb(dbName ?? Guid.NewGuid().ToString());
+            var walletMock = new Mock<IWalletService>();
+            walletMock.Setup(w => w.DebitAsync(It.IsAny<Guid>(), It.IsAny<decimal>(), It.IsAny<string>(),
+                It.IsAny<Guid?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
-    // ── GetMyAsync ────────────────────────────────────────────────────────────
+            var svc = new BookingService(
+                new Repository<Booking>(db),
+                new Repository<BookingPassenger>(db),
+                new Repository<Payment>(db),
+                new Repository<BusSchedule>(db),
+                db,
+                walletMock.Object);
 
-    [Fact]
-    public async Task GetMy_ReturnsOnlyCurrentUsersBookings()
-    {
-        var (svc, db) = Build();
-        var (_, _, _, schedule) = SeedHelper.SeedSchedule(db);
+            return (svc, db, walletMock);
+        }
 
-        var userId1 = Guid.NewGuid();
-        var userId2 = Guid.NewGuid();
+        private static (Bus bus, BusRoute route, BusSchedule schedule, User user) SeedBasicData(
+            AppDbContext db,
+            DateTime? departure = null,
+            bool isCancelled = false,
+            BusStatus busStatus = BusStatus.Available)
+        {
+            var bus = new Bus
+            {
+                Code = "BUS001",
+                RegistrationNumber = "MH01AB1234",
+                BusType = BusType.AC,
+                TotalSeats = 40,
+                Status = busStatus
+            };
+            var route = new BusRoute { RouteCode = "R001" };
+            var schedule = new BusSchedule
+            {
+                BusId = bus.Id,
+                RouteId = route.Id,
+                DepartureUtc = departure ?? DateTime.UtcNow.AddDays(2),
+                BasePrice = 500,
+                IsCancelledByAdmin = isCancelled
+            };
+            var user = new User { Username = "alice", Email = "alice@test.com" };
 
-        db.Bookings.AddRange(
-            SeedHelper.MakeBooking(userId1, schedule.Id),
-            SeedHelper.MakeBooking(userId1, schedule.Id),
-            SeedHelper.MakeBooking(userId2, schedule.Id)
-        );
-        await db.SaveChangesAsync();
+            db.Buses.Add(bus);
+            db.BusRoutes.Add(route);
+            db.BusSchedules.Add(schedule);
+            db.Users.Add(user);
+            db.SaveChanges();
 
-        var result = (await svc.GetMyAsync(userId1)).ToList();
+            return (bus, route, schedule, user);
+        }
 
-        Assert.Equal(2, result.Count);
-        Assert.All(result, b => Assert.Equal(userId1, b.UserId));
-    }
+        private static CreateBookingRequestDto MakeBookingDto(Guid scheduleId, params string[] seats)
+        {
+            return new CreateBookingRequestDto
+            {
+                ScheduleId = scheduleId,
+                Passengers = seats.Select((s, i) => new BookingPassengerDto
+                {
+                    Name = $"Passenger{i + 1}",
+                    Age = 25,
+                    SeatNo = s
+                }).ToList()
+            };
+        }
 
-    [Fact]
-    public async Task GetMy_ReturnsEmpty_WhenUserHasNoBookings()
-    {
-        var (svc, _) = Build();
-        Assert.Empty(await svc.GetMyAsync(Guid.NewGuid()));
-    }
+        // ── CreateAsync ───────────────────────────────────────────────────────
 
-    // ── GetByIdForUserAsync ───────────────────────────────────────────────────
+        [Fact]
+        public async Task CreateAsync_ValidRequest_CreatesBookingPending()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db);
 
-    [Fact]
-    public async Task GetById_ReturnsBooking_ForOwner()
-    {
-        var (svc, db) = Build();
-        var (_, _, _, schedule) = SeedHelper.SeedSchedule(db);
-        var userId  = Guid.NewGuid();
-        var booking = SeedHelper.MakeBooking(userId, schedule.Id);
-        db.Bookings.Add(booking);
-        await db.SaveChangesAsync();
+            var dto = MakeBookingDto(schedule.Id, "1", "2");
+            var result = await svc.CreateAsync(user.Id, dto);
 
-        var result = await svc.GetByIdForUserAsync(userId, booking.Id);
+            Assert.Equal(BookingStatus.Pending, result.Status);
+            Assert.Equal(1000, result.TotalAmount); // 500 * 2
+            Assert.Equal(2, result.Passengers.Count);
+        }
 
-        Assert.NotNull(result);
-        Assert.Equal(booking.Id, result!.Id);
-    }
+        [Fact]
+        public async Task CreateAsync_NoPassengers_ThrowsInvalidOperationException()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db);
 
-    [Fact]
-    public async Task GetById_ReturnsNull_ForDifferentUser()
-    {
-        var (svc, db) = Build();
-        var (_, _, _, schedule) = SeedHelper.SeedSchedule(db);
-        var ownerId = Guid.NewGuid();
-        var booking = SeedHelper.MakeBooking(ownerId, schedule.Id);
-        db.Bookings.Add(booking);
-        await db.SaveChangesAsync();
+            var dto = new CreateBookingRequestDto { ScheduleId = schedule.Id, Passengers = new List<BookingPassengerDto>() };
 
-        var result = await svc.GetByIdForUserAsync(Guid.NewGuid(), booking.Id, allowPrivileged: false);
-        Assert.Null(result);
-    }
+            await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateAsync(user.Id, dto));
+        }
 
-    [Fact]
-    public async Task GetById_ReturnsBooking_ForPrivilegedUser()
-    {
-        var (svc, db) = Build();
-        var (_, _, _, schedule) = SeedHelper.SeedSchedule(db);
-        var ownerId = Guid.NewGuid();
-        var booking = SeedHelper.MakeBooking(ownerId, schedule.Id);
-        db.Bookings.Add(booking);
-        await db.SaveChangesAsync();
+        [Fact]
+        public async Task CreateAsync_DuplicateSeatInRequest_ThrowsInvalidOperationException()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db);
 
-        var result = await svc.GetByIdForUserAsync(Guid.NewGuid(), booking.Id, allowPrivileged: true);
-        Assert.NotNull(result);
-    }
+            var dto = MakeBookingDto(schedule.Id, "5", "5");
 
-    [Fact]
-    public async Task GetById_ReturnsNull_WhenBookingNotFound()
-    {
-        var (svc, _) = Build();
-        Assert.Null(await svc.GetByIdForUserAsync(Guid.NewGuid(), Guid.NewGuid()));
-    }
+            await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateAsync(user.Id, dto));
+        }
 
-    // ── CancelAsync ───────────────────────────────────────────────────────────
+        [Fact]
+        public async Task CreateAsync_ScheduleNotFound_ThrowsInvalidOperationException()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, _, user) = SeedBasicData(db);
 
-    [Fact]
-    public async Task Cancel_SetsCancelledStatus_ForPendingBooking()
-    {
-        var (svc, db) = Build();
-        var (_, _, _, schedule) = SeedHelper.SeedSchedule(db);
-        var userId  = Guid.NewGuid();
-        var booking = SeedHelper.MakeBooking(userId, schedule.Id, BookingStatus.Pending);
-        db.Bookings.Add(booking);
-        await db.SaveChangesAsync();
+            var dto = MakeBookingDto(Guid.NewGuid(), "1");
 
-        var result = await svc.CancelAsync(userId, booking.Id);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateAsync(user.Id, dto));
+        }
 
-        Assert.True(result);
-        Assert.Equal(BookingStatus.Cancelled, db.Bookings.Find(booking.Id)!.Status);
-    }
+        [Fact]
+        public async Task CreateAsync_CancelledSchedule_ThrowsInvalidOperationException()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db, isCancelled: true);
 
-    [Fact]
-    public async Task Cancel_ReturnsFalse_WhenBookingNotFound()
-    {
-        var (svc, _) = Build();
-        Assert.False(await svc.CancelAsync(Guid.NewGuid(), Guid.NewGuid()));
-    }
+            var dto = MakeBookingDto(schedule.Id, "1");
 
-    [Fact]
-    public async Task Cancel_ReturnsTrue_WhenAlreadyCancelled()
-    {
-        var (svc, db) = Build();
-        var (_, _, _, schedule) = SeedHelper.SeedSchedule(db);
-        var userId  = Guid.NewGuid();
-        var booking = SeedHelper.MakeBooking(userId, schedule.Id, BookingStatus.Cancelled);
-        db.Bookings.Add(booking);
-        await db.SaveChangesAsync();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateAsync(user.Id, dto));
+        }
 
-        Assert.True(await svc.CancelAsync(userId, booking.Id));
-    }
+        [Fact]
+        public async Task CreateAsync_DepartedSchedule_ThrowsInvalidOperationException()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db, departure: DateTime.UtcNow.AddDays(-1));
 
-    [Fact]
-    public async Task Cancel_Throws_WhenUserDoesNotOwnBooking()
-    {
-        var (svc, db) = Build();
-        var (_, _, _, schedule) = SeedHelper.SeedSchedule(db);
-        var ownerId = Guid.NewGuid();
-        var booking = SeedHelper.MakeBooking(ownerId, schedule.Id, BookingStatus.Pending);
-        db.Bookings.Add(booking);
-        await db.SaveChangesAsync();
+            var dto = MakeBookingDto(schedule.Id, "1");
 
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(
-            () => svc.CancelAsync(Guid.NewGuid(), booking.Id, allowPrivileged: false));
-    }
+            await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateAsync(user.Id, dto));
+        }
 
-    [Fact]
-    public async Task Cancel_IssuesRefund_ForConfirmedPaidBooking()
-    {
-        var (svc, db) = Build();
-        var (_, _, _, schedule) = SeedHelper.SeedSchedule(db, departure: DateTime.UtcNow.AddHours(72), price: 500m);
+        [Fact]
+        public async Task CreateAsync_BusUnderRepair_ThrowsInvalidOperationException()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db, busStatus: BusStatus.UnderRepair);
 
-        var userId  = Guid.NewGuid();
-        var booking = SeedHelper.MakeBooking(userId, schedule.Id, BookingStatus.Confirmed, 500m);
-        var payment = SeedHelper.MakePayment(booking.Id, PaymentStatus.Success, 500m);
-        booking.Payment  = payment;
-        booking.Schedule = schedule;
-        db.Bookings.Add(booking);
-        db.Payments.Add(payment);
-        await db.SaveChangesAsync();
+            var dto = MakeBookingDto(schedule.Id, "1");
 
-        await svc.CancelAsync(userId, booking.Id);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateAsync(user.Id, dto));
+        }
 
-        var wallet = db.Wallets.SingleOrDefault(w => w.UserId == userId);
-        Assert.NotNull(wallet);
-        Assert.Equal(500m, wallet!.Balance);
-    }
+        [Fact]
+        public async Task CreateAsync_BusNotAvailable_ThrowsInvalidOperationException()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db, busStatus: BusStatus.NotAvailable);
 
-    [Fact]
-    public async Task Cancel_NoRefund_ForPendingUnpaidBooking()
-    {
-        var (svc, db) = Build();
-        var (_, _, _, schedule) = SeedHelper.SeedSchedule(db, departure: DateTime.UtcNow.AddHours(72), price: 500m);
+            var dto = MakeBookingDto(schedule.Id, "1");
 
-        var userId  = Guid.NewGuid();
-        var booking = SeedHelper.MakeBooking(userId, schedule.Id, BookingStatus.Pending, 500m);
-        booking.Schedule = schedule;
-        db.Bookings.Add(booking);
-        await db.SaveChangesAsync();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateAsync(user.Id, dto));
+        }
 
-        await svc.CancelAsync(userId, booking.Id);
+        [Fact]
+        public async Task CreateAsync_InvalidSeatNumber_ThrowsInvalidOperationException()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db);
 
-        Assert.Empty(db.Wallets);
-    }
+            var dto = MakeBookingDto(schedule.Id, "99"); // bus has 40 seats
 
-    // ── PayAsync ──────────────────────────────────────────────────────────────
+            await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateAsync(user.Id, dto));
+        }
 
-    [Fact]
-    public async Task Pay_ConfirmsBooking_WithMockGateway()
-    {
-        var (svc, db) = Build();
-        var (_, _, _, schedule) = SeedHelper.SeedSchedule(db);
-        var userId  = Guid.NewGuid();
-        var booking = SeedHelper.MakeBooking(userId, schedule.Id, BookingStatus.Pending, 500m);
-        var payment = SeedHelper.MakePayment(booking.Id, PaymentStatus.Initiated, 500m);
-        booking.Payment  = payment;
-        booking.Schedule = schedule;
-        db.Bookings.Add(booking);
-        db.Payments.Add(payment);
-        await db.SaveChangesAsync();
+        [Fact]
+        public async Task CreateAsync_AlreadyTakenSeat_ThrowsInvalidOperationException()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db);
 
-        var result = await svc.PayAsync(userId, booking.Id, 500m, "PAY-123");
+            // First booking takes seat 1
+            await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
 
-        Assert.NotNull(result);
-        Assert.Equal(BookingStatus.Confirmed, result!.Status);
-    }
+            // Second booking tries to take seat 1 again
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1")));
+        }
 
-    [Fact]
-    public async Task Pay_ConfirmsBooking_WithWallet_WhenSufficientBalance()
-    {
-        var (svc, db) = Build();
-        var (_, _, _, schedule) = SeedHelper.SeedSchedule(db);
-        var userId  = Guid.NewGuid();
-        var booking = SeedHelper.MakeBooking(userId, schedule.Id, BookingStatus.Pending, 300m);
-        var payment = SeedHelper.MakePayment(booking.Id, PaymentStatus.Initiated, 300m);
-        booking.Payment  = payment;
-        booking.Schedule = schedule;
-        db.Bookings.Add(booking);
-        db.Payments.Add(payment);
-        db.Wallets.Add(SeedHelper.MakeWallet(userId, 1000m));
-        await db.SaveChangesAsync();
+        [Fact]
+        public async Task CreateAsync_EmptySeatNo_ThrowsInvalidOperationException()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db);
 
-        var result = await svc.PayAsync(userId, booking.Id, 300m, "WALLET", useWallet: true);
+            var dto = new CreateBookingRequestDto
+            {
+                ScheduleId = schedule.Id,
+                Passengers = new List<BookingPassengerDto> { new() { Name = "Alice", SeatNo = "  " } }
+            };
 
-        Assert.NotNull(result);
-        Assert.Equal(BookingStatus.Confirmed, result!.Status);
-        Assert.Equal(700m, db.Wallets.Single(w => w.UserId == userId).Balance);
-    }
+            await Assert.ThrowsAsync<InvalidOperationException>(() => svc.CreateAsync(user.Id, dto));
+        }
 
-    [Fact]
-    public async Task Pay_Throws_WhenWalletInsufficientBalance()
-    {
-        var (svc, db) = Build();
-        var (_, _, _, schedule) = SeedHelper.SeedSchedule(db);
-        var userId  = Guid.NewGuid();
-        var booking = SeedHelper.MakeBooking(userId, schedule.Id, BookingStatus.Pending, 500m);
-        var payment = SeedHelper.MakePayment(booking.Id, PaymentStatus.Initiated, 500m);
-        booking.Payment  = payment;
-        booking.Schedule = schedule;
-        db.Bookings.Add(booking);
-        db.Payments.Add(payment);
-        db.Wallets.Add(SeedHelper.MakeWallet(userId, 100m));
-        await db.SaveChangesAsync();
+        // ── GetMyAsync ────────────────────────────────────────────────────────
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => svc.PayAsync(userId, booking.Id, 500m, "WALLET", useWallet: true));
-    }
+        [Fact]
+        public async Task GetMyAsync_ReturnsOnlyUserBookings()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db);
+            var otherUser = new User { Username = "bob", Email = "bob@test.com" };
+            db.Users.Add(otherUser);
+            await db.SaveChangesAsync();
 
-    [Fact]
-    public async Task Pay_ReturnsNull_WhenBookingNotFound()
-    {
-        var (svc, _) = Build();
-        Assert.Null(await svc.PayAsync(Guid.NewGuid(), Guid.NewGuid(), 100m, "REF"));
-    }
+            await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
+            await svc.CreateAsync(otherUser.Id, MakeBookingDto(schedule.Id, "2"));
 
-    [Fact]
-    public async Task Pay_ReturnsNull_WhenUserDoesNotOwnBooking()
-    {
-        var (svc, db) = Build();
-        var (_, _, _, schedule) = SeedHelper.SeedSchedule(db);
-        var ownerId = Guid.NewGuid();
-        var booking = SeedHelper.MakeBooking(ownerId, schedule.Id, BookingStatus.Pending, 500m);
-        db.Bookings.Add(booking);
-        await db.SaveChangesAsync();
+            var result = (await svc.GetMyAsync(user.Id)).ToList();
 
-        Assert.Null(await svc.PayAsync(Guid.NewGuid(), booking.Id, 500m, "REF", allowPrivileged: false));
-    }
+            Assert.Single(result);
+            Assert.Equal(user.Id, result[0].UserId);
+        }
 
-    [Fact]
-    public async Task Pay_Throws_WhenBookingIsCancelled()
-    {
-        var (svc, db) = Build();
-        var (_, _, _, schedule) = SeedHelper.SeedSchedule(db);
-        var userId  = Guid.NewGuid();
-        var booking = SeedHelper.MakeBooking(userId, schedule.Id, BookingStatus.Cancelled, 500m);
-        db.Bookings.Add(booking);
-        await db.SaveChangesAsync();
+        [Fact]
+        public async Task GetMyAsync_ConfirmedBooking_CalculatesRefundPolicy()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db, departure: DateTime.UtcNow.AddDays(3));
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => svc.PayAsync(userId, booking.Id, 500m, "REF", allowPrivileged: true));
-    }
+            var booking = await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
+            await svc.PayAsync(user.Id, booking.Id, 500, "REF123");
 
-    [Fact]
-    public async Task Pay_UsesFullAmount_WhenAmountIsZero()
-    {
-        var (svc, db) = Build();
-        var (_, _, _, schedule) = SeedHelper.SeedSchedule(db);
-        var userId  = Guid.NewGuid();
-        var booking = SeedHelper.MakeBooking(userId, schedule.Id, BookingStatus.Pending, 750m);
-        var payment = SeedHelper.MakePayment(booking.Id, PaymentStatus.Initiated, 750m);
-        booking.Payment  = payment;
-        booking.Schedule = schedule;
-        db.Bookings.Add(booking);
-        db.Payments.Add(payment);
-        await db.SaveChangesAsync();
+            var result = (await svc.GetMyAsync(user.Id)).First();
 
-        var result = await svc.PayAsync(userId, booking.Id, 0m, "PAY-AUTO");
+            Assert.Equal(100, result.RefundPercent); // 3 days = 48h+
+            Assert.NotNull(result.RefundPolicy);
+        }
 
-        Assert.NotNull(result);
-        Assert.Equal(750m, db.Payments.Single(p => p.BookingId == booking.Id).Amount);
+        // ── GetByIdForUserAsync ───────────────────────────────────────────────
+
+        [Fact]
+        public async Task GetByIdForUserAsync_OwnerCanAccess()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db);
+
+            var booking = await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
+            var result = await svc.GetByIdForUserAsync(user.Id, booking.Id);
+
+            Assert.NotNull(result);
+            Assert.Equal(booking.Id, result!.Id);
+        }
+
+        [Fact]
+        public async Task GetByIdForUserAsync_OtherUserCannotAccess()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db);
+
+            var booking = await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
+            var result = await svc.GetByIdForUserAsync(Guid.NewGuid(), booking.Id);
+
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public async Task GetByIdForUserAsync_AdminCanAccessAnyBooking()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db);
+
+            var booking = await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
+            var result = await svc.GetByIdForUserAsync(Guid.NewGuid(), booking.Id, allowPrivileged: true);
+
+            Assert.NotNull(result);
+        }
+
+        [Fact]
+        public async Task GetByIdForUserAsync_NotFound_ReturnsNull()
+        {
+            var (svc, _, _) = CreateService();
+            var result = await svc.GetByIdForUserAsync(Guid.NewGuid(), Guid.NewGuid());
+            Assert.Null(result);
+        }
+
+        // ── CancelAsync ───────────────────────────────────────────────────────
+
+        [Fact]
+        public async Task CancelAsync_PendingBooking_CancelledNoRefund()
+        {
+            var (svc, db, walletMock) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db);
+
+            var booking = await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
+            var result = await svc.CancelAsync(user.Id, booking.Id);
+
+            Assert.True(result);
+            walletMock.Verify(w => w.CreditAsync(It.IsAny<Guid>(), It.IsAny<decimal>(), It.IsAny<string>(),
+                It.IsAny<Guid?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task CancelAsync_ConfirmedPaidBooking_48hPlus_FullRefund()
+        {
+            var (svc, db, walletMock) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db, departure: DateTime.UtcNow.AddDays(3));
+
+            var booking = await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
+            await svc.PayAsync(user.Id, booking.Id, 500, "REF");
+
+            await svc.CancelAsync(user.Id, booking.Id);
+
+            walletMock.Verify(w => w.CreditAsync(user.Id, 500, "CancellationRefund",
+                booking.Id, It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CancelAsync_ConfirmedPaidBooking_24to48h_75PercentRefund()
+        {
+            var (svc, db, walletMock) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db, departure: DateTime.UtcNow.AddHours(36));
+
+            var booking = await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
+            await svc.PayAsync(user.Id, booking.Id, 500, "REF");
+
+            await svc.CancelAsync(user.Id, booking.Id);
+
+            walletMock.Verify(w => w.CreditAsync(user.Id, 375, "CancellationRefund",
+                booking.Id, It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CancelAsync_ConfirmedPaidBooking_6to24h_50PercentRefund()
+        {
+            var (svc, db, walletMock) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db, departure: DateTime.UtcNow.AddHours(12));
+
+            var booking = await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
+            await svc.PayAsync(user.Id, booking.Id, 500, "REF");
+
+            await svc.CancelAsync(user.Id, booking.Id);
+
+            walletMock.Verify(w => w.CreditAsync(user.Id, 250, "CancellationRefund",
+                booking.Id, It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CancelAsync_ConfirmedPaidBooking_0to6h_25PercentRefund()
+        {
+            var (svc, db, walletMock) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db, departure: DateTime.UtcNow.AddHours(3));
+
+            var booking = await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
+            await svc.PayAsync(user.Id, booking.Id, 500, "REF");
+
+            await svc.CancelAsync(user.Id, booking.Id);
+
+            walletMock.Verify(w => w.CreditAsync(user.Id, 125, "CancellationRefund",
+                booking.Id, It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task CancelAsync_AlreadyCancelled_ReturnsTrueIdempotent()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db);
+
+            var booking = await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
+            await svc.CancelAsync(user.Id, booking.Id);
+
+            var result = await svc.CancelAsync(user.Id, booking.Id);
+
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task CancelAsync_NotFound_ReturnsFalse()
+        {
+            var (svc, _, _) = CreateService();
+            var result = await svc.CancelAsync(Guid.NewGuid(), Guid.NewGuid());
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task CancelAsync_OtherUserNotPrivileged_ThrowsUnauthorizedAccessException()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db);
+
+            var booking = await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+                svc.CancelAsync(Guid.NewGuid(), booking.Id, allowPrivileged: false));
+        }
+
+        // ── PayAsync ──────────────────────────────────────────────────────────
+
+        [Fact]
+        public async Task PayAsync_GatewayPayment_ConfirmsBooking()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db);
+
+            var booking = await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
+            var result = await svc.PayAsync(user.Id, booking.Id, 500, "GATEWAY-REF");
+
+            Assert.NotNull(result);
+            Assert.Equal(BookingStatus.Confirmed, result!.Status);
+        }
+
+        [Fact]
+        public async Task PayAsync_WalletPayment_DebitsWalletAndConfirms()
+        {
+            var (svc, db, walletMock) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db);
+
+            var booking = await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
+            var result = await svc.PayAsync(user.Id, booking.Id, 500, "", useWallet: true);
+
+            Assert.NotNull(result);
+            Assert.Equal(BookingStatus.Confirmed, result!.Status);
+            walletMock.Verify(w => w.DebitAsync(user.Id, 500, "BookingPayment",
+                booking.Id, It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task PayAsync_WalletInsufficientBalance_ThrowsInvalidOperationException()
+        {
+            var (svc, db, walletMock) = CreateService();
+            walletMock.Setup(w => w.DebitAsync(It.IsAny<Guid>(), It.IsAny<decimal>(), It.IsAny<string>(),
+                It.IsAny<Guid?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
+
+            var (_, _, schedule, user) = SeedBasicData(db);
+            var booking = await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                svc.PayAsync(user.Id, booking.Id, 500, "", useWallet: true));
+        }
+
+        [Fact]
+        public async Task PayAsync_CancelledBooking_ThrowsInvalidOperationException()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db);
+
+            var booking = await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
+            await svc.CancelAsync(user.Id, booking.Id);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                svc.PayAsync(user.Id, booking.Id, 500, "REF"));
+        }
+
+        [Fact]
+        public async Task PayAsync_NotFound_ReturnsNull()
+        {
+            var (svc, _, _) = CreateService();
+            var result = await svc.PayAsync(Guid.NewGuid(), Guid.NewGuid(), 500, "REF");
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public async Task PayAsync_OtherUserNotPrivileged_ReturnsNull()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db);
+
+            var booking = await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
+            var result = await svc.PayAsync(Guid.NewGuid(), booking.Id, 500, "REF");
+
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public async Task PayAsync_ZeroAmount_UsesBookingTotal()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db);
+
+            var booking = await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
+            var result = await svc.PayAsync(user.Id, booking.Id, 0, "REF");
+
+            Assert.NotNull(result);
+            Assert.Equal(BookingStatus.Confirmed, result!.Status);
+        }
+
+        [Fact]
+        public async Task PayAsync_AdminPrivileged_CanPayAnyBooking()
+        {
+            var (svc, db, _) = CreateService();
+            var (_, _, schedule, user) = SeedBasicData(db);
+
+            var booking = await svc.CreateAsync(user.Id, MakeBookingDto(schedule.Id, "1"));
+            var result = await svc.PayAsync(Guid.NewGuid(), booking.Id, 500, "REF", allowPrivileged: true);
+
+            Assert.NotNull(result);
+            Assert.Equal(BookingStatus.Confirmed, result!.Status);
+        }
     }
 }

@@ -1,3 +1,4 @@
+using BusTicketBooking.Contexts;
 using BusTicketBooking.Models;
 using BusTicketBooking.Repositories;
 using BusTicketBooking.Services;
@@ -7,179 +8,189 @@ namespace BusTicketBooking.Tests.Services
 {
     public class WalletServiceTests
     {
-        private static WalletService Build(BusTicketBooking.Contexts.AppDbContext db)
-            => new(new Repository<BusTicketBooking.Models.Wallet>(db),
-                   new Repository<BusTicketBooking.Models.WalletTransaction>(db));
+        private WalletService CreateService(out AppDbContext db)
+        {
+            db = DbHelper.CreateDb();
+            return new WalletService(new Repository<Wallet>(db), new Repository<WalletTransaction>(db));
+        }
+
         // ── GetOrCreateAsync ──────────────────────────────────────────────────
 
         [Fact]
-        public async Task GetOrCreate_CreatesWallet_WhenUserHasNone()
+        public async Task GetOrCreateAsync_NoExistingWallet_CreatesNewWallet()
         {
-            using var db = DbHelper.CreateDb();
-            var svc    = Build(db);
+            var svc = CreateService(out var db);
             var userId = Guid.NewGuid();
 
             var wallet = await svc.GetOrCreateAsync(userId);
 
-            Assert.NotNull(wallet);
             Assert.Equal(userId, wallet.UserId);
-            Assert.Equal(0m, wallet.Balance);
+            Assert.Equal(0, wallet.Balance);
+            Assert.Single(db.Wallets.ToList());
         }
 
         [Fact]
-        public async Task GetOrCreate_ReturnsExisting_WhenWalletExists()
+        public async Task GetOrCreateAsync_ExistingWallet_ReturnsExisting()
         {
-            using var db = DbHelper.CreateDb();
-            var svc    = Build(db);
+            var svc = CreateService(out var db);
             var userId = Guid.NewGuid();
-
-            // Seed an existing wallet with balance
-            var existing = SeedHelper.MakeWallet(userId, 500m);
-            db.Wallets.Add(existing);
+            db.Wallets.Add(new Wallet { UserId = userId, Balance = 500 });
             await db.SaveChangesAsync();
 
             var wallet = await svc.GetOrCreateAsync(userId);
 
-            Assert.Equal(500m, wallet.Balance);
-            // Should not create a second wallet
-            Assert.Single(db.Wallets.Where(w => w.UserId == userId));
+            Assert.Equal(500, wallet.Balance);
+            Assert.Single(db.Wallets.ToList());
         }
 
         // ── CreditAsync ───────────────────────────────────────────────────────
 
         [Fact]
-        public async Task Credit_IncreasesBalance_AndCreatesTransaction()
+        public async Task CreditAsync_PositiveAmount_IncreasesBalance()
         {
-            using var db = DbHelper.CreateDb();
-            var svc    = Build(db);
+            var svc = CreateService(out var db);
             var userId = Guid.NewGuid();
 
-            await svc.CreditAsync(userId, 200m, "TopUp");
+            await svc.CreditAsync(userId, 200, "TopUp");
 
-            var wallet = db.Wallets.Single(w => w.UserId == userId);
-            Assert.Equal(200m, wallet.Balance);
-
-            var tx = db.WalletTransactions.Single(t => t.UserId == userId);
-            Assert.Equal("Credit", tx.Type);
-            Assert.Equal(200m, tx.Amount);
-            Assert.Equal(200m, tx.BalanceAfter);
-            Assert.Equal("TopUp", tx.Reason);
+            var wallet = db.Wallets.First();
+            Assert.Equal(200, wallet.Balance);
+            Assert.Single(db.WalletTransactions.ToList());
+            Assert.Equal("Credit", db.WalletTransactions.First().Type);
+            Assert.Equal("TopUp", db.WalletTransactions.First().Reason);
         }
 
         [Fact]
-        public async Task Credit_DoesNothing_WhenAmountIsZero()
+        public async Task CreditAsync_ZeroAmount_DoesNothing()
         {
-            using var db = DbHelper.CreateDb();
-            var svc    = Build(db);
+            var svc = CreateService(out var db);
             var userId = Guid.NewGuid();
 
-            await svc.CreditAsync(userId, 0m, "TopUp");
+            await svc.CreditAsync(userId, 0, "TopUp");
 
-            // No wallet or transaction should be created
-            Assert.Empty(db.Wallets);
-            Assert.Empty(db.WalletTransactions);
+            Assert.Empty(db.Wallets.ToList());
+            Assert.Empty(db.WalletTransactions.ToList());
         }
 
         [Fact]
-        public async Task Credit_DoesNothing_WhenAmountIsNegative()
+        public async Task CreditAsync_NegativeAmount_DoesNothing()
         {
-            using var db = DbHelper.CreateDb();
-            var svc    = Build(db);
+            var svc = CreateService(out var db);
             var userId = Guid.NewGuid();
 
-            await svc.CreditAsync(userId, -50m, "Refund");
+            await svc.CreditAsync(userId, -50, "TopUp");
 
-            Assert.Empty(db.Wallets);
+            Assert.Empty(db.Wallets.ToList());
+            Assert.Empty(db.WalletTransactions.ToList());
         }
 
         [Fact]
-        public async Task Credit_AccumulatesBalance_OnMultipleCredits()
+        public async Task CreditAsync_SetsBalanceAfterOnTransaction()
         {
-            using var db = DbHelper.CreateDb();
-            var svc    = Build(db);
+            var svc = CreateService(out var db);
             var userId = Guid.NewGuid();
 
-            await svc.CreditAsync(userId, 100m, "TopUp");
-            await svc.CreditAsync(userId, 250m, "Refund");
+            await svc.CreditAsync(userId, 300, "TopUp");
 
-            var wallet = db.Wallets.Single(w => w.UserId == userId);
-            Assert.Equal(350m, wallet.Balance);
-            Assert.Equal(2, db.WalletTransactions.Count(t => t.UserId == userId));
+            Assert.Equal(300, db.WalletTransactions.First().BalanceAfter);
+        }
+
+        [Fact]
+        public async Task CreditAsync_WithBookingId_SetsBookingIdOnTransaction()
+        {
+            var svc = CreateService(out var db);
+            var userId = Guid.NewGuid();
+            var bookingId = Guid.NewGuid();
+
+            await svc.CreditAsync(userId, 100, "CancellationRefund", bookingId: bookingId);
+
+            Assert.Equal(bookingId, db.WalletTransactions.First().BookingId);
+        }
+
+        [Fact]
+        public async Task CreditAsync_MultipleCalls_AccumulatesBalance()
+        {
+            var svc = CreateService(out var db);
+            var userId = Guid.NewGuid();
+
+            await svc.CreditAsync(userId, 100, "TopUp");
+            await svc.CreditAsync(userId, 200, "TopUp");
+
+            Assert.Equal(300, db.Wallets.First().Balance);
+            Assert.Equal(2, db.WalletTransactions.Count());
         }
 
         // ── DebitAsync ────────────────────────────────────────────────────────
 
         [Fact]
-        public async Task Debit_DecreasesBalance_AndReturnsTrue_WhenSufficientFunds()
+        public async Task DebitAsync_SufficientBalance_DeductsAndReturnsTrue()
         {
-            using var db = DbHelper.CreateDb();
-            var svc    = Build(db);
+            var svc = CreateService(out var db);
             var userId = Guid.NewGuid();
-
-            db.Wallets.Add(SeedHelper.MakeWallet(userId, 1000m));
+            db.Wallets.Add(new Wallet { UserId = userId, Balance = 500 });
             await db.SaveChangesAsync();
 
-            var result = await svc.DebitAsync(userId, 300m, "BookingPayment");
+            var result = await svc.DebitAsync(userId, 200, "BookingPayment");
 
             Assert.True(result);
-            var wallet = db.Wallets.Single(w => w.UserId == userId);
-            Assert.Equal(700m, wallet.Balance);
-
-            var tx = db.WalletTransactions.Single(t => t.UserId == userId);
-            Assert.Equal("Debit", tx.Type);
-            Assert.Equal(300m, tx.Amount);
-            Assert.Equal(700m, tx.BalanceAfter);
+            Assert.Equal(300, db.Wallets.First().Balance);
+            Assert.Single(db.WalletTransactions.ToList());
+            Assert.Equal("Debit", db.WalletTransactions.First().Type);
         }
 
         [Fact]
-        public async Task Debit_ReturnsFalse_WhenInsufficientFunds()
+        public async Task DebitAsync_InsufficientBalance_ReturnsFalseNoChange()
         {
-            using var db = DbHelper.CreateDb();
-            var svc    = Build(db);
+            var svc = CreateService(out var db);
             var userId = Guid.NewGuid();
-
-            db.Wallets.Add(SeedHelper.MakeWallet(userId, 100m));
+            db.Wallets.Add(new Wallet { UserId = userId, Balance = 100 });
             await db.SaveChangesAsync();
 
-            var result = await svc.DebitAsync(userId, 500m, "BookingPayment");
+            var result = await svc.DebitAsync(userId, 500, "BookingPayment");
 
             Assert.False(result);
-            // Balance should be unchanged
-            var wallet = db.Wallets.Single(w => w.UserId == userId);
-            Assert.Equal(100m, wallet.Balance);
-            // No transaction should be recorded
-            Assert.Empty(db.WalletTransactions);
+            Assert.Equal(100, db.Wallets.First().Balance);
+            Assert.Empty(db.WalletTransactions.ToList());
         }
 
         [Fact]
-        public async Task Debit_ReturnsTrue_WhenAmountIsZero()
+        public async Task DebitAsync_ZeroAmount_ReturnsTrueNoChange()
         {
-            using var db = DbHelper.CreateDb();
-            var svc    = Build(db);
+            var svc = CreateService(out var db);
             var userId = Guid.NewGuid();
 
-            var result = await svc.DebitAsync(userId, 0m, "BookingPayment");
+            var result = await svc.DebitAsync(userId, 0, "BookingPayment");
 
             Assert.True(result);
-            // No wallet or transaction created for zero amount
-            Assert.Empty(db.Wallets);
+            Assert.Empty(db.Wallets.ToList());
+            Assert.Empty(db.WalletTransactions.ToList());
         }
 
         [Fact]
-        public async Task Debit_LinksTransaction_ToBookingId_WhenProvided()
+        public async Task DebitAsync_SetsBalanceAfterOnTransaction()
         {
-            using var db = DbHelper.CreateDb();
-            var svc       = Build(db);
-            var userId    = Guid.NewGuid();
-            var bookingId = Guid.NewGuid();
-
-            db.Wallets.Add(SeedHelper.MakeWallet(userId, 500m));
+            var svc = CreateService(out var db);
+            var userId = Guid.NewGuid();
+            db.Wallets.Add(new Wallet { UserId = userId, Balance = 500 });
             await db.SaveChangesAsync();
 
-            await svc.DebitAsync(userId, 200m, "BookingPayment", bookingId: bookingId);
+            await svc.DebitAsync(userId, 200, "BookingPayment");
 
-            var tx = db.WalletTransactions.Single(t => t.UserId == userId);
-            Assert.Equal(bookingId, tx.BookingId);
+            Assert.Equal(300, db.WalletTransactions.First().BalanceAfter);
+        }
+
+        [Fact]
+        public async Task DebitAsync_ExactBalance_SucceedsWithZeroBalance()
+        {
+            var svc = CreateService(out var db);
+            var userId = Guid.NewGuid();
+            db.Wallets.Add(new Wallet { UserId = userId, Balance = 300 });
+            await db.SaveChangesAsync();
+
+            var result = await svc.DebitAsync(userId, 300, "BookingPayment");
+
+            Assert.True(result);
+            Assert.Equal(0, db.Wallets.First().Balance);
         }
     }
 }

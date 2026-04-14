@@ -52,7 +52,7 @@ namespace BusTicketBooking.Tests.Helpers
                 RouteId               = routeId,
                 DepartureUtc          = departure ?? DateTime.UtcNow.AddHours(24),
                 BasePrice             = price,
-                IsCancelledByOperator = cancelled
+                IsCancelledByAdmin = cancelled
             };
 
         // ── Booking ───────────────────────────────────────────────────────────
